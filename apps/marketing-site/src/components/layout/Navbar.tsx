@@ -57,7 +57,7 @@ export function Navbar() {
         </nav>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Link
             href="/#contact"
             className="hidden sm:inline-flex items-center justify-center min-h-[44px] px-4 rounded-xl text-sm font-bold text-neutral-text hover:bg-slate-100/80 hover:text-primary transition-colors"
@@ -66,10 +66,12 @@ export function Navbar() {
           </Link>
           <Link
             href="/#free-tools"
-            className="inline-flex items-center justify-center min-h-[48px] rounded-xl bg-gradient-to-r from-accent to-orange-600 px-6 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-accent/25 hover:shadow-xl hover:shadow-accent/40 hover:-translate-y-0.5 transition-all duration-200 active:scale-95 whitespace-nowrap"
+            className="inline-flex items-center justify-center min-h-[40px] sm:min-h-[48px] rounded-xl bg-gradient-to-r from-accent to-orange-600 px-3 sm:px-6 py-2 text-xs sm:text-sm font-extrabold text-white shadow-md sm:shadow-lg shadow-accent/25 hover:shadow-xl hover:shadow-accent/40 hover:-translate-y-0.5 transition-all duration-200 active:scale-95 whitespace-nowrap"
           >
-            <span>Launch Free Utilities</span>
-            <ArrowRight className="ml-2 h-4 w-4" />
+            <Sparkles className="h-3.5 w-3.5 mr-1.5 sm:hidden" />
+            <span className="sm:hidden">Free Tools</span>
+            <span className="hidden sm:inline">Launch Free Utilities</span>
+            <ArrowRight className="hidden sm:inline-block ml-2 h-4 w-4" />
           </Link>
 
           {/* Accessible Mobile Hamburger Menu Trigger */}
