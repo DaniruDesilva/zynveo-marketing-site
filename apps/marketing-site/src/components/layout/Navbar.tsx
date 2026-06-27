@@ -32,45 +32,51 @@ export function Navbar() {
             className="flex items-center gap-2 text-sm font-extrabold text-primary bg-primary/10 hover:bg-primary hover:text-white px-4 py-2.5 rounded-full transition-all duration-200 group mr-2"
           >
             <Sparkles className="h-4 w-4 text-accent group-hover:text-white transition-colors animate-spin" style={{ animationDuration: '8s' }} />
-            <span>Free Viral Suite</span>
+            <span>Free Tools</span>
             <span className="rounded-full bg-accent text-white text-[9px] font-black uppercase px-1.5 py-0.5 ml-0.5">100% Free</span>
           </Link>
 
           <Link
-            href="/#features"
-            className="text-sm font-bold text-neutral-text hover:text-primary transition-colors px-4 py-2 rounded-xl hover:bg-slate-100/80"
+            href="/#coming-soon"
+            className="text-sm font-bold text-neutral-text hover:text-primary transition-colors px-4 py-2 rounded-xl hover:bg-slate-100/80 flex items-center gap-1.5"
           >
-            ERP Modules
+            <span>Premium Tools</span>
+            <span className="rounded bg-indigo-500/10 text-indigo-600 px-1.5 py-0.5 text-[9px] font-black uppercase">Soon</span>
           </Link>
           <Link
-            href="/#pricing"
+            href="/about"
             className="text-sm font-bold text-neutral-text hover:text-primary transition-colors px-4 py-2 rounded-xl hover:bg-slate-100/80"
           >
-            Pricing
+            About
           </Link>
           <Link
             href="/blog"
             className="text-sm font-bold text-neutral-text hover:text-primary transition-colors px-4 py-2 rounded-xl hover:bg-slate-100/80"
           >
-            Insights
+            Blogs
+          </Link>
+          <Link
+            href="/contact"
+            className="text-sm font-bold text-neutral-text hover:text-primary transition-colors px-4 py-2 rounded-xl hover:bg-slate-100/80"
+          >
+            Contact
           </Link>
         </nav>
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2 sm:gap-4">
           <Link
-            href="/#contact"
+            href="/contact"
             className="hidden sm:inline-flex items-center justify-center min-h-[44px] px-4 rounded-xl text-sm font-bold text-neutral-text hover:bg-slate-100/80 hover:text-primary transition-colors"
           >
-            Talk to Sales
+            Contact Sales
           </Link>
           <Link
             href="/#free-tools"
             className="inline-flex items-center justify-center min-h-[40px] sm:min-h-[48px] rounded-xl bg-gradient-to-r from-accent to-orange-600 px-3 sm:px-6 py-2 text-xs sm:text-sm font-extrabold text-white shadow-md sm:shadow-lg shadow-accent/25 hover:shadow-xl hover:shadow-accent/40 hover:-translate-y-0.5 transition-all duration-200 active:scale-95 whitespace-nowrap"
           >
             <Sparkles className="h-3.5 w-3.5 mr-1.5 sm:hidden" />
-            <span className="sm:hidden">Free Tools</span>
-            <span className="hidden sm:inline">Launch Free Utilities</span>
+            <span>Try Our Free Tools</span>
             <ArrowRight className="hidden sm:inline-block ml-2 h-4 w-4" />
           </Link>
 
@@ -160,36 +166,43 @@ export function Navbar() {
           {/* Section 2: Enterprise Platform */}
           <div className="pt-4 border-t border-slate-200 space-y-3">
             <div className="px-1 text-xs font-black uppercase tracking-widest text-slate-400">
-              Platform & Company
+              Platform & Navigation
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Link
-                href="/#features"
+                href="/#free-tools"
                 onClick={() => setIsOpen(false)}
                 className="flex items-center justify-center min-h-[48px] p-3 rounded-xl bg-slate-50 text-slate-700 hover:bg-slate-100 font-bold text-sm text-center"
               >
-                ERP Modules
+                Free Tools
               </Link>
               <Link
-                href="/#pricing"
+                href="/#coming-soon"
                 onClick={() => setIsOpen(false)}
                 className="flex items-center justify-center min-h-[48px] p-3 rounded-xl bg-slate-50 text-slate-700 hover:bg-slate-100 font-bold text-sm text-center"
               >
-                Pricing Plans
+                Premium Tools
+              </Link>
+              <Link
+                href="/about"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center justify-center min-h-[48px] p-3 rounded-xl bg-slate-50 text-slate-700 hover:bg-slate-100 font-bold text-sm text-center"
+              >
+                About
               </Link>
               <Link
                 href="/blog"
                 onClick={() => setIsOpen(false)}
                 className="flex items-center justify-center min-h-[48px] p-3 rounded-xl bg-slate-50 text-slate-700 hover:bg-slate-100 font-bold text-sm text-center"
               >
-                Insights Blog
+                Blogs
               </Link>
               <Link
-                href="/#contact"
+                href="/contact"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center justify-center min-h-[48px] p-3 rounded-xl bg-slate-50 text-slate-700 hover:bg-slate-100 font-bold text-sm text-center"
+                className="col-span-2 flex items-center justify-center min-h-[48px] p-3 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 font-bold text-sm text-center"
               >
-                Talk to Sales
+                Contact Us
               </Link>
             </div>
           </div>

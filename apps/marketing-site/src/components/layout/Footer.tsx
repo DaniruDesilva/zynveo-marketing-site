@@ -88,27 +88,32 @@ export function Footer() {
           {/* Company & Platform Links */}
           <div>
             <h3 className="text-xs font-black text-white uppercase tracking-wider mb-4">
-              Platform & Company
+              Navigation
             </h3>
             <ul className="space-y-3 text-sm font-medium text-slate-400">
               <li>
-                <Link href="/#features" className="hover:text-white transition-colors block py-1">
-                  Cloud ERP & Smart POS
+                <Link href="/#free-tools" className="hover:text-white transition-colors block py-1">
+                  Free Viral Suite
                 </Link>
               </li>
               <li>
-                <Link href="/#pricing" className="hover:text-white transition-colors block py-1">
-                  Transparent Pricing
+                <Link href="/#coming-soon" className="hover:text-white transition-colors block py-1">
+                  Premium Tools (Coming Soon)
+                </Link>
+              </li>
+              <li>
+                <Link href="/about" className="hover:text-white transition-colors block py-1">
+                  About Us
                 </Link>
               </li>
               <li>
                 <Link href="/blog" className="hover:text-white transition-colors block py-1">
-                  FMCG Insights & Blog
+                  Insights & Blogs
                 </Link>
               </li>
               <li>
-                <Link href="/#contact" className="hover:text-white transition-colors block py-1">
-                  Talk to Sales & Support
+                <Link href="/contact" className="hover:text-white transition-colors block py-1">
+                  Contact Support & Sales
                 </Link>
               </li>
             </ul>
@@ -145,8 +150,9 @@ export function Footer() {
           <div className="flex flex-wrap gap-6 justify-center">
             <Link href="/llms.txt" className="hover:text-slate-300 transition-colors">AI Index (llms.txt)</Link>
             <Link href="/sitemap.xml" className="hover:text-slate-300 transition-colors">Sitemap</Link>
-            <Link href="#" className="hover:text-slate-300 transition-colors">Privacy Policy</Link>
-            <Link href="#" className="hover:text-slate-300 transition-colors">Terms of Service</Link>
+            <Link href="/legal" className="hover:text-slate-300 transition-colors">Legal Policy</Link>
+            <Link href="/privacy" className="hover:text-slate-300 transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-slate-300 transition-colors">Terms of Service</Link>
           </div>
         </div>
       </div>

@@ -2,7 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { 
   ArrowRight, CheckCircle2, Zap, Shield, TrendingUp, Layers, 
-  Calculator, FileText, ShoppingBag, PieChart, Users, Star, Tag, Sparkles, Lock, Clock, ArrowUpRight
+  Calculator, FileText, ShoppingBag, PieChart, Users, Star, Tag, Sparkles, Lock, Clock, ArrowUpRight, BarChart3, Bell, RefreshCw, Plus, Search, DollarSign, Briefcase, Truck, Database, Smartphone, ShieldCheck, HeartHandshake
 } from "lucide-react";
 
 export default function MarketingHomepage() {
@@ -11,7 +11,7 @@ export default function MarketingHomepage() {
     "@graph": [
       {
         "@type": "SoftwareApplication",
-        name: "Synctra ERP & POS",
+        name: "Synctra ERP & POS Suite",
         applicationCategory: "BusinessApplication",
         operatingSystem: "Cloud, Web, Android, iOS",
         offers: {
@@ -65,9 +65,9 @@ export default function MarketingHomepage() {
       <div className="glow-blob w-[500px] h-[500px] bg-primary/15 top-10 left-1/2 -translate-x-1/2" />
       <div className="glow-blob w-[400px] h-[400px] bg-accent/10 top-1/3 -left-20" style={{ animationDelay: '-3s' }} />
 
-      {/* 1. Hero Section */}
+      {/* 1. HERO SECTION */}
       <section className="relative pt-12 md:pt-20 lg:pt-28 px-4 sm:px-6 lg:px-8 hero-gradient z-10">
-        <div className="container mx-auto max-w-5xl text-center space-y-8 sm:space-y-10">
+        <div className="container mx-auto max-w-6xl text-center space-y-8 sm:space-y-10">
           <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-slate-900 text-white text-xs sm:text-sm font-bold shadow-xl ring-1 ring-white/20 hover:scale-105 transition-all duration-300 cursor-default">
             <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0 shadow-sm shadow-emerald-400/50" />
             <span className="text-slate-200 tracking-wide">
@@ -75,7 +75,7 @@ export default function MarketingHomepage() {
             </span>
           </div>
 
-          <h1 className="text-3xl sm:text-6xl lg:text-7xl font-black tracking-tight text-neutral-text leading-[1.15] sm:leading-[1.08]">
+          <h1 className="text-3xl sm:text-6xl lg:text-7xl font-black tracking-tight text-neutral-text leading-[1.15] sm:leading-[1.08] max-w-5xl mx-auto">
             <span>Scale Your Operations</span> <br />
             <span>Without The</span> <br className="sm:hidden" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-indigo-600 to-accent block sm:inline mt-1 sm:mt-0">
@@ -96,7 +96,7 @@ export default function MarketingHomepage() {
               <span>Launch Free Utility Suite</span>
             </Link>
             <Link
-              href="#contact"
+              href="/contact"
               className="w-full sm:w-auto min-h-[52px] inline-flex items-center justify-center rounded-2xl glass-panel px-8 py-4 text-base font-bold text-neutral-text hover:border-primary hover:text-primary hover:shadow-lg transition-all duration-200 active:scale-95"
             >
               <span>Talk to Enterprise Sales</span>
@@ -104,43 +104,159 @@ export default function MarketingHomepage() {
             </Link>
           </div>
 
-          {/* Elevated Interactive Dashboard Preview Mockup */}
-          <div className="pt-8 sm:pt-14 relative">
-            <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-primary via-indigo-500 to-accent opacity-30 blur-xl pointer-events-none" />
-            <div className="relative rounded-3xl p-2 sm:p-3 bg-gradient-to-b from-primary/30 via-slate-200/50 to-white/80 shadow-2xl border border-white/80">
-              <div className="rounded-2xl bg-slate-950 p-6 sm:p-10 border border-slate-800 text-left grid grid-cols-1 md:grid-cols-3 gap-6 shadow-inner">
-                {/* Metric Card 1 */}
-                <div className="p-6 rounded-2xl bg-gradient-to-br from-primary to-indigo-900 text-white space-y-4 shadow-xl border border-indigo-500/30 hover:-translate-y-1 transition-transform">
-                  <div className="flex justify-between items-center text-indigo-200 text-xs uppercase font-black tracking-wider">
-                    <span>Active Revenue (Monthly)</span>
-                    <TrendingUp className="h-4 w-4 text-emerald-400" />
+          {/* BEAUTIFUL BLURRED ERP DASHBOARD MOCKUP WITH COMING SOON BADGE (Inspired by Image 1) */}
+          <div className="pt-10 sm:pt-16 relative max-w-5xl mx-auto">
+            {/* Floating Badge 1: Active Users */}
+            <div className="absolute -top-4 sm:top-6 -left-2 sm:-left-12 z-30 bg-white/95 backdrop-blur-xl p-3.5 sm:p-5 rounded-2xl shadow-2xl border border-slate-100 flex items-center gap-3.5 transform -rotate-3 hover:rotate-0 transition-transform duration-300 animate-bounce" style={{ animationDuration: '4s' }}>
+              <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600 shadow-inner">
+                <TrendingUp className="h-6 w-6 sm:h-7 sm:w-7" />
+              </div>
+              <div className="text-left">
+                <div className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400">Active Users</div>
+                <div className="text-base sm:text-xl font-black text-slate-800">25,000+</div>
+              </div>
+            </div>
+
+            {/* Floating Badge 2: Security */}
+            <div className="absolute top-1/3 -right-2 sm:-right-12 z-30 bg-white/95 backdrop-blur-xl p-3.5 sm:p-5 rounded-2xl shadow-2xl border border-slate-100 flex items-center gap-3.5 transform rotate-3 hover:rotate-0 transition-transform duration-300">
+              <div className="p-3 rounded-xl bg-blue-50 text-blue-600 shadow-inner">
+                <ShieldCheck className="h-6 w-6 sm:h-7 sm:w-7" />
+              </div>
+              <div className="text-left">
+                <div className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400">Security</div>
+                <div className="text-base sm:text-xl font-black text-blue-600 flex items-center gap-1">
+                  <span>• Bank Grade</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Floating Badge 3: Price */}
+            <div className="absolute -bottom-4 sm:bottom-6 left-4 sm:left-10 z-30 bg-white/95 backdrop-blur-xl p-3.5 sm:p-5 rounded-2xl shadow-2xl border border-slate-100 flex items-center gap-3.5 transform rotate-2 hover:rotate-0 transition-transform duration-300">
+              <div className="p-3 rounded-xl bg-amber-50 text-amber-500 shadow-inner">
+                <Star className="h-6 w-6 sm:h-7 sm:w-7 fill-amber-400" />
+              </div>
+              <div className="text-left">
+                <div className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400">Utilities Price</div>
+                <div className="text-base sm:text-xl font-black text-amber-600">100% Free</div>
+              </div>
+            </div>
+
+            {/* Main Mockup Container */}
+            <div className="relative rounded-3xl p-2 sm:p-4 bg-gradient-to-b from-slate-200 via-slate-100 to-white shadow-2xl border border-slate-200/80 overflow-hidden">
+              {/* Browser Window Bar */}
+              <div className="flex items-center justify-between px-4 py-3 bg-slate-100 rounded-t-2xl border-b border-slate-200 text-xs text-slate-500 font-medium">
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full bg-rose-400" />
+                  <div className="h-3 w-3 rounded-full bg-amber-400" />
+                  <div className="h-3 w-3 rounded-full bg-emerald-400" />
+                </div>
+                <div className="flex items-center gap-2 bg-white px-4 py-1 rounded-full shadow-sm border border-slate-200/80 text-slate-600">
+                  <Lock className="h-3 w-3 text-emerald-500" />
+                  <span>app.synctrahq.com/dashboard</span>
+                </div>
+                <div className="hidden sm:flex items-center gap-2 text-primary font-bold">
+                  <span className="h-2 w-2 rounded-full bg-primary animate-ping" />
+                  <span>Live Cloud Sync</span>
+                </div>
+              </div>
+
+              {/* Underlying Dashboard UI Content (Will be blurred) */}
+              <div className="bg-slate-50 p-6 sm:p-8 rounded-b-2xl text-left space-y-6 filter blur-[6px] sm:blur-[8px] opacity-75 select-none pointer-events-none transform scale-[0.99] transition-all">
+                {/* Dashboard Top Banner */}
+                <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                  <div>
+                    <h3 className="text-2xl font-black text-slate-800">Welcome back, Enterprise Administrator!</h3>
+                    <p className="text-xs text-slate-400 font-semibold mt-1">Thursday, June 27, 2026 • 50 Active Multi-Branch Locations Synced</p>
                   </div>
-                  <div className="text-3xl sm:text-4xl font-black tracking-tight">Rs. 4,850,200</div>
-                  <div className="text-xs text-indigo-100 flex items-center gap-1.5 font-semibold bg-white/10 w-fit px-2.5 py-1 rounded-full">
-                    <span className="text-emerald-300 font-bold">↑ 24.8%</span> vs last month
+                  <div className="flex gap-2">
+                    <span className="px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold shadow-sm">Upgrade Tier</span>
+                    <span className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold">POS Terminal</span>
                   </div>
                 </div>
 
-                {/* Metric Card 2 */}
-                <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 hover:-translate-y-1 transition-transform">
-                  <div className="flex justify-between items-center text-slate-400 text-xs uppercase font-black tracking-wider">
-                    <span>True FMCG Shelf Margin</span>
-                    <PieChart className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="text-3xl sm:text-4xl font-black text-white">28.4%</div>
-                  <div className="text-xs text-slate-400 font-medium">Calculated backward from MRP</div>
+                {/* Quick Actions Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                  {["New Invoice", "Add Customer", "Record Payment", "Add GRN Stock", "View Reports"].map((action, i) => (
+                    <div key={i} className="bg-white p-4 rounded-xl border border-slate-100 text-center shadow-sm space-y-2">
+                      <div className="h-8 w-8 rounded-lg bg-indigo-50 text-primary mx-auto flex items-center justify-center font-black">+</div>
+                      <div className="text-xs font-bold text-slate-700">{action}</div>
+                    </div>
+                  ))}
                 </div>
 
-                {/* Metric Card 3 */}
-                <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 hover:-translate-y-1 transition-transform">
-                  <div className="flex justify-between items-center text-slate-400 text-xs uppercase font-black tracking-wider">
-                    <span>Instant Invoices</span>
-                    <FileText className="h-4 w-4 text-accent" />
+                {/* Metrics Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                  <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-2 border-l-4 border-l-primary">
+                    <div className="text-[10px] font-black uppercase text-slate-400">Today's Revenue</div>
+                    <div className="text-2xl font-black text-slate-800">Rs. 1,450,800</div>
+                    <div className="text-[10px] text-emerald-500 font-bold">↑ 18.4% vs yesterday</div>
                   </div>
-                  <div className="text-3xl sm:text-4xl font-black text-white">14 Active</div>
-                  <div className="text-xs text-accent font-bold flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-accent animate-ping" />
-                    <span>No-login payment links synced</span>
+                  <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-2 border-l-4 border-l-amber-500">
+                    <div className="text-[10px] font-black uppercase text-slate-400">Total Customers</div>
+                    <div className="text-2xl font-black text-slate-800">14,280</div>
+                    <div className="text-[10px] text-slate-400 font-bold">Active trade accounts</div>
+                  </div>
+                  <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-2 border-l-4 border-l-blue-500">
+                    <div className="text-[10px] font-black uppercase text-slate-400">Warehouse Stock</div>
+                    <div className="text-2xl font-black text-slate-800">98.4%</div>
+                    <div className="text-[10px] text-blue-500 font-bold">Optimal turnover rate</div>
+                  </div>
+                  <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-2 border-l-4 border-l-emerald-500">
+                    <div className="text-[10px] font-black uppercase text-slate-400">Net Profit Margin</div>
+                    <div className="text-2xl font-black text-slate-800">28.4%</div>
+                    <div className="text-[10px] text-emerald-500 font-bold">Verified shelf margin</div>
+                  </div>
+                </div>
+
+                {/* Charts Placeholder Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="h-48 bg-white rounded-2xl border border-slate-100 p-6 flex flex-col justify-end">
+                    <div className="flex items-end gap-3 h-28">
+                      <div className="w-1/6 bg-primary/20 h-1/2 rounded-t" />
+                      <div className="w-1/6 bg-primary/40 h-3/4 rounded-t" />
+                      <div className="w-1/6 bg-primary h-full rounded-t" />
+                      <div className="w-1/6 bg-primary/60 h-4/5 rounded-t" />
+                      <div className="w-1/6 bg-accent h-full rounded-t" />
+                      <div className="w-1/6 bg-indigo-600 h-2/3 rounded-t" />
+                    </div>
+                  </div>
+                  <div className="h-48 bg-white rounded-2xl border border-slate-100 p-6 flex flex-col justify-end">
+                    <div className="h-24 w-full bg-gradient-to-tr from-emerald-500/20 to-primary/20 rounded-xl border border-emerald-500/30" />
+                  </div>
+                </div>
+              </div>
+
+              {/* CENTER COMING SOON OVERLAY BADGE IN BEST UI/UX WAY */}
+              <div className="absolute inset-0 z-20 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-[4px]">
+                <div className="max-w-xl w-full p-8 sm:p-10 rounded-3xl bg-slate-950/90 border border-white/20 shadow-2xl text-center space-y-6 text-white backdrop-blur-2xl transform hover:scale-[1.02] transition-all duration-300">
+                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-primary to-accent text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/30 animate-pulse">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>Next-Gen Cloud OS</span>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <h3 className="text-3xl sm:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-400">
+                      COMING SOON
+                    </h3>
+                    <p className="text-sm sm:text-base text-slate-300 font-medium max-w-md mx-auto leading-relaxed">
+                      Our enterprise ERP, AI margin analytics, and multi-branch POS platform is launching soon. Meanwhile, enjoy our <strong className="text-accent underline decoration-2">100% Free Viral Utility Suite</strong> below!
+                    </p>
+                  </div>
+
+                  <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <Link
+                      href="#free-tools"
+                      className="w-full sm:w-auto min-h-[48px] px-8 rounded-xl bg-gradient-to-r from-accent to-orange-500 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-accent/25 hover:shadow-xl hover:scale-105 transition-all"
+                    >
+                      <span>Use Free Tools Now</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                    <Link
+                      href="#coming-soon"
+                      className="w-full sm:w-auto min-h-[48px] px-6 rounded-xl bg-white/10 text-white hover:bg-white/20 font-bold text-sm flex items-center justify-center transition-colors border border-white/10"
+                    >
+                      <span>Explore Software Roadmap</span>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -149,20 +265,20 @@ export default function MarketingHomepage() {
         </div>
       </section>
 
-      {/* 2. DEDICATED FREE VIRAL UTILITY SUITE SECTION (No Sign-up Required) */}
-      <section id="free-tools" className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl z-10 scroll-mt-24">
+      {/* 2. DEDICATED CURRENT AVAILABLE FREE TOOLS SECTION (#free-tools) */}
+      <section id="free-tools" className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl z-10 scroll-mt-28">
         <div className="p-8 sm:p-12 lg:p-16 rounded-3xl bg-gradient-to-br from-primary/10 via-indigo-50/50 to-orange-50/50 border-2 border-primary/30 shadow-2xl relative overflow-hidden space-y-12">
           {/* Section Header */}
           <div className="text-center space-y-4 max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-accent text-white text-xs font-black uppercase tracking-widest shadow-md shadow-accent/25">
               <Sparkles className="h-3.5 w-3.5" />
-              <span>100% Free • No Sign-Up Required</span>
+              <span>100% Free Forever • No Sign-Up Required</span>
             </div>
             <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-neutral-text leading-tight">
-              Instant Viral Utility Suite
+              Current Available Free Tools
             </h2>
             <p className="text-base sm:text-lg font-medium text-neutral-muted">
-              We built these mission-critical utility calculators so you can streamline daily pricing and billing immediately without creating an account or entering a credit card.
+              Click any tool below to launch and use immediately. We built these mission-critical calculators so you can streamline daily pricing and billing right now without entering a credit card or creating an account.
             </p>
           </div>
 
@@ -208,7 +324,7 @@ export default function MarketingHomepage() {
                   href="/mrp-calculator"
                   className="w-full min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-white font-bold text-sm shadow-md hover:bg-primary-hover transition-all group-hover:translate-x-1"
                 >
-                  <span>Launch MRP Calculator</span>
+                  <span>Click to Use Calculator</span>
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
@@ -254,7 +370,7 @@ export default function MarketingHomepage() {
                   href="/invoice-generator"
                   className="w-full min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 text-white font-bold text-sm shadow-md hover:bg-indigo-700 transition-all group-hover:translate-x-1"
                 >
-                  <span>Create Free Invoice</span>
+                  <span>Click to Use Invoice Maker</span>
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
@@ -274,7 +390,7 @@ export default function MarketingHomepage() {
                 </div>
                 <div>
                   <h3 className="text-2xl font-black text-neutral-text group-hover:text-purple-600 transition-colors">
-                    SKU & Barcode Maker
+                    SKU & Barcode Generator
                   </h3>
                   <p className="text-sm font-medium text-neutral-muted mt-2 leading-relaxed">
                     Generate standardized retail product SKUs, Code 128 barcodes, EAN13 retail barcodes, and high-resolution QR stickers.
@@ -300,7 +416,7 @@ export default function MarketingHomepage() {
                   href="/barcode-generator"
                   className="w-full min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-purple-600 text-white font-bold text-sm shadow-md hover:bg-purple-700 transition-all group-hover:translate-x-1"
                 >
-                  <span>Generate Barcode Free</span>
+                  <span>Click to Use Barcode Maker</span>
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
@@ -309,64 +425,86 @@ export default function MarketingHomepage() {
         </div>
       </section>
 
-      {/* 3. Enterprise ERP & POS Modules Section */}
-      <section id="features" className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl z-10 scroll-mt-24">
+      {/* 3. COMING SOON TOOLS & ENTERPRISE SOFTWARE SECTION (#coming-soon) */}
+      <section id="coming-soon" className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl z-10 scroll-mt-28">
         <div className="text-center space-y-4 mb-16">
-          <div className="text-xs font-black uppercase tracking-widest text-primary">
-            Full-Scale Operating System
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 text-indigo-300 text-xs font-black uppercase tracking-widest border border-slate-800">
+            <Clock className="h-3.5 w-3.5 text-accent animate-pulse" />
+            <span>Software Roadmap & Future Suite</span>
           </div>
           <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-neutral-text">
-            Enterprise Modules for Scaling Brands
+            Coming Soon Tools & Enterprise Software
           </h2>
-          <p className="text-lg font-medium text-neutral-muted max-w-2xl mx-auto">
-            When you're ready to connect your retail counters directly to your central warehouse, unlock our cloud-native automation modules.
+          <p className="text-lg font-medium text-neutral-muted max-w-3xl mx-auto">
+            Below current free utilities, we are engineering high-demand cloud OS software modules. These enterprise tools will transform how you manage retail inventory, cashier POS counters, and customer relationships.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {[
             {
-              icon: ShoppingBag,
-              title: "Integrated Smart POS",
-              desc: "Lightning-fast point of sale for retail stores with automated barcode scanning, offline caching, and instant drawer synchronization.",
-              badge: "Counter Ready",
-              color: "text-blue-600 bg-blue-50 border-blue-200"
+              icon: Layers,
+              title: "Enterprise ERP Suite",
+              desc: "Full-scale cloud enterprise resource planning to unify procurement, multi-currency accounting, and warehouse stock rotation.",
+              badge: "Coming Q3 2026",
+              color: "text-indigo-600 bg-indigo-50 border-indigo-200"
             },
             {
-              icon: Layers,
-              title: "Multi-Branch Inventory",
-              desc: "Track live stock across distributed warehouses, set automated shelf reorder triggers, and manage batch expiry dates seamlessly.",
-              badge: "Real-time Sync",
+              icon: ShoppingBag,
+              title: "Smart Retail POS System",
+              desc: "Countertop barcode scanning terminal with offline transaction caching, thermal receipt printing, and live stock decrement.",
+              badge: "High Demand",
               color: "text-emerald-600 bg-emerald-50 border-emerald-200"
             },
             {
-              icon: PieChart,
-              title: "AI Margin Analytics",
-              desc: "Continuous financial monitoring that reverse-engineers landed costs across your distributor network to uncover hidden margin leaks.",
-              badge: "AI Powered",
-              color: "text-orange-600 bg-orange-50 border-orange-200"
+              icon: Users,
+              title: "CRM & Loyalty Manager",
+              desc: "Track repeat retail buyer purchase history, issue automated WhatsApp discount vouchers, and analyze customer lifetime value.",
+              badge: "Coming Soon",
+              color: "text-purple-600 bg-purple-50 border-purple-200"
             },
-          ].map((mod, idx) => (
+            {
+              icon: Database,
+              title: "AI Inventory Management Tool",
+              desc: "Predictive demand forecasting that alerts you before best-selling SKU items go out of stock during peak holiday shopping seasons.",
+              badge: "AI Powered",
+              color: "text-blue-600 bg-blue-50 border-blue-200"
+            },
+            {
+              icon: DollarSign,
+              title: "Automated Payroll & Staff Billing",
+              desc: "Manage sales commission structures, cashier shift hours, and automated monthly salary slips compliant with local labor laws.",
+              badge: "In Development",
+              color: "text-amber-600 bg-amber-50 border-amber-200"
+            },
+            {
+              icon: Truck,
+              title: "Multi-Warehouse Stock Dispatcher",
+              desc: "Orchestrate inter-branch stock transfers, generate delivery challans, and track dispatch fleet drivers in real time.",
+              badge: "Coming Q4 2026",
+              color: "text-rose-600 bg-rose-50 border-rose-200"
+            },
+          ].map((tool, idx) => (
             <div
               key={idx}
-              className="p-8 rounded-2xl glass-panel border border-neutral-border hover:border-primary/40 transition-all duration-300 flex flex-col justify-between hover:-translate-y-1 shadow-sm hover:shadow-xl space-y-6"
+              className="p-8 rounded-2xl glass-panel border border-neutral-border hover:border-primary/40 transition-all duration-300 flex flex-col justify-between hover:-translate-y-1 shadow-sm hover:shadow-xl space-y-6 relative overflow-hidden group"
             >
               <div className="space-y-4">
                 <div className="flex justify-between items-start">
-                  <div className="p-3.5 rounded-2xl bg-primary/10 text-primary">
-                    <mod.icon className="h-6 w-6" />
+                  <div className="p-3.5 rounded-2xl bg-slate-100 text-slate-800 group-hover:bg-primary group-hover:text-white transition-colors">
+                    <tool.icon className="h-6 w-6" />
                   </div>
-                  <span className={`text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full border ${mod.color}`}>
-                    {mod.badge}
+                  <span className={`text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full border ${tool.color}`}>
+                    {tool.badge}
                   </span>
                 </div>
-                <h3 className="text-2xl font-black text-neutral-text">{mod.title}</h3>
-                <p className="text-sm font-medium text-neutral-muted leading-relaxed">{mod.desc}</p>
+                <h3 className="text-2xl font-black text-neutral-text">{tool.title}</h3>
+                <p className="text-sm font-medium text-neutral-muted leading-relaxed">{tool.desc}</p>
               </div>
               <div className="pt-4 border-t border-neutral-border/60 flex items-center justify-between">
-                <span className="text-xs font-bold text-neutral-muted">Included in Standard & Pro</span>
-                <Link href="#pricing" className="text-xs font-extrabold text-primary hover:underline flex items-center gap-1">
-                  <span>See Plans</span>
+                <span className="text-xs font-bold text-neutral-muted">Early Access Perks</span>
+                <Link href="/contact" className="text-xs font-extrabold text-primary hover:underline flex items-center gap-1">
+                  <span>Join Priority Waitlist</span>
                   <ArrowUpRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
@@ -375,7 +513,7 @@ export default function MarketingHomepage() {
         </div>
       </section>
 
-      {/* 4. Growth Engine Financial Waterfall Section */}
+      {/* 4. FINANCIAL ACCURACY & SECURITY SECTION */}
       <section className="bg-gradient-to-br from-primary-dark via-primary to-slate-900 text-white py-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden z-10">
         <div className="container mx-auto max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           <div className="space-y-6">
@@ -467,8 +605,8 @@ export default function MarketingHomepage() {
         </div>
       </section>
 
-      {/* 5. Pricing Section */}
-      <section id="pricing" className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl z-10 scroll-mt-24">
+      {/* 5. PRICING SECTION */}
+      <section id="pricing" className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl z-10 scroll-mt-28">
         <div className="text-center space-y-4 mb-16">
           <div className="text-xs font-black uppercase tracking-widest text-primary">
             Transparent Scaling
@@ -484,7 +622,7 @@ export default function MarketingHomepage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
           {[
             {
-              name: "Starter",
+              name: "Starter Utility Tier",
               price: "Free",
               period: "forever",
               desc: "Perfect for sole traders and early consumer product founders.",
@@ -492,14 +630,14 @@ export default function MarketingHomepage() {
                 "Viral MRP & Margin Calculator",
                 "No-Login Invoice Generator",
                 "SKU & Barcode Maker",
-                "Up to 50 Stored Records /mo"
+                "Zero Registration Needed"
               ],
               cta: "Launch Free Tools",
               href: "#free-tools",
               accent: false
             },
             {
-              name: "Standard",
+              name: "Standard ERP",
               price: "Rs. 1,600",
               period: "/month",
               desc: "Most Popular for growing retail brands and multi-store distributors.",
@@ -510,12 +648,12 @@ export default function MarketingHomepage() {
                 "WhatsApp & SMS Billing Alerts",
                 "Priority Technical Support"
               ],
-              cta: "Start 14-Day Free Trial",
-              href: "#contact",
+              cta: "Join Waitlist / Inquiry",
+              href: "/contact",
               accent: true
             },
             {
-              name: "Professional",
+              name: "Professional OS",
               price: "Rs. 2,400",
               period: "/month",
               desc: "Built for multi-branch powerhouses and regional wholesale chains.",
@@ -526,8 +664,8 @@ export default function MarketingHomepage() {
                 "Custom RLS Permissions",
                 "24/7 Dedicated Account Manager"
               ],
-              cta: "Talk to Sales",
-              href: "#contact",
+              cta: "Contact Enterprise Sales",
+              href: "/contact",
               accent: false
             }
           ].map((plan, idx) => (
@@ -585,8 +723,8 @@ export default function MarketingHomepage() {
         </div>
       </section>
 
-      {/* 6. Frequently Asked Questions Section (100% Preserved SEO/GEO) */}
-      <section id="faq" className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl z-10 scroll-mt-24">
+      {/* 6. FAQ SECTION */}
+      <section id="faq" className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl z-10 scroll-mt-28">
         <div className="text-center space-y-4 mb-16">
           <div className="text-xs font-black uppercase tracking-widest text-primary">
             Got Questions?

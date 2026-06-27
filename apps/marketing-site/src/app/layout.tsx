@@ -5,6 +5,7 @@ import { Inter } from "next/font/google";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Analytics } from "@/components/analytics/Analytics";
+import { Preloader } from "@/components/layout/Preloader";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -111,6 +112,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen flex flex-col bg-neutral-bg text-neutral-text font-sans antialiased">
+        <Preloader />
         <Navbar />
         <main className="flex-1 flex flex-col">{children}</main>
         <Footer />
