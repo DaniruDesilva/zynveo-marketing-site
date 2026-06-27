@@ -139,14 +139,14 @@ export function Footer() {
               </li>
               <li className="flex items-start gap-3">
                 <MapPin className="h-4 w-4 text-accent shrink-0 mt-1" />
-                <span>Synctra Technologies (Pvt) Ltd, Galle, Sri Lanka</span>
+                <span>Synctra Technologies, Galle, Sri Lanka</span>
               </li>
             </ul>
           </div>
         </div>
 
         <div className="mt-16 pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-slate-500 font-medium">
-          <p>© 2026 Synctra Technologies (Pvt) Ltd. All rights reserved.</p>
+          <p>© 2026 Synctra Technologies. All rights reserved.</p>
           <div className="flex flex-wrap gap-6 justify-center">
             <Link href="/llms.txt" className="hover:text-slate-300 transition-colors">AI Index (llms.txt)</Link>
             <Link href="/sitemap.xml" className="hover:text-slate-300 transition-colors">Sitemap</Link>

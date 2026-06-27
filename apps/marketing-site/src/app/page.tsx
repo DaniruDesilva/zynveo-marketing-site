@@ -75,11 +75,11 @@ export default function MarketingHomepage() {
             </span>
           </div>
 
-          <h1 className="text-3xl sm:text-6xl lg:text-7xl font-black tracking-tight text-neutral-text leading-[1.15] sm:leading-[1.08] max-w-5xl mx-auto">
-            <span>Scale Your Operations</span> <br />
-            <span>Without The</span> <br className="sm:hidden" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-indigo-600 to-accent block sm:inline mt-1 sm:mt-0">
-              Enterprise Price Tag
+          <h1 className="text-3xl sm:text-6xl lg:text-7xl font-black tracking-tight text-neutral-text leading-[1.2] sm:leading-[1.1] max-w-5xl mx-auto px-2">
+            <span>The Next-Gen Cloud OS For</span> <br className="hidden sm:inline" />
+            <span>Retail, POS & Inventory</span> <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-indigo-600 to-accent block mt-1.5 sm:mt-2">
+              Enterprise Power. 100% Free Suite.
             </span>
           </h1>
 
@@ -104,77 +104,81 @@ export default function MarketingHomepage() {
             </Link>
           </div>
 
-          {/* BEAUTIFUL BLURRED ERP DASHBOARD MOCKUP WITH COMING SOON BADGE (Inspired by Image 1) */}
-          <div className="pt-8 sm:pt-16 relative max-w-5xl mx-auto">
-            {/* Floating Badge 1: Active Users */}
-            <div className="absolute -top-4 sm:top-6 left-2 sm:-left-12 z-30 bg-white/95 backdrop-blur-xl p-3 sm:p-5 rounded-2xl shadow-2xl border border-slate-100 flex items-center gap-2.5 sm:gap-3.5 transform -rotate-2 hover:rotate-0 transition-transform duration-300 scale-90 sm:scale-100 origin-top-left animate-bounce" style={{ animationDuration: '5s' }}>
-              <div className="p-2 sm:p-3 rounded-xl bg-emerald-50 text-emerald-600 shadow-inner">
-                <TrendingUp className="h-5 w-5 sm:h-7 sm:w-7" />
+          {/* TRUST & METRICS PILL ROW (Flawlessly Responsive, Never Overflows) */}
+          <div className="pt-10 sm:pt-14 pb-6 max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 px-2">
+            <div className="flex items-center gap-3.5 p-4 rounded-2xl bg-white/90 backdrop-blur-md border border-slate-200/80 shadow-lg shadow-slate-200/50 hover:border-emerald-500/40 transition-all duration-300">
+              <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600 shadow-inner shrink-0">
+                <TrendingUp className="h-6 w-6" />
               </div>
               <div className="text-left">
-                <div className="text-[9px] sm:text-xs font-black uppercase tracking-widest text-slate-400">Active Users</div>
-                <div className="text-sm sm:text-xl font-black text-slate-800">25,000+</div>
+                <div className="text-[11px] font-black uppercase tracking-widest text-slate-400">Active Brands</div>
+                <div className="text-lg font-black text-slate-800">25,000+ Synced</div>
               </div>
             </div>
 
-            {/* Floating Badge 2: Security */}
-            <div className="absolute -top-4 sm:top-1/3 right-2 sm:-right-12 z-30 bg-white/95 backdrop-blur-xl p-3 sm:p-5 rounded-2xl shadow-2xl border border-slate-100 flex items-center gap-2.5 sm:gap-3.5 transform rotate-2 hover:rotate-0 transition-transform duration-300 scale-90 sm:scale-100 origin-top-right">
-              <div className="p-2 sm:p-3 rounded-xl bg-blue-50 text-blue-600 shadow-inner">
-                <ShieldCheck className="h-5 w-5 sm:h-7 sm:w-7" />
+            <div className="flex items-center gap-3.5 p-4 rounded-2xl bg-white/90 backdrop-blur-md border border-slate-200/80 shadow-lg shadow-slate-200/50 hover:border-blue-500/40 transition-all duration-300">
+              <div className="p-3 rounded-xl bg-blue-50 text-blue-600 shadow-inner shrink-0">
+                <ShieldCheck className="h-6 w-6" />
               </div>
               <div className="text-left">
-                <div className="text-[9px] sm:text-xs font-black uppercase tracking-widest text-slate-400">Security</div>
-                <div className="text-sm sm:text-xl font-black text-blue-600 flex items-center gap-1">
-                  <span>• Bank Grade</span>
+                <div className="text-[11px] font-black uppercase tracking-widest text-slate-400">Cloud Security</div>
+                <div className="text-lg font-black text-blue-600 flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+                  <span>Bank-Grade RLS</span>
                 </div>
               </div>
             </div>
 
-            {/* Floating Badge 3: Price */}
-            <div className="absolute -bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-10 z-30 bg-white/95 backdrop-blur-xl p-3 sm:p-5 rounded-2xl shadow-2xl border border-slate-100 flex items-center gap-2.5 sm:gap-3.5 transform rotate-1 hover:rotate-0 transition-transform duration-300 scale-90 sm:scale-100">
-              <div className="p-2 sm:p-3 rounded-xl bg-amber-50 text-amber-500 shadow-inner">
-                <Star className="h-5 w-5 sm:h-7 sm:w-7 fill-amber-400" />
+            <div className="flex items-center gap-3.5 p-4 rounded-2xl bg-white/90 backdrop-blur-md border border-slate-200/80 shadow-lg shadow-slate-200/50 hover:border-amber-500/40 transition-all duration-300">
+              <div className="p-3 rounded-xl bg-amber-50 text-amber-500 shadow-inner shrink-0">
+                <Star className="h-6 w-6 fill-amber-400" />
               </div>
               <div className="text-left">
-                <div className="text-[9px] sm:text-xs font-black uppercase tracking-widest text-slate-400">Utilities Price</div>
-                <div className="text-sm sm:text-xl font-black text-amber-600">100% Free</div>
+                <div className="text-[11px] font-black uppercase tracking-widest text-slate-400">Utility Pricing</div>
+                <div className="text-lg font-black text-amber-600">100% Free Suite</div>
               </div>
             </div>
+          </div>
 
-            {/* Main Mockup Container */}
-            <div className="relative rounded-3xl p-2 sm:p-4 bg-gradient-to-b from-slate-200 via-slate-100 to-white shadow-2xl border border-slate-200/80 overflow-hidden mt-6 sm:mt-0">
-              {/* Browser Window Bar */}
-              <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-100 rounded-t-2xl border-b border-slate-200 text-xs text-slate-500 font-medium">
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-rose-400" />
-                  <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-amber-400" />
-                  <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-emerald-400" />
+          {/* ULTIMATE BLURRED ERP DASHBOARD MOCKUP WITH COMING SOON OVERLAY */}
+          <div className="relative max-w-5xl mx-auto px-1 sm:px-0">
+            {/* Gradient Outer Glow Frame */}
+            <div className="p-1 sm:p-2 rounded-[28px] sm:rounded-[36px] bg-gradient-to-b from-slate-300 via-slate-200/60 to-slate-300 shadow-2xl shadow-indigo-500/10 relative overflow-hidden">
+              {/* Browser Header Bar */}
+              <div className="flex items-center justify-between px-4 py-3 bg-slate-900 rounded-t-[24px] sm:rounded-t-[30px] border-b border-slate-800 text-xs text-slate-400 font-semibold select-none">
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full bg-rose-500 hover:opacity-80 transition-opacity" />
+                  <div className="h-3 w-3 rounded-full bg-amber-500 hover:opacity-80 transition-opacity" />
+                  <div className="h-3 w-3 rounded-full bg-emerald-500 hover:opacity-80 transition-opacity" />
                 </div>
-                <div className="flex items-center gap-1.5 sm:gap-2 bg-white px-3 sm:px-4 py-1 rounded-full shadow-sm border border-slate-200/80 text-slate-600 text-[10px] sm:text-xs">
-                  <Lock className="h-3 w-3 text-emerald-500 shrink-0" />
-                  <span className="truncate max-w-[160px] sm:max-w-none">app.synctrahq.com/dashboard</span>
+                
+                <div className="flex items-center gap-2 bg-slate-800/90 hover:bg-slate-800 px-4 py-1.5 rounded-full border border-slate-700 text-slate-300 text-xs shadow-inner transition-colors">
+                  <Lock className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                  <span className="font-mono tracking-tight text-[11px] sm:text-xs text-slate-200">app.synctrahq.com/enterprise</span>
                 </div>
-                <div className="hidden sm:flex items-center gap-2 text-primary font-bold">
-                  <span className="h-2 w-2 rounded-full bg-primary animate-ping" />
-                  <span>Live Cloud Sync</span>
+
+                <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs bg-emerald-950/50 px-3 py-1 rounded-full border border-emerald-800/50">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+                  <span className="hidden xs:inline">Live Cloud OS</span>
+                  <span className="xs:hidden">Live</span>
                 </div>
               </div>
 
-              {/* Underlying Dashboard UI Content (Will be blurred) */}
-              <div className="bg-slate-50 p-4 sm:p-8 rounded-b-2xl text-left space-y-4 sm:space-y-6 filter blur-[5px] sm:blur-[8px] opacity-75 select-none pointer-events-none transform scale-[0.99] transition-all max-h-[380px] sm:max-h-none overflow-hidden">
+              {/* Underlying Dashboard UI Content (Blurred behind the glass overlay) */}
+              <div className="bg-slate-50 p-4 sm:p-8 rounded-b-[24px] sm:rounded-b-[30px] text-left space-y-4 sm:space-y-6 filter blur-[6px] sm:blur-[8px] opacity-80 select-none pointer-events-none transform scale-[0.99] transition-all h-[420px] sm:h-[480px] md:h-[540px] overflow-hidden relative">
                 {/* Dashboard Top Banner */}
-                <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100">
+                <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100/80">
                   <div>
-                    <h3 className="text-lg sm:text-2xl font-black text-slate-800">Welcome back, Enterprise Administrator!</h3>
-                    <p className="text-[10px] sm:text-xs text-slate-400 font-semibold mt-1">Thursday, June 27, 2026 • 50 Active Multi-Branch Locations Synced</p>
+                    <h3 className="text-base sm:text-2xl font-black text-slate-800">Welcome back, Enterprise Administrator!</h3>
+                    <p className="text-[10px] sm:text-xs text-slate-400 font-semibold mt-1">Synced across 50 active multi-branch retail locations</p>
                   </div>
-                  <div className="hidden sm:flex gap-2">
-                    <span className="px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold shadow-sm">Upgrade Tier</span>
-                    <span className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold">POS Terminal</span>
+                  <div className="hidden md:flex gap-2">
+                    <span className="px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold shadow-sm">Enterprise V2</span>
+                    <span className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold">POS Terminal Active</span>
                   </div>
                 </div>
 
-                {/* Quick Actions Grid */}
+                {/* Quick Actions Row */}
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
                   {["New Invoice", "Add Customer", "Record Payment", "Add GRN Stock", "View Reports"].map((action, i) => (
                     <div key={i} className={`bg-white p-3 sm:p-4 rounded-xl border border-slate-100 text-center shadow-sm space-y-1 sm:space-y-2 ${i >= 3 ? 'hidden sm:block' : ''}`}>
@@ -186,12 +190,12 @@ export default function MarketingHomepage() {
 
                 {/* Metrics Row */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                  <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-100 shadow-sm space-y-1 sm:space-y-2 border-l-4 border-l-primary">
+                  <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm space-y-1 sm:space-y-2 border-l-4 border-l-primary">
                     <div className="text-[9px] sm:text-[10px] font-black uppercase text-slate-400">Today's Revenue</div>
                     <div className="text-base sm:text-2xl font-black text-slate-800">Rs. 1,450,800</div>
                     <div className="text-[9px] sm:text-[10px] text-emerald-500 font-bold">↑ 18.4% vs yesterday</div>
                   </div>
-                  <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-100 shadow-sm space-y-1 sm:space-y-2 border-l-4 border-l-amber-500">
+                  <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm space-y-1 sm:space-y-2 border-l-4 border-l-amber-500">
                     <div className="text-[9px] sm:text-[10px] font-black uppercase text-slate-400">Total Customers</div>
                     <div className="text-base sm:text-2xl font-black text-slate-800">14,280</div>
                     <div className="text-[9px] sm:text-[10px] text-slate-400 font-bold">Active trade accounts</div>
@@ -209,9 +213,9 @@ export default function MarketingHomepage() {
                 </div>
 
                 {/* Charts Placeholder Row */}
-                <div className="hidden sm:grid grid-cols-2 gap-4">
-                  <div className="h-48 bg-white rounded-2xl border border-slate-100 p-6 flex flex-col justify-end">
-                    <div className="flex items-end gap-3 h-28">
+                <div className="hidden md:grid grid-cols-2 gap-4">
+                  <div className="h-44 bg-white rounded-2xl border border-slate-100 p-6 flex flex-col justify-end">
+                    <div className="flex items-end gap-3 h-24">
                       <div className="w-1/6 bg-primary/20 h-1/2 rounded-t" />
                       <div className="w-1/6 bg-primary/40 h-3/4 rounded-t" />
                       <div className="w-1/6 bg-primary h-full rounded-t" />
@@ -220,40 +224,43 @@ export default function MarketingHomepage() {
                       <div className="w-1/6 bg-indigo-600 h-2/3 rounded-t" />
                     </div>
                   </div>
-                  <div className="h-48 bg-white rounded-2xl border border-slate-100 p-6 flex flex-col justify-end">
+                  <div className="h-44 bg-white rounded-2xl border border-slate-100 p-6 flex flex-col justify-end">
                     <div className="h-24 w-full bg-gradient-to-tr from-emerald-500/20 to-primary/20 rounded-xl border border-emerald-500/30" />
                   </div>
                 </div>
               </div>
 
-              {/* CENTER COMING SOON OVERLAY BADGE IN BEST UI/UX WAY */}
-              <div className="absolute inset-0 z-20 flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 backdrop-blur-[4px]">
-                <div className="max-w-xl w-full p-6 sm:p-10 rounded-2xl sm:rounded-3xl bg-slate-950/90 border border-white/20 shadow-2xl text-center space-y-4 sm:space-y-6 text-white backdrop-blur-2xl transform hover:scale-[1.02] transition-all duration-300">
-                  <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-gradient-to-r from-primary to-accent text-white text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/30 animate-pulse">
-                    <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                    <span>Next-Gen Cloud OS</span>
+              {/* BEST UI/UX MODERN GLASS OVERLAY BADGE */}
+              <div className="absolute inset-0 z-20 flex items-center justify-center p-3 sm:p-6 bg-slate-950/45 backdrop-blur-[5px]">
+                <div className="max-w-xl w-full p-6 sm:p-10 rounded-2xl sm:rounded-3xl bg-slate-950/90 border border-white/20 shadow-[0_0_80px_-15px_rgba(79,46,229,0.5)] text-center space-y-5 sm:space-y-6 text-white backdrop-blur-2xl relative overflow-hidden transform hover:scale-[1.01] transition-all duration-300">
+                  {/* Subtle top shimmer glow */}
+                  <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-80" />
+                  
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-primary/30 via-indigo-500/30 to-accent/30 border border-white/15 text-white text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/20">
+                    <Sparkles className="h-3.5 w-3.5 text-accent animate-spin" style={{ animationDuration: '8s' }} />
+                    <span>Next-Gen Cloud OS Launching Soon</span>
                   </div>
                   
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <h3 className="text-2xl sm:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-400">
+                  <div className="space-y-2 sm:space-y-3">
+                    <h3 className="text-3xl sm:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300 drop-shadow-sm">
                       COMING SOON
                     </h3>
                     <p className="text-xs sm:text-base text-slate-300 font-medium max-w-md mx-auto leading-relaxed">
-                      Our enterprise ERP, AI margin analytics, and multi-branch POS platform is launching soon. Meanwhile, enjoy our <strong className="text-accent underline decoration-2">100% Free Viral Utility Suite</strong> below!
+                      Our enterprise ERP, AI margin analytics, and multi-branch POS platform is launching soon. Meanwhile, enjoy our <strong className="text-accent font-bold underline decoration-2 underline-offset-2">100% Free Viral Utility Suite</strong> below!
                     </p>
                   </div>
 
-                  <div className="pt-1 sm:pt-2 flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3">
+                  <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
                     <Link
                       href="#free-tools"
-                      className="w-full sm:w-auto min-h-[44px] sm:min-h-[48px] px-6 sm:px-8 rounded-xl bg-gradient-to-r from-accent to-orange-500 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-accent/25 hover:shadow-xl hover:scale-105 transition-all"
+                      className="w-full sm:w-auto min-h-[48px] px-8 rounded-xl bg-gradient-to-r from-accent via-orange-500 to-amber-600 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-xl shadow-accent/30 hover:shadow-2xl hover:shadow-accent/50 hover:scale-105 transition-all duration-200 active:scale-95"
                     >
                       <span>Use Free Tools Now</span>
                       <ArrowRight className="h-4 w-4" />
                     </Link>
                     <Link
                       href="#coming-soon"
-                      className="w-full sm:w-auto min-h-[44px] sm:min-h-[48px] px-5 sm:px-6 rounded-xl bg-white/10 text-white hover:bg-white/20 font-bold text-xs sm:text-sm flex items-center justify-center transition-colors border border-white/10"
+                      className="w-full sm:w-auto min-h-[48px] px-6 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-sm flex items-center justify-center transition-all border border-white/15 active:scale-95"
                     >
                       <span>Explore Software Roadmap</span>
                     </Link>
