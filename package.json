@@ -1,0 +1,20 @@
+{
+  "name": "erp",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "clean": "turbo clean"
+  },
+  "workspaces": [
+    "apps/web",
+    "packages/*",
+    "packages/core-modules/*"
+  ],
+  "pnpm.overrides": {
+    "next": "file:./next-14.2.15.tgz",
+    "@next/swc-win32-x64-msvc": "file:./swc-win32-x64-msvc-14.2.15.tgz"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@erp/database": ["packages/database/src/schema/index.ts"],
+      "@erp/sync": ["packages/sync/src/index.ts"]
+    }
+  },
+  "include": [
+    "packages/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/node_modules"
+  ]
+}

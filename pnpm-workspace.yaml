@@ -1,0 +1,10 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+  - 'packages/core-modules/*'
+allowBuilds:
+  '@journeyapps/wa-sqlite': true
+  core-js: set this to true or false
+  es5-ext: true
+  esbuild: true
+  unrs-resolver: true

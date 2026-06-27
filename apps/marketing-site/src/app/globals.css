@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-neutral-bg text-neutral-text antialiased font-sans selection:bg-accent selection:text-white;
+  }
+}
+
+/* Custom premium scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Glassmorphism utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.dark-glass-panel {
+  background: rgba(30, 27, 75, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(79, 70, 229, 0.3);
+}
+
+/* Animated gradient backgrounds */
+.hero-gradient {
+  background: radial-gradient(circle at 50% 0%, rgba(79, 70, 229, 0.15) 0%, rgba(248, 250, 252, 0) 75%);
+}
+
+/* Glowing ambient blobs for dynamic background depth */
+@keyframes pulse-slow {
+  0%, 100% { transform: scale(1) translate(0, 0); opacity: 0.4; }
+  50% { transform: scale(1.1) translate(20px, -20px); opacity: 0.7; }
+}
+
+.glow-blob {
+  position: absolute;
+  filter: blur(80px);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  animation: pulse-slow 8s infinite ease-in-out;
+}
+

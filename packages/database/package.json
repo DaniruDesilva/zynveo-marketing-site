@@ -1,0 +1,19 @@
+{
+  "name": "@erp/database",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "scripts": {
+    "generate": "drizzle-kit generate:pg",
+    "push": "drizzle-kit push:pg",
+    "seed": "npx tsx src/seed.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.30.10"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.20.18",
+    "pg": "^8.11.3",
+    "typescript": "^5.4.5"
+  }
+}

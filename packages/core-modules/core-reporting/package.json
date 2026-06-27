@@ -1,0 +1,14 @@
+{
+  "name": "@erp/core-reporting",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "dependencies": {
+    "@erp/database": "workspace:*",
+    "drizzle-orm": "^0.30.10",
+    "date-fns": "^3.6.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}
