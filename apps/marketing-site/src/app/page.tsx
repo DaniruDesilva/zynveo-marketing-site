@@ -75,10 +75,11 @@ export default function MarketingHomepage() {
             </span>
           </div>
 
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-neutral-text leading-[1.08]">
-            Scale Your Operations Without <br className="hidden sm:inline" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-indigo-600 to-accent">
-              The Enterprise Price Tag
+          <h1 className="text-3xl sm:text-6xl lg:text-7xl font-black tracking-tight text-neutral-text leading-[1.15] sm:leading-[1.08]">
+            <span>Scale Your Operations</span> <br />
+            <span>Without The</span> <br className="sm:hidden" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-indigo-600 to-accent block sm:inline mt-1 sm:mt-0">
+              Enterprise Price Tag
             </span>
           </h1>
 
@@ -168,14 +169,14 @@ export default function MarketingHomepage() {
           {/* 3-Column Free Tool Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Tool Card 1: MRP Calculator */}
-            <div className="rounded-2xl bg-white p-8 border border-neutral-border shadow-lg hover:shadow-2xl hover:border-primary transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
+            <div className="rounded-2xl bg-white p-6 sm:p-8 border border-neutral-border shadow-lg hover:shadow-2xl hover:border-primary transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full pointer-events-none group-hover:scale-110 transition-transform" />
-              <div className="space-y-5">
-                <div className="flex justify-between items-start">
+              <div className="space-y-5 relative z-10">
+                <div className="flex flex-wrap justify-between items-center gap-2">
                   <div className="p-3.5 rounded-2xl bg-primary text-white shadow-md shadow-primary/25">
                     <Calculator className="h-7 w-7" />
                   </div>
-                  <span className="rounded-full bg-accent/10 text-accent border border-accent/20 px-3 py-1 text-xs font-black uppercase tracking-wider">
+                  <span className="rounded-full bg-accent/10 text-accent border border-accent/20 px-3 py-1 text-xs font-black uppercase tracking-wider whitespace-nowrap">
                     Most Popular
                   </span>
                 </div>
@@ -202,7 +203,7 @@ export default function MarketingHomepage() {
                   </li>
                 </ul>
               </div>
-              <div className="pt-8">
+              <div className="pt-8 relative z-10">
                 <Link
                   href="/mrp-calculator"
                   className="w-full min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-white font-bold text-sm shadow-md hover:bg-primary-hover transition-all group-hover:translate-x-1"
@@ -214,14 +215,14 @@ export default function MarketingHomepage() {
             </div>
 
             {/* Tool Card 2: Invoice Generator */}
-            <div className="rounded-2xl bg-white p-8 border border-neutral-border shadow-lg hover:shadow-2xl hover:border-indigo-600 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
+            <div className="rounded-2xl bg-white p-6 sm:p-8 border border-neutral-border shadow-lg hover:shadow-2xl hover:border-indigo-600 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-bl-full pointer-events-none group-hover:scale-110 transition-transform" />
-              <div className="space-y-5">
-                <div className="flex justify-between items-start">
+              <div className="space-y-5 relative z-10">
+                <div className="flex flex-wrap justify-between items-center gap-2">
                   <div className="p-3.5 rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-500/25">
                     <FileText className="h-7 w-7" />
                   </div>
-                  <span className="rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 px-3 py-1 text-xs font-black uppercase tracking-wider">
+                  <span className="rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 px-3 py-1 text-xs font-black uppercase tracking-wider whitespace-nowrap">
                     Instant PDF
                   </span>
                 </div>
@@ -248,7 +249,7 @@ export default function MarketingHomepage() {
                   </li>
                 </ul>
               </div>
-              <div className="pt-8">
+              <div className="pt-8 relative z-10">
                 <Link
                   href="/invoice-generator"
                   className="w-full min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 text-white font-bold text-sm shadow-md hover:bg-indigo-700 transition-all group-hover:translate-x-1"
@@ -260,14 +261,14 @@ export default function MarketingHomepage() {
             </div>
 
             {/* Tool Card 3: Barcode Maker */}
-            <div className="rounded-2xl bg-white p-8 border border-neutral-border shadow-lg hover:shadow-2xl hover:border-purple-600 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
+            <div className="rounded-2xl bg-white p-6 sm:p-8 border border-neutral-border shadow-lg hover:shadow-2xl hover:border-purple-600 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-bl-full pointer-events-none group-hover:scale-110 transition-transform" />
-              <div className="space-y-5">
-                <div className="flex justify-between items-start">
+              <div className="space-y-5 relative z-10">
+                <div className="flex flex-wrap justify-between items-center gap-2">
                   <div className="p-3.5 rounded-2xl bg-purple-600 text-white shadow-md shadow-purple-500/25">
                     <Tag className="h-7 w-7" />
                   </div>
-                  <span className="rounded-full bg-purple-500/10 text-purple-600 border border-purple-500/20 px-3 py-1 text-xs font-black uppercase tracking-wider">
+                  <span className="rounded-full bg-purple-500/10 text-purple-600 border border-purple-500/20 px-3 py-1 text-xs font-black uppercase tracking-wider whitespace-nowrap">
                     Printer Ready
                   </span>
                 </div>
@@ -294,7 +295,7 @@ export default function MarketingHomepage() {
                   </li>
                 </ul>
               </div>
-              <div className="pt-8">
+              <div className="pt-8 relative z-10">
                 <Link
                   href="/barcode-generator"
                   className="w-full min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-purple-600 text-white font-bold text-sm shadow-md hover:bg-purple-700 transition-all group-hover:translate-x-1"
