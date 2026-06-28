@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   creator: "Zynveo Technologies",
   publisher: "Zynveo Technologies (Pvt) Ltd",
   verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "",
+    google: "irsIIasYQ_21H1yyQwPRXc1LvkAnCOgGEeRITy3yocM",
   },
   robots: {
     index: true,
