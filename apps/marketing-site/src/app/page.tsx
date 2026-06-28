@@ -75,10 +75,13 @@ export default function MarketingHomepage() {
             </span>
           </div>
 
-          <h1 className="text-3xl sm:text-6xl lg:text-7xl font-black tracking-tight text-neutral-text leading-[1.2] sm:leading-[1.1] max-w-5xl mx-auto px-2">
-            <span>The Next-Gen Cloud OS For</span> <br className="hidden sm:inline" />
-            <span>Retail, ERP, POS & Inventory</span> <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-indigo-600 to-accent block mt-1.5 sm:mt-2">
+          <h1 className="text-[28px] sm:text-6xl lg:text-7xl font-black tracking-tight text-neutral-text leading-[1.18] sm:leading-[1.1] max-w-5xl mx-auto px-2">
+            <span>The Next-Gen Cloud OS</span> <br className="sm:hidden" />
+            <span className="hidden sm:inline"> For </span>
+            <span className="sm:hidden">For </span>
+            <span>Retail, ERP, POS</span> <br className="sm:hidden" />
+            <span> & Inventory</span> <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-indigo-600 to-accent block mt-1.5 sm:mt-2 text-[22px] sm:text-5xl lg:text-6xl leading-[1.2]">
               Enterprise Power. 100% Free Suite.
             </span>
           </h1>

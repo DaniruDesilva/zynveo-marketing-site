@@ -76,7 +76,8 @@ export function Navbar() {
             className="inline-flex items-center justify-center min-h-[40px] sm:min-h-[48px] rounded-xl bg-gradient-to-r from-accent to-orange-600 px-3 sm:px-6 py-2 text-xs sm:text-sm font-extrabold text-white shadow-md sm:shadow-lg shadow-accent/25 hover:shadow-xl hover:shadow-accent/40 hover:-translate-y-0.5 transition-all duration-200 active:scale-95 whitespace-nowrap"
           >
             <Sparkles className="h-3.5 w-3.5 mr-1.5 sm:hidden" />
-            <span>Try Our Free Tools</span>
+            <span className="sm:hidden">Free Tools</span>
+            <span className="hidden sm:inline">Try Our Free Tools</span>
             <ArrowRight className="hidden sm:inline-block ml-2 h-4 w-4" />
           </Link>
 
