@@ -75,32 +75,28 @@ export default function MarketingHomepage() {
             </span>
           </div>
 
-          <h1 className="text-[28px] sm:text-6xl lg:text-7xl font-black tracking-tight text-neutral-text leading-[1.18] sm:leading-[1.1] max-w-5xl mx-auto px-2">
-            <span>The Next-Gen Cloud OS</span> <br className="sm:hidden" />
-            <span className="hidden sm:inline"> For </span>
-            <span className="sm:hidden">For </span>
-            <span>Retail, ERP, POS</span> <br className="sm:hidden" />
-            <span> & Inventory</span> <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-indigo-600 to-accent block mt-1.5 sm:mt-2 text-[22px] sm:text-5xl lg:text-6xl leading-[1.2]">
+          <h1 className="text-[24px] sm:text-6xl lg:text-7xl font-black tracking-tight text-neutral-text leading-[1.25] sm:leading-[1.1] max-w-5xl mx-auto px-1">
+            <span>The Next-Gen Cloud OS For Retail, ERP, POS & Inventory</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-indigo-600 to-accent block mt-2 sm:mt-3 text-[18px] sm:text-5xl lg:text-6xl leading-normal font-extrabold">
               Enterprise Power. 100% Free Suite.
             </span>
           </h1>
 
-          <p className="max-w-3xl mx-auto text-lg sm:text-xl font-medium text-neutral-muted leading-relaxed">
+          <p className="max-w-3xl mx-auto text-sm sm:text-xl font-medium text-neutral-muted leading-relaxed px-2">
             The all-in-one cloud OS for inventory, POS scanning, and instant pricing math. Plus, access our high-converting utility calculators <span className="text-neutral-text font-bold underline decoration-accent decoration-2">completely free without signing up</span>.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-2 w-full max-w-xs sm:max-w-none mx-auto">
             <Link
               href="#free-tools"
-              className="w-full sm:w-auto min-h-[52px] inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-accent to-orange-600 px-8 py-4 text-base font-extrabold text-white shadow-xl shadow-accent/30 hover:shadow-2xl hover:shadow-accent/50 hover:-translate-y-1 transition-all duration-200 active:scale-95"
+              className="w-full sm:w-auto min-h-[48px] sm:min-h-[52px] inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-accent to-orange-600 px-4 py-3 sm:px-8 sm:py-4 text-sm sm:text-base font-extrabold text-white shadow-xl shadow-accent/30 hover:shadow-2xl hover:shadow-accent/50 hover:-translate-y-1 transition-all duration-200 active:scale-95 whitespace-nowrap"
             >
-              <Sparkles className="mr-2 h-5 w-5 animate-spin" style={{ animationDuration: '6s' }} />
+              <Sparkles className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin shrink-0" style={{ animationDuration: '6s' }} />
               <span>Launch Free Utility Suite</span>
             </Link>
             <Link
               href="/contact"
-              className="w-full sm:w-auto min-h-[52px] inline-flex items-center justify-center rounded-2xl glass-panel px-8 py-4 text-base font-bold text-neutral-text hover:border-primary hover:text-primary hover:shadow-lg transition-all duration-200 active:scale-95"
+              className="w-full sm:w-auto min-h-[48px] sm:min-h-[52px] inline-flex items-center justify-center rounded-2xl glass-panel px-4 py-3 sm:px-8 sm:py-4 text-sm sm:text-base font-bold text-neutral-text hover:border-primary hover:text-primary hover:shadow-lg transition-all duration-200 active:scale-95 whitespace-nowrap"
             >
               <span>Talk to Enterprise Sales</span>
               <ArrowRight className="ml-2 h-5 w-5" />
