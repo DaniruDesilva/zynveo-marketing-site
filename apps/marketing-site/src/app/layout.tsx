@@ -16,7 +16,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL("https://zynveo.com"),
   title: {
-    default: "Zynveo | Million-Dollar Invoicing, ERP & Viral Pricing Calculator",
+    default: "Zynveo | The Next-Gen Cloud OS For Retail, ERP, POS & Inventory",
     template: "%s | Zynveo",
   },
   description:
@@ -56,14 +56,14 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "https://zynveo.com",
-    title: "Zynveo | Worldwide Retail & Warehouse Operating System",
+    title: "Zynveo | The Next-Gen Cloud OS For Retail, ERP, POS & Inventory",
     description:
       "Empowering modern FMCG brands, manufacturers, and SMEs with million-dollar ERP tools, POS, and real-time pricing intelligence.",
     siteName: "Zynveo",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Zynveo | Worldwide Retail & Warehouse Operating System",
+    title: "Zynveo | The Next-Gen Cloud OS For Retail, ERP, POS & Inventory",
     description:
       "Calculate true FMCG margins, generate instant PDF invoices without login, and create standardized retail barcodes.",
     creator: "@zynveo",

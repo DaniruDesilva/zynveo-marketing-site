@@ -77,7 +77,7 @@ export default function MarketingHomepage() {
 
           <h1 className="text-3xl sm:text-6xl lg:text-7xl font-black tracking-tight text-neutral-text leading-[1.2] sm:leading-[1.1] max-w-5xl mx-auto px-2">
             <span>The Next-Gen Cloud OS For</span> <br className="hidden sm:inline" />
-            <span>Retail, POS & Inventory</span> <br />
+            <span>Retail, ERP, POS & Inventory</span> <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-indigo-600 to-accent block mt-1.5 sm:mt-2">
               Enterprise Power. 100% Free Suite.
             </span>
