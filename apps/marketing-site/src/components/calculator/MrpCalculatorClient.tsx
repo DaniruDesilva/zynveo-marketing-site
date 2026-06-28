@@ -334,7 +334,7 @@ export function MrpCalculatorClient() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 pb-28 lg:pb-8 sm:px-6 lg:px-8 max-w-6xl relative">
+    <div className="container mx-auto px-3 py-8 pb-28 lg:pb-8 sm:px-6 lg:px-8 max-w-6xl relative">
       {/* Sleek SaaS Utility Header & Language Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6 mb-8 sm:mb-10 pb-6 border-b border-neutral-border/60 text-center sm:text-left">
         <div className="flex items-center gap-3">
@@ -473,7 +473,7 @@ export function MrpCalculatorClient() {
         {/* Left Form Panel (7 Cols) */}
         <motion.div 
           layout 
-          className="lg:col-span-7 rounded-3xl glass-panel p-6 sm:p-8 shadow-xl border border-white/80 space-y-6"
+          className="lg:col-span-7 rounded-3xl glass-panel p-4 sm:p-8 shadow-xl border border-white/80 space-y-6"
         >
           <div className="flex items-center justify-between border-b border-neutral-border pb-4">
             <h2 className="font-bold text-neutral-text flex items-center gap-2 text-xl">
@@ -653,7 +653,7 @@ export function MrpCalculatorClient() {
         <motion.div 
           layout 
           id="mobile-results-anchor"
-          className="lg:col-span-5 rounded-3xl bg-primary text-white p-6 sm:p-8 shadow-2xl space-y-8 relative overflow-hidden"
+          className="lg:col-span-5 rounded-3xl bg-primary text-white p-4 sm:p-8 shadow-2xl space-y-8 relative overflow-hidden"
         >
           <div className="flex justify-between items-center border-b border-white/10 pb-4">
             <span className="uppercase font-extrabold tracking-widest text-indigo-100 text-xs">
@@ -750,7 +750,7 @@ export function MrpCalculatorClient() {
             <button
               type="button"
               onClick={() => setIsLeadModalOpen(true)}
-              className="w-full inline-flex items-center justify-center rounded-xl bg-accent px-6 py-4 text-base font-extrabold text-white shadow-xl shadow-accent/40 hover:bg-accent-hover transition-all duration-200 active:scale-95"
+              className="w-full inline-flex items-center justify-center rounded-xl bg-accent px-4 py-3.5 sm:px-6 sm:py-4 text-sm sm:text-base font-extrabold text-white shadow-xl shadow-accent/40 hover:bg-accent-hover transition-all duration-200 active:scale-95 whitespace-nowrap"
             >
               <Download className="mr-2 h-5 w-5 shrink-0" />
               <span>{t.exportBtn}</span>

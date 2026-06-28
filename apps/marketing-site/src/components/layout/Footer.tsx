@@ -145,9 +145,9 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-16 pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-slate-500 font-medium">
+        <div className="mt-16 pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6 text-xs text-slate-500 font-medium text-center sm:text-left">
           <p>© 2026 Zynveo Technologies. All rights reserved.</p>
-          <div className="flex flex-wrap gap-6 justify-center">
+          <div className="flex flex-wrap gap-3 sm:gap-6 justify-center">
             <Link href="/llms.txt" className="hover:text-slate-300 transition-colors">AI Index (llms.txt)</Link>
             <Link href="/sitemap.xml" className="hover:text-slate-300 transition-colors">Sitemap</Link>
             <Link href="/legal" className="hover:text-slate-300 transition-colors">Legal Policy</Link>

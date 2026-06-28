@@ -15,6 +15,9 @@ module.exports = {
       },
     },
     extend: {
+      screens: {
+        xs: "360px",
+      },
       fontFamily: {
         sans: ["var(--font-inter)", "sans-serif"],
       },

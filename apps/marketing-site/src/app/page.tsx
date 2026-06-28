@@ -272,26 +272,27 @@ export default function MarketingHomepage() {
       </section>
 
       {/* 2. DEDICATED CURRENT AVAILABLE FREE TOOLS SECTION (#free-tools) */}
-      <section id="free-tools" className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl z-10 scroll-mt-28">
-        <div className="p-8 sm:p-12 lg:p-16 rounded-3xl bg-gradient-to-br from-primary/10 via-indigo-50/50 to-orange-50/50 border-2 border-primary/30 shadow-2xl relative overflow-hidden space-y-12">
+      <section id="free-tools" className="container mx-auto px-3 sm:px-6 lg:px-8 max-w-6xl z-10 scroll-mt-28">
+        <div className="p-4 sm:p-12 lg:p-16 rounded-3xl bg-gradient-to-br from-primary/10 via-indigo-50/50 to-orange-50/50 border-2 border-primary/30 shadow-2xl relative overflow-hidden space-y-10 sm:space-y-12">
           {/* Section Header */}
-          <div className="text-center space-y-4 max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-accent text-white text-xs font-black uppercase tracking-widest shadow-md shadow-accent/25">
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>100% Free Forever • No Sign-Up Required</span>
+          <div className="text-center space-y-4 max-w-3xl mx-auto px-1">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent text-white text-xs font-black uppercase tracking-wider shadow-md shadow-accent/25 text-center">
+              <Sparkles className="h-3.5 w-3.5 shrink-0" />
+              <span className="sm:hidden">100% Free Forever</span>
+              <span className="hidden sm:inline">100% Free Forever • No Sign-Up Required</span>
             </div>
-            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-neutral-text leading-tight">
+            <h2 className="text-2xl sm:text-5xl font-black tracking-tight text-neutral-text leading-tight">
               Current Available Free Tools
             </h2>
-            <p className="text-base sm:text-lg font-medium text-neutral-muted">
+            <p className="text-sm sm:text-lg font-medium text-neutral-muted">
               Click any tool below to launch and use immediately. We built these mission-critical calculators so you can streamline daily pricing and billing right now without entering a credit card or creating an account.
             </p>
           </div>
 
           {/* 3-Column Free Tool Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
             {/* Tool Card 1: MRP Calculator */}
-            <div className="rounded-2xl bg-white p-6 sm:p-8 border border-neutral-border shadow-lg hover:shadow-2xl hover:border-primary transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
+            <div className="rounded-2xl bg-white p-5 sm:p-8 border border-neutral-border shadow-lg hover:shadow-2xl hover:border-primary transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full pointer-events-none group-hover:scale-110 transition-transform" />
               <div className="space-y-5 relative z-10">
                 <div className="flex flex-wrap justify-between items-center gap-2">
@@ -337,7 +338,7 @@ export default function MarketingHomepage() {
             </div>
 
             {/* Tool Card 2: Invoice Generator */}
-            <div className="rounded-2xl bg-white p-6 sm:p-8 border border-neutral-border shadow-lg hover:shadow-2xl hover:border-indigo-600 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
+            <div className="rounded-2xl bg-white p-5 sm:p-8 border border-neutral-border shadow-lg hover:shadow-2xl hover:border-indigo-600 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-bl-full pointer-events-none group-hover:scale-110 transition-transform" />
               <div className="space-y-5 relative z-10">
                 <div className="flex flex-wrap justify-between items-center gap-2">
@@ -383,7 +384,7 @@ export default function MarketingHomepage() {
             </div>
 
             {/* Tool Card 3: Barcode Maker */}
-            <div className="rounded-2xl bg-white p-6 sm:p-8 border border-neutral-border shadow-lg hover:shadow-2xl hover:border-purple-600 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
+            <div className="rounded-2xl bg-white p-5 sm:p-8 border border-neutral-border shadow-lg hover:shadow-2xl hover:border-purple-600 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-bl-full pointer-events-none group-hover:scale-110 transition-transform" />
               <div className="space-y-5 relative z-10">
                 <div className="flex flex-wrap justify-between items-center gap-2">
@@ -493,7 +494,7 @@ export default function MarketingHomepage() {
           ].map((tool, idx) => (
             <div
               key={idx}
-              className="p-8 rounded-2xl glass-panel border border-neutral-border hover:border-primary/40 transition-all duration-300 flex flex-col justify-between hover:-translate-y-1 shadow-sm hover:shadow-xl space-y-6 relative overflow-hidden group"
+              className="p-5 sm:p-8 rounded-2xl glass-panel border border-neutral-border hover:border-primary/40 transition-all duration-300 flex flex-col justify-between hover:-translate-y-1 shadow-sm hover:shadow-xl space-y-6 relative overflow-hidden group"
             >
               <div className="space-y-4">
                 <div className="flex justify-between items-start">
@@ -549,7 +550,7 @@ export default function MarketingHomepage() {
             </ul>
           </div>
 
-          <div className="p-8 sm:p-10 rounded-3xl bg-slate-950/80 border border-white/10 shadow-2xl space-y-6 backdrop-blur-xl">
+          <div className="p-5 sm:p-10 rounded-3xl bg-slate-950/80 border border-white/10 shadow-2xl space-y-6 backdrop-blur-xl">
             <div className="flex justify-between items-center border-b border-white/10 pb-4">
               <h3 className="text-xl font-black text-white">
                 Live Shelf Price Decomposition
@@ -677,7 +678,7 @@ export default function MarketingHomepage() {
           ].map((plan, idx) => (
             <div
               key={idx}
-              className={`rounded-3xl p-8 flex flex-col justify-between border transition-all duration-300 ${
+              className={`rounded-3xl p-5 sm:p-8 flex flex-col justify-between border transition-all duration-300 ${
                 plan.accent 
                   ? "bg-gradient-to-b from-primary to-indigo-950 text-white border-primary shadow-2xl md:-translate-y-4 relative" 
                   : "glass-panel border-neutral-border text-neutral-text hover:shadow-xl hover:border-primary/30"
@@ -730,7 +731,7 @@ export default function MarketingHomepage() {
       </section>
 
       {/* 6. FAQ SECTION */}
-      <section id="faq" className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl z-10 scroll-mt-28">
+      <section id="faq" className="container mx-auto px-3 sm:px-6 lg:px-8 max-w-4xl z-10 scroll-mt-28">
         <div className="text-center space-y-4 mb-16">
           <div className="text-xs font-black uppercase tracking-widest text-primary">
             Got Questions?
@@ -762,7 +763,7 @@ export default function MarketingHomepage() {
               a: "We utilize bank-grade encryption powered by Supabase Auth and Row Level Security (RLS). Strict kernel-level database rules ensure staff can only access data relevant to their assigned branches."
             }
           ].map((faq, idx) => (
-            <div key={idx} className="p-6 sm:p-8 rounded-2xl glass-panel border border-neutral-border hover:border-primary/30 transition-colors space-y-3 shadow-sm">
+            <div key={idx} className="p-4 sm:p-8 rounded-2xl glass-panel border border-neutral-border hover:border-primary/30 transition-colors space-y-3 shadow-sm">
               <h3 className="text-lg sm:text-xl font-extrabold text-neutral-text flex items-start gap-3">
                 <span className="text-primary font-black shrink-0">Q.</span>
                 <span>{faq.q}</span>

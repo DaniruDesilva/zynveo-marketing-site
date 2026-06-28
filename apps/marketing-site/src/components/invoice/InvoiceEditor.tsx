@@ -73,7 +73,7 @@ export default function InvoiceEditor({ form, lang = "en" }: InvoiceEditorProps)
     <div className="w-full space-y-6">
       
       {/* CARD 1: CUSTOMIZATION */}
-      <div className="glass-panel rounded-3xl p-6 sm:p-8 shadow-xl border border-white/80 space-y-6">
+      <div className="glass-panel rounded-3xl p-4 sm:p-8 shadow-xl border border-white/80 space-y-6">
         <div className="flex items-center gap-3.5 border-b border-neutral-border/60 pb-4">
           <div className="p-2.5 rounded-2xl bg-amber-50 text-amber-600 border border-amber-100 shadow-sm shrink-0">
             <Sliders className="h-5 w-5" />
@@ -213,7 +213,7 @@ export default function InvoiceEditor({ form, lang = "en" }: InvoiceEditorProps)
       </div>
 
       {/* CARD 2: INVOICE BASICS */}
-      <div className="glass-panel rounded-3xl p-6 sm:p-8 shadow-xl border border-white/80 space-y-6">
+      <div className="glass-panel rounded-3xl p-4 sm:p-8 shadow-xl border border-white/80 space-y-6">
         <div className="flex items-center gap-3.5 border-b border-neutral-border/60 pb-4">
           <div className="p-2.5 rounded-2xl bg-violet-50 text-violet-600 border border-violet-100 shadow-sm shrink-0">
             <FileText className="h-5 w-5" />
@@ -293,7 +293,7 @@ export default function InvoiceEditor({ form, lang = "en" }: InvoiceEditorProps)
       </div>
 
       {/* CARD 3: ITEMS */}
-      <div className="glass-panel rounded-3xl p-6 sm:p-8 shadow-xl border border-white/80 space-y-6">
+      <div className="glass-panel rounded-3xl p-4 sm:p-8 shadow-xl border border-white/80 space-y-6">
         <div className="flex items-center justify-between border-b border-neutral-border/60 pb-4">
           <div className="flex items-center gap-3.5">
             <div className="p-2.5 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm shrink-0">
@@ -389,7 +389,7 @@ export default function InvoiceEditor({ form, lang = "en" }: InvoiceEditorProps)
       {/* CARD 4: NOTES & TOTALS SIDE-BY-SIDE */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Notes */}
-        <div className="lg:col-span-6 glass-panel rounded-3xl p-6 sm:p-8 shadow-xl border border-white/80 space-y-4">
+        <div className="lg:col-span-6 glass-panel rounded-3xl p-4 sm:p-8 shadow-xl border border-white/80 space-y-4">
           <h2 className="text-lg font-black text-neutral-text tracking-tight">{t.notesTermsLabel}</h2>
           <textarea
             rows={6}
@@ -400,7 +400,7 @@ export default function InvoiceEditor({ form, lang = "en" }: InvoiceEditorProps)
         </div>
 
         {/* Totals */}
-        <div className="lg:col-span-6 glass-panel rounded-3xl p-6 sm:p-8 shadow-xl border border-white/80 space-y-4">
+        <div className="lg:col-span-6 glass-panel rounded-3xl p-4 sm:p-8 shadow-xl border border-white/80 space-y-4">
           <h2 className="text-lg font-black text-neutral-text tracking-tight border-b border-neutral-border/60 pb-3">
             {t.totalsCalcLabel}
           </h2>
@@ -501,7 +501,7 @@ export default function InvoiceEditor({ form, lang = "en" }: InvoiceEditorProps)
       </div>
 
       {/* Viral Growth Hook */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white shadow-xl relative overflow-hidden group">
+      <div className="p-4 sm:p-8 rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white shadow-xl relative overflow-hidden group">
         <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
         <div className="relative z-10 space-y-3">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent text-white text-[11px] font-extrabold uppercase tracking-wider shadow-sm">

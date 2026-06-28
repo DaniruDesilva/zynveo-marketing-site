@@ -184,8 +184,8 @@ export function InvoiceGeneratorClient() {
           </div>
 
           {/* Scaled A4 Sheet Container */}
-          <div className="w-full bg-slate-200/70 rounded-3xl p-4 sm:p-8 flex justify-center overflow-x-auto min-h-[850px] border border-slate-300/60 shadow-inner">
-            <div className="origin-top transform scale-[0.48] xs:scale-[0.55] sm:scale-[0.72] md:scale-[0.88] lg:scale-100 transition-transform duration-300">
+          <div className="w-full bg-slate-200/70 rounded-3xl p-2 sm:p-8 flex justify-center overflow-x-auto min-h-[500px] sm:min-h-[850px] border border-slate-300/60 shadow-inner">
+            <div className="origin-top transform scale-[0.36] xs:scale-[0.48] sm:scale-[0.72] md:scale-[0.88] lg:scale-100 transition-transform duration-300">
               <div className="shadow-2xl rounded-sm overflow-hidden">
                 <InvoicePreview ref={previewRef} data={formData} lang={lang} />
               </div>
