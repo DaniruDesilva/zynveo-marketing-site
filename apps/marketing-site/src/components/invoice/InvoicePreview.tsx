@@ -280,7 +280,7 @@ const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
         <div className="mt-auto border border-slate-200 rounded-xl px-6 py-4 bg-slate-50 flex justify-between items-center text-xs text-slate-700 font-bold box-border shrink-0 gap-2 select-none">
           <span className="font-mono whitespace-nowrap leading-normal">{t.docInvNo}: {data?.invoiceNumber || "INV-001"}</span>
           <span className="text-[11px] text-slate-500 font-medium text-center whitespace-nowrap leading-normal">
-            {t.docAttribution} <span className="font-bold text-indigo-600 underline">synctrahq.com</span>
+            {t.docAttribution} <span className="font-bold text-indigo-600 underline">zynveo.com</span>
           </span>
           <span className="font-mono whitespace-nowrap leading-normal">{t.docDate}: {formatDate(data?.date)}</span>
         </div>

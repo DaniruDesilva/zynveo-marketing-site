@@ -17,7 +17,7 @@ export function Footer() {
                 <Zap className="h-5 w-5 fill-current" />
               </div>
               <span className="text-2xl font-black tracking-tight text-white">
-                Sync<span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-orange-400">tra</span>
+                Zyn<span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-orange-400">veo</span>
               </span>
             </Link>
             <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
@@ -127,8 +127,8 @@ export function Footer() {
             <ul className="space-y-3 text-sm text-slate-400 font-medium">
               <li className="flex items-start gap-3">
                 <Mail className="h-4 w-4 text-accent shrink-0 mt-1" />
-                <a href="mailto:hello@synctrahq.com" className="hover:text-white transition-colors">
-                  hello@synctrahq.com
+                <a href="mailto:hello@zynveo.com" className="hover:text-white transition-colors">
+                  hello@zynveo.com
                 </a>
               </li>
               <li className="flex items-start gap-3">
@@ -139,14 +139,14 @@ export function Footer() {
               </li>
               <li className="flex items-start gap-3">
                 <MapPin className="h-4 w-4 text-accent shrink-0 mt-1" />
-                <span>Synctra Technologies, Galle, Sri Lanka</span>
+                <span>Zynveo Technologies, Galle, Sri Lanka</span>
               </li>
             </ul>
           </div>
         </div>
 
         <div className="mt-16 pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-slate-500 font-medium">
-          <p>© 2026 Synctra Technologies. All rights reserved.</p>
+          <p>© 2026 Zynveo Technologies. All rights reserved.</p>
           <div className="flex flex-wrap gap-6 justify-center">
             <Link href="/llms.txt" className="hover:text-slate-300 transition-colors">AI Index (llms.txt)</Link>
             <Link href="/sitemap.xml" className="hover:text-slate-300 transition-colors">Sitemap</Link>

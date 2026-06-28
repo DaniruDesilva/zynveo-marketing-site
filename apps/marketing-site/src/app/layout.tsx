@@ -14,13 +14,13 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://synctrahq.com"),
+  metadataBase: new URL("https://zynveo.com"),
   title: {
-    default: "Synctra | Million-Dollar Invoicing, ERP & Viral Pricing Calculator",
-    template: "%s | Synctra",
+    default: "Zynveo | Million-Dollar Invoicing, ERP & Viral Pricing Calculator",
+    template: "%s | Zynveo",
   },
   description:
-    "Synctra is the modern cloud-native ERP and SaaS operating system for FMCG brands, wholesalers, and SMEs. Calculate true product margins, generate invoices, and scale your business.",
+    "Zynveo is the modern cloud-native ERP and SaaS operating system for FMCG brands, wholesalers, and SMEs. Calculate true product margins, generate invoices, and scale your business.",
   keywords: [
     "ERP software",
     "FMCG billing software",
@@ -32,9 +32,9 @@ export const metadata: Metadata = {
     "inventory management",
     "barcode generator",
   ],
-  authors: [{ name: "Synctra Technologies" }],
-  creator: "Synctra Technologies",
-  publisher: "Synctra Technologies (Pvt) Ltd",
+  authors: [{ name: "Zynveo Technologies" }],
+  creator: "Zynveo Technologies",
+  publisher: "Zynveo Technologies (Pvt) Ltd",
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "",
   },
@@ -55,18 +55,18 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://synctrahq.com",
-    title: "Synctra | Worldwide Retail & Warehouse Operating System",
+    url: "https://zynveo.com",
+    title: "Zynveo | Worldwide Retail & Warehouse Operating System",
     description:
       "Empowering modern FMCG brands, manufacturers, and SMEs with million-dollar ERP tools, POS, and real-time pricing intelligence.",
-    siteName: "Synctra",
+    siteName: "Zynveo",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Synctra | Worldwide Retail & Warehouse Operating System",
+    title: "Zynveo | Worldwide Retail & Warehouse Operating System",
     description:
       "Calculate true FMCG margins, generate instant PDF invoices without login, and create standardized retail barcodes.",
-    creator: "@synctrahq",
+    creator: "@zynveo",
   },
 };
 
@@ -80,24 +80,24 @@ export default function RootLayout({
     "@graph": [
       {
         "@type": "Organization",
-        "@id": "https://synctrahq.com/#organization",
-        name: "Synctra Technologies",
-        url: "https://synctrahq.com",
-        logo: "https://synctrahq.com/logo.png",
+        "@id": "https://zynveo.com/#organization",
+        name: "Zynveo Technologies",
+        url: "https://zynveo.com",
+        logo: "https://zynveo.com/logo.png",
         contactPoint: {
           "@type": "ContactPoint",
           telephone: "+94-72-375-8191",
           contactType: "customer service",
-          email: "hello@synctrahq.com",
+          email: "hello@zynveo.com",
         },
       },
       {
         "@type": "WebSite",
-        "@id": "https://synctrahq.com/#website",
-        url: "https://synctrahq.com",
-        name: "Synctra",
+        "@id": "https://zynveo.com/#website",
+        url: "https://zynveo.com",
+        name: "Zynveo",
         publisher: {
-          "@id": "https://synctrahq.com/#organization",
+          "@id": "https://zynveo.com/#organization",
         },
       },
     ],

@@ -55,7 +55,7 @@ export function SKUAndBarcodeGeneratorClient() {
   const [gtin, setGtin] = useState("479100012345");
   const [batchNo, setBatchNo] = useState("BATCH-09");
   const [digitalLinkPrefix, setDigitalLinkPrefix] = useState(
-    "https://synctrahq.com/gtin"
+    "https://zynveo.com/gtin"
   );
 
   // Customization Sliders & Ink Theme
@@ -76,7 +76,7 @@ export function SKUAndBarcodeGeneratorClient() {
     const nameCode = clean(productName).substring(0, 4);
     const sizeCode = clean(size);
     const generated = [catCode, nameCode, sizeCode].filter(Boolean).join("-");
-    setSku(generated || "SYNCTRA-ITEM");
+    setSku(generated || "ZYNVEO-ITEM");
   }, [productName, category, size, isManualSku]);
 
   // Category switch defaults
@@ -155,11 +155,11 @@ export function SKUAndBarcodeGeneratorClient() {
           value: numericOnly.padEnd(7, "0").slice(0, 7),
         };
       case "CODE128":
-        return { format: "CODE128" as const, value: sku || "SYNCTRA" };
+        return { format: "CODE128" as const, value: sku || "ZYNVEO" };
       case "CODE39":
         return {
           format: "CODE39" as const,
-          value: (sku || "SYNCTRA")
+          value: (sku || "ZYNVEO")
             .replace(/[^A-Z0-9 -.$/+%]/gi, "")
             .toUpperCase(),
         };
@@ -169,7 +169,7 @@ export function SKUAndBarcodeGeneratorClient() {
           value: numericOnly.padEnd(13, "0").slice(0, 13),
         };
       default:
-        return { format: "CODE128" as const, value: sku || "SYNCTRA" };
+        return { format: "CODE128" as const, value: sku || "ZYNVEO" };
     }
   };
 
@@ -181,7 +181,7 @@ export function SKUAndBarcodeGeneratorClient() {
         "04791000123456";
       return `${digitalLinkPrefix.replace(/\/$/, "")}/01/${cleanGtin}/10/${encodeURIComponent(batchNo || "LOT1")}`;
     }
-    return sku || "https://synctrahq.com";
+    return sku || "https://zynveo.com";
   };
 
   // PNG Export Handler
@@ -191,7 +191,7 @@ export function SKUAndBarcodeGeneratorClient() {
       const url = bwipCanvasRef.current.toDataURL("image/png");
       const link = document.createElement("a");
       link.href = url;
-      link.download = `Synctra_Label_${activeFormat}_${sku || gtin}.png`;
+      link.download = `Zynveo_Label_${activeFormat}_${sku || gtin}.png`;
       link.click();
       return;
     }
@@ -206,7 +206,7 @@ export function SKUAndBarcodeGeneratorClient() {
       const url = canvas.toDataURL("image/png");
       const link = document.createElement("a");
       link.href = url;
-      link.download = `Synctra_Label_${activeFormat}_${sku || gtin}.png`;
+      link.download = `Zynveo_Label_${activeFormat}_${sku || gtin}.png`;
       link.click();
     } catch (error) {
       console.error("Export error:", error);
@@ -236,7 +236,7 @@ export function SKUAndBarcodeGeneratorClient() {
       printWindow.document.write(`
         <html>
           <head>
-            <title>Print Label - Synctra</title>
+            <title>Print Label - Zynveo</title>
             <style>
               body { margin: 0; padding: 40px; display: flex; justify-content: center; align-items: flex-start; background: white; }
               img { max-width: 100%; height: auto; border: 2px dashed #cbd5e1; padding: 20px; border-radius: 12px; }
@@ -280,7 +280,7 @@ export function SKUAndBarcodeGeneratorClient() {
           </div>
           <div className="text-left">
             <span className="font-extrabold tracking-tight text-xl sm:text-2xl block leading-tight">
-              Synctra
+              Zynveo
             </span>
             <span className="text-[11px] font-extrabold uppercase tracking-widest text-accent block mt-0.5">
               Worldwide Retail & Warehouse OS
@@ -772,18 +772,18 @@ export function SKUAndBarcodeGeneratorClient() {
                 )}
               </div>
 
-              {/* Bottom Synctra Verification Watermark on Sticker */}
+              {/* Bottom Zynveo Verification Watermark on Sticker */}
               {(() => {
                 const gs1Formats = ["EAN13", "UPCA", "EAN8", "UPCE", "GS1_128", "GS1_DIGITAL_LINK"];
                 const verifyLabel = gs1Formats.includes(activeFormat)
-                  ? "Synctra GS1 Verified"
+                  ? "Zynveo GS1 Verified"
                   : activeFormat === "QR"
-                    ? "Synctra QR Verified"
+                    ? "Zynveo QR Verified"
                     : activeFormat === "DATA_MATRIX"
-                      ? "Synctra Matrix Verified"
+                      ? "Zynveo Matrix Verified"
                       : activeFormat === "ITF14"
-                        ? "Synctra Logistics Verified"
-                        : "Synctra SKU Verified";
+                        ? "Zynveo Logistics Verified"
+                        : "Zynveo SKU Verified";
                 return (
                   <div className="mt-3.5 text-center text-[9px] font-mono font-extrabold uppercase tracking-widest select-none leading-none">
                     <span className="text-emerald-500 mr-1.5 inline-block font-sans">✔</span>
@@ -817,7 +817,7 @@ export function SKUAndBarcodeGeneratorClient() {
         </div>
       </div>
 
-      {/* Synctra PLG Upsell Hook Banner */}
+      {/* Zynveo PLG Upsell Hook Banner */}
       <motion.div
         layout
         className="mt-16 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-8 sm:p-12 text-white shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8 border border-white/10 relative overflow-hidden"

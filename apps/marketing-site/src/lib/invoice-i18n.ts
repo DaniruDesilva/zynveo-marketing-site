@@ -61,8 +61,8 @@ export const DICT = {
 
     proInvoicing: "Pro Invoicing",
     viralTitle: "Want to send recurring invoices automatically?",
-    viralDesc: "Save client directory profiles, automated payment reminders, and sync directly with Synctra ERP accounting.",
-    exploreBtn: "Explore Synctra ERP",
+    viralDesc: "Save client directory profiles, automated payment reminders, and sync directly with Zynveo ERP accounting.",
+    exploreBtn: "Explore Zynveo ERP",
 
     // Document Preview
     docInvoiceTitle: "INVOICE",
@@ -150,8 +150,8 @@ export const DICT = {
 
     proInvoicing: "උසස් පහසුකම්",
     viralTitle: "ස්වයංක්‍රීයව ඉන්වොයිසි යැවීමට අවශ්‍යද?",
-    viralDesc: "පාරිභෝගික විස්තර සුරැකීමට, ගෙවීම් සිහිගන්වීම් යැවීමට සහ Synctra ගිණුම්කරණය සමඟ සම්බන්ධ කිරීමට අපගේ මෘදුකාංගය අත්හදා බලන්න.",
-    exploreBtn: "Synctra ERP අත්හදා බලන්න",
+    viralDesc: "පාරිභෝගික විස්තර සුරැකීමට, ගෙවීම් සිහිගන්වීම් යැවීමට සහ Zynveo ගිණුම්කරණය සමඟ සම්බන්ධ කිරීමට අපගේ මෘදුකාංගය අත්හදා බලන්න.",
+    exploreBtn: "Zynveo ERP අත්හදා බලන්න",
 
     // Document Preview
     docInvoiceTitle: "ඉන්වොයිසිය",
@@ -239,8 +239,8 @@ export const DICT = {
 
     proInvoicing: "மேம்பட்ட வசதிகள்",
     viralTitle: "தானாகவே இன்வாய்ஸ் அனுப்ப வேண்டுமா?",
-    viralDesc: "வாடிக்கையாளர் விவரங்களை சேமிக்கவும், கொடுப்பனவு நினைவூட்டல்களை அனுப்பவும் Synctra மென்பொருளை முயற்சிக்கவும்.",
-    exploreBtn: "Synctra ERP முயற்சிக்கவும்",
+    viralDesc: "வாடிக்கையாளர் விவரங்களை சேமிக்கவும், கொடுப்பனவு நினைவூட்டல்களை அனுப்பவும் Zynveo மென்பொருளை முயற்சிக்கவும்.",
+    exploreBtn: "Zynveo ERP முயற்சிக்கவும்",
 
     // Document Preview
     docInvoiceTitle: "இன்வாய்ஸ்",

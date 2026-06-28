@@ -4,8 +4,8 @@ import { Lock, ArrowLeft, CheckCircle2 } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | Synctra Technologies",
-  description: "Learn how Synctra protects user privacy, secures cloud ERP ledgers, and maintains zero data retention on public utility tools.",
+  title: "Privacy Policy | Zynveo Technologies",
+  description: "Learn how Zynveo protects user privacy, secures cloud ERP ledgers, and maintains zero data retention on public utility tools.",
   alternates: { canonical: "/privacy" },
 };
 
@@ -34,7 +34,7 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-2xl font-black text-slate-900">1. Information We Collect</h2>
           <p>
-            We collect minimal, strictly necessary data depending on how you interact with Synctra:
+            We collect minimal, strictly necessary data depending on how you interact with Zynveo:
           </p>
           <ul className="space-y-2 list-none pl-0">
             <li className="flex items-start gap-3">
@@ -65,7 +65,7 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-2xl font-black text-slate-900">4. Data Deletion Rights</h2>
           <p>
-            You have the right to request full erasure of any contact inquiry records or subscribed ERP account metadata. Submit a deletion request to <a href="mailto:hello@synctrahq.com" className="text-primary font-bold underline">hello@synctrahq.com</a> and we will purge all records within 48 hours.
+            You have the right to request full erasure of any contact inquiry records or subscribed ERP account metadata. Submit a deletion request to <a href="mailto:hello@zynveo.com" className="text-primary font-bold underline">hello@zynveo.com</a> and we will purge all records within 48 hours.
           </p>
         </section>
       </div>

@@ -7,7 +7,7 @@ const loadingSteps = [
   { progress: 15, text: "CONNECTING TO ENTERPRISE CLOUD NODES..." },
   { progress: 45, text: "SYNCING MULTI-BRANCH POS & INVENTORY..." },
   { progress: 80, text: "LOADING 100% FREE VIRAL UTILITY SUITE..." },
-  { progress: 100, text: "CLOUD OS LIVE • LAUNCHING SYNCTRA..." },
+  { progress: 100, text: "CLOUD OS LIVE • LAUNCHING ZYNVEO..." },
 ];
 
 export function Preloader() {
@@ -69,7 +69,7 @@ export function Preloader() {
             </div>
             <div className="flex flex-col text-left">
               <span className="text-4xl font-black tracking-tight text-white leading-none">
-                Sync<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-indigo-400 to-accent">tra</span>
+                Zyn<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-indigo-400 to-accent">veo</span>
               </span>
               <div className="flex items-center gap-1.5 mt-1">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />

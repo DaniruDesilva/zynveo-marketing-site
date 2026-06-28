@@ -17,7 +17,7 @@ export function Navbar() {
           </div>
           <div className="flex flex-col">
             <span className="text-2xl font-black tracking-tight text-neutral-text leading-none">
-              Sync<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">tra</span>
+              Zyn<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">veo</span>
             </span>
             <span className="text-[10px] font-extrabold tracking-widest uppercase text-neutral-muted mt-0.5">
               Cloud OS

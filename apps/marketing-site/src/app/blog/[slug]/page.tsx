@@ -13,11 +13,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = BLOG_POSTS[params.slug];
   if (!post) {
     return {
-      title: "Article Not Found | Synctra Insights",
+      title: "Article Not Found | Zynveo Insights",
     };
   }
   return {
-    title: `${post.title} | Synctra Insights`,
+    title: `${post.title} | Zynveo Insights`,
     description: post.desc,
     alternates: {
       canonical: `/blog/${post.slug}`,
@@ -62,10 +62,10 @@ export default function BlogPostPage({ params }: Props) {
     },
     publisher: {
       "@type": "Organization",
-      name: "Synctra Technologies",
+      name: "Zynveo Technologies",
       logo: {
         "@type": "ImageObject",
-        url: "https://synctrahq.com/favicon.ico",
+        url: "https://zynveo.com/favicon.ico",
       },
     },
     datePublished: post.date,
@@ -163,7 +163,7 @@ export default function BlogPostPage({ params }: Props) {
             Stop Leaking Margins in Your Daily Operations
           </h3>
           <p className="text-indigo-100 max-w-xl mx-auto font-medium text-sm sm:text-base">
-            Use Synctra's 100% free viral MRP and Invoice calculators right now without creating an account or signing up.
+            Use Zynveo's 100% free viral MRP and Invoice calculators right now without creating an account or signing up.
           </p>
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link

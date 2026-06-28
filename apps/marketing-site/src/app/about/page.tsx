@@ -4,16 +4,16 @@ import { Shield, Zap, TrendingUp, Users, Heart, Globe, Award, Sparkles, ArrowRig
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "About Synctra | Modern Cloud OS & FMCG Pricing Suite",
+  title: "About Zynveo | Modern Cloud OS & FMCG Pricing Suite",
   description:
-    "Learn about Synctra Technologies, our mission to democratize enterprise ERP tools, and our roots in Galle, Sri Lanka empowering over 25,000 retail brands globally.",
+    "Learn about Zynveo Technologies, our mission to democratize enterprise ERP tools, and our roots in Galle, Sri Lanka empowering over 25,000 retail brands globally.",
   alternates: {
     canonical: "/about",
   },
   openGraph: {
-    title: "About Synctra | Empowering Global Retail & FMCG Brands",
-    description: "Discover why 25,000+ growing consumer brands rely on Synctra Cloud OS and our free viral pricing calculators.",
-    url: "https://synctrahq.com/about",
+    title: "About Zynveo | Empowering Global Retail & FMCG Brands",
+    description: "Discover why 25,000+ growing consumer brands rely on Zynveo Cloud OS and our free viral pricing calculators.",
+    url: "https://zynveo.com/about",
   },
 };
 
@@ -23,7 +23,7 @@ export default function AboutPage() {
     "@type": "AboutPage",
     mainEntity: {
       "@type": "Organization",
-      name: "Synctra Technologies (Pvt) Ltd",
+      name: "Zynveo Technologies (Pvt) Ltd",
       foundingDate: "2024",
       address: {
         "@type": "PostalAddress",
@@ -31,12 +31,12 @@ export default function AboutPage() {
         addressCountry: "Sri Lanka",
       },
       description:
-        "Synctra builds cloud-native ERP operating systems, real-time POS scanning solutions, and instant zero-login pricing utilities for consumer brands and wholesalers.",
+        "Zynveo builds cloud-native ERP operating systems, real-time POS scanning solutions, and instant zero-login pricing utilities for consumer brands and wholesalers.",
       numberOfEmployees: {
         "@type": "QuantitativeValue",
         value: "25",
       },
-      url: "https://synctrahq.com",
+      url: "https://zynveo.com",
     },
   };
 
@@ -65,7 +65,7 @@ export default function AboutPage() {
         </h1>
 
         <p className="max-w-3xl mx-auto text-lg sm:text-xl font-medium text-neutral-muted leading-relaxed">
-          For decades, multi-branch ERP software was locked behind expensive contracts and clunky local servers. Synctra is changing the narrative by combining million-dollar cloud automation with viral zero-login utilities.
+          For decades, multi-branch ERP software was locked behind expensive contracts and clunky local servers. Zynveo is changing the narrative by combining million-dollar cloud automation with viral zero-login utilities.
         </p>
 
         {/* Stats Bar */}
@@ -91,7 +91,7 @@ export default function AboutPage() {
           <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full filter blur-3xl pointer-events-none" />
           
           <div className="space-y-4 max-w-3xl relative z-10">
-            <span className="text-xs font-black uppercase tracking-widest text-accent">The Synctra Story</span>
+            <span className="text-xs font-black uppercase tracking-widest text-accent">The Zynveo Story</span>
             <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
               Solving the Silent Margin Crisis in Consumer Goods
             </h2>
@@ -102,7 +102,7 @@ export default function AboutPage() {
               The culprit was flawed product pricing math. Founders were calculating wholesaler cuts forward as a markup over cost, while supermarket chains calculated margins backward from shelf MRP prices. This mismatch silently erased up to 15% of brand net profit.
             </p>
             <p className="text-slate-300 text-base sm:text-lg leading-relaxed font-medium">
-              We built Synctra to eradicate this error forever. Today, our free utility suite allows anyone to reverse-engineer exact shelf pricing instantly, while our enterprise cloud OS connects retail counters directly to warehouse ledgers.
+              We built Zynveo to eradicate this error forever. Today, our free utility suite allows anyone to reverse-engineer exact shelf pricing instantly, while our enterprise cloud OS connects retail counters directly to warehouse ledgers.
             </p>
           </div>
 
@@ -183,7 +183,7 @@ export default function AboutPage() {
       <section className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl z-10">
         <div className="p-10 sm:p-16 rounded-3xl bg-gradient-to-r from-primary to-indigo-900 text-white text-center space-y-6 shadow-2xl relative overflow-hidden">
           <h2 className="text-3xl sm:text-5xl font-black tracking-tight">
-            Ready to Experience Synctra?
+            Ready to Experience Zynveo?
           </h2>
           <p className="text-indigo-100 text-lg max-w-xl mx-auto font-medium">
             Launch our instant free utility tools right now or get in touch with our enterprise engineering team.

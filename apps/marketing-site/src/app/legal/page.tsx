@@ -4,8 +4,8 @@ import { Shield, Lock, FileText, ArrowLeft, CheckCircle2 } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Legal Policy & Compliance Hub | Synctra Technologies",
-  description: "Review Synctra Technologies legal policies, data compliance standards, row-level security architecture, and regulatory framework.",
+  title: "Legal Policy & Compliance Hub | Zynveo Technologies",
+  description: "Review Zynveo Technologies legal policies, data compliance standards, row-level security architecture, and regulatory framework.",
   alternates: { canonical: "/legal" },
 };
 
@@ -26,7 +26,7 @@ export default function LegalPage() {
           Legal Policy & Security Hub
         </h1>
         <p className="text-neutral-muted font-medium text-lg">
-          Last updated: June 27, 2026 • Synctra Technologies (Pvt) Ltd, Galle, Sri Lanka.
+          Last updated: June 27, 2026 • Zynveo Technologies (Pvt) Ltd, Galle, Sri Lanka.
         </p>
       </header>
 
@@ -34,7 +34,7 @@ export default function LegalPage() {
         <section className="space-y-3">
           <h2 className="text-2xl font-black text-slate-900">1. Regulatory Compliance Framework</h2>
           <p>
-            Synctra Technologies (Pvt) Ltd ("Synctra", "we", "our", or "us") operates under the statutory corporate regulations of Sri Lanka and adheres to strict international cloud data compliance standards. Our software platforms are engineered to ensure complete separation between proprietary brand data and external analytics.
+            Zynveo Technologies (Pvt) Ltd ("Zynveo", "we", "our", or "us") operates under the statutory corporate regulations of Sri Lanka and adheres to strict international cloud data compliance standards. Our software platforms are engineered to ensure complete separation between proprietary brand data and external analytics.
           </p>
         </section>
 
@@ -65,13 +65,13 @@ export default function LegalPage() {
         <section className="space-y-3">
           <h2 className="text-2xl font-black text-slate-900">4. Intellectual Property Rights</h2>
           <p>
-            All code, UI designs, algorithms, and branding elements associated with Synctra Cloud OS and Synctra Viral Suite are the sole intellectual property of Synctra Technologies (Pvt) Ltd. Unauthorized reproduction, reverse engineering, or resale is prohibited under international copyright law.
+            All code, UI designs, algorithms, and branding elements associated with Zynveo Cloud OS and Zynveo Viral Suite are the sole intellectual property of Zynveo Technologies (Pvt) Ltd. Unauthorized reproduction, reverse engineering, or resale is prohibited under international copyright law.
           </p>
         </section>
 
         <section className="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
           <h3 className="text-lg font-black text-slate-900">Contact Legal Department</h3>
-          <p className="text-sm">For official legal notices or compliance verification requests, please contact our legal team at <a href="mailto:hello@synctrahq.com" className="text-primary font-bold underline">hello@synctrahq.com</a>.</p>
+          <p className="text-sm">For official legal notices or compliance verification requests, please contact our legal team at <a href="mailto:hello@zynveo.com" className="text-primary font-bold underline">hello@zynveo.com</a>.</p>
         </section>
       </div>
     </div>

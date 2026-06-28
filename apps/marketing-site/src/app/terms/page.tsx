@@ -4,8 +4,8 @@ import { FileText, ArrowLeft, CheckCircle2 } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | Synctra Technologies",
-  description: "Review terms and conditions governing the use of Synctra Cloud OS and free viral utility tools.",
+  title: "Terms of Service | Zynveo Technologies",
+  description: "Review terms and conditions governing the use of Zynveo Cloud OS and free viral utility tools.",
   alternates: { canonical: "/terms" },
 };
 
@@ -34,7 +34,7 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="text-2xl font-black text-slate-900">1. Acceptance of Terms</h2>
           <p>
-            By accessing or utilizing any tool on the Synctra website (`synctrahq.com`), you agree to be bound by these Terms of Service. If you do not agree with any provision of these terms, you must immediately discontinue use of the site.
+            By accessing or utilizing any tool on the Zynveo website (`zynveo.com`), you agree to be bound by these Terms of Service. If you do not agree with any provision of these terms, you must immediately discontinue use of the site.
           </p>
         </section>
 
@@ -55,7 +55,7 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="text-2xl font-black text-slate-900">4. Modifications to Terms</h2>
           <p>
-            Synctra reserves the right to modify these terms at any time. Continued usage of our web platform following the posting of changes constitutes acceptance of the revised terms.
+            Zynveo reserves the right to modify these terms at any time. Continued usage of our web platform following the posting of changes constitutes acceptance of the revised terms.
           </p>
         </section>
       </div>

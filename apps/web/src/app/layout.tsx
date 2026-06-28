@@ -30,7 +30,7 @@ import { SidebarNavItem } from "../components/SidebarNavItem";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Synctra ERP",
+  title: "Zynveo ERP",
   description: "Modern ERP Dashboard",
 };
 
@@ -47,7 +47,7 @@ export default function RootLayout({
           <aside className="w-64 border-r border-slate-200 bg-white flex flex-col z-20 relative shadow-sm">
             <div className="h-16 flex items-center px-6">
               <span className="font-bold text-xl tracking-tight text-slate-800">
-                Synctra<span className="text-blue-600 text-sm align-top">ERP</span>
+                Zynveo<span className="text-blue-600 text-sm align-top">ERP</span>
               </span>
             </div>
             
@@ -85,7 +85,7 @@ export default function RootLayout({
               <div className="flex-1 flex justify-center">
                  <div className="flex items-center space-x-2 bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-full text-sm font-medium border border-emerald-100">
                    <ShieldCheck size={16} />
-                   <span>app.synctrahq.com</span>
+                   <span>app.zynveo.com</span>
                  </div>
               </div>
               <div className="flex items-center space-x-4">

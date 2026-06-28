@@ -22,9 +22,9 @@ export default function ContactPage() {
     "@type": "ContactPage",
     mainEntity: {
       "@type": "Organization",
-      name: "Synctra Technologies",
+      name: "Zynveo Technologies",
       telephone: "+94-72-375-8191",
-      email: "hello@synctrahq.com",
+      email: "hello@zynveo.com",
       address: {
         "@type": "PostalAddress",
         streetAddress: "Tech Hub, Galle Road",
@@ -82,7 +82,7 @@ export default function ContactPage() {
 
               <div className="space-y-6">
                 <a
-                  href="mailto:hello@synctrahq.com"
+                  href="mailto:hello@zynveo.com"
                   className="flex items-start gap-4 p-4 rounded-2xl bg-white hover:bg-slate-50 transition-colors border border-slate-100 shadow-sm group"
                 >
                   <div className="p-3 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
@@ -90,7 +90,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email Sales & Support</div>
-                    <div className="text-base font-black text-slate-800 mt-0.5">hello@synctrahq.com</div>
+                    <div className="text-base font-black text-slate-800 mt-0.5">hello@zynveo.com</div>
                     <div className="text-xs text-emerald-600 font-bold mt-1">24/7 Monitored Inbox</div>
                   </div>
                 </a>
@@ -200,7 +200,7 @@ export default function ContactPage() {
                       <label className="text-xs font-black uppercase tracking-wider text-slate-700">Company / Brand Name</label>
                       <input
                         type="text"
-                        placeholder="Synctra Retailers"
+                        placeholder="Zynveo Retailers"
                         className="w-full h-12 px-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-medium text-sm text-slate-800 placeholder:text-slate-400 bg-slate-50/50"
                       />
                     </div>

@@ -12,10 +12,10 @@ export const metadata: Metadata = {
     canonical: "/blog",
   },
   openGraph: {
-    title: "Synctra Insights | FMCG Pricing & SaaS Growth Blog",
+    title: "Zynveo Insights | FMCG Pricing & SaaS Growth Blog",
     description:
       "Expert advice on consumer product distribution, inventory math, and modern business operations.",
-    url: "https://synctrahq.com/blog",
+    url: "https://zynveo.com/blog",
   },
 };
 
@@ -25,7 +25,7 @@ export default function BlogPage() {
       <div className="text-center space-y-4 mb-16 max-w-3xl mx-auto">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-black uppercase tracking-widest border border-primary/20">
           <BookOpen className="h-3.5 w-3.5" />
-          <span>Synctra Insights Library</span>
+          <span>Zynveo Insights Library</span>
         </div>
         <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-neutral-text leading-tight">
           Pricing Intelligence & <br className="hidden sm:inline" />

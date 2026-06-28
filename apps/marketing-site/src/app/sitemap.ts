@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://synctrahq.com";
+  const baseUrl = "https://zynveo.com";
 
   // Core static pages
   const staticPages = [

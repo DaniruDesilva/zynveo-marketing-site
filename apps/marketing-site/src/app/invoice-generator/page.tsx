@@ -3,7 +3,7 @@ import { InvoiceGeneratorClient } from "@/components/invoice/InvoiceGeneratorCli
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Free No-Login Invoice Generator | Synctra",
+  title: "Free No-Login Invoice Generator | Zynveo",
   description:
     "The ultimate friction-free invoice generator. Create, preview, and download professional PDF invoices instantly without signing up or remembering passwords.",
   keywords: ["free invoice generator", "no login invoice maker", "PDF invoice tool", "GST VAT billing generator", "instant invoice link"],
@@ -11,10 +11,10 @@ export const metadata: Metadata = {
     canonical: "/invoice-generator",
   },
   openGraph: {
-    title: "Free No-Login Invoice Generator | Synctra",
+    title: "Free No-Login Invoice Generator | Zynveo",
     description:
       "Create branded PDF invoices instantly without signing up or remembering passwords.",
-    url: "https://synctrahq.com/invoice-generator",
+    url: "https://zynveo.com/invoice-generator",
   },
 };
 
@@ -22,8 +22,8 @@ export default function InvoiceGeneratorPage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    name: "Synctra No-Login Invoice Generator",
-    url: "https://synctrahq.com/invoice-generator",
+    name: "Zynveo No-Login Invoice Generator",
+    url: "https://zynveo.com/invoice-generator",
     description:
       "Friction-free online billing tool to create branded PDF invoices and payment links without user registration.",
     applicationCategory: "BusinessApplication",

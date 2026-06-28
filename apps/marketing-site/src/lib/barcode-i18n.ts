@@ -97,8 +97,8 @@ export const BARCODE_DICT = {
     printBtn: "Quick Print Label",
     upsellTitle: "Automate checkout & inventory across all your stores",
     upsellDesc:
-      "Printing labels is just step one. Stop counting stock by hand. Synctra Smart POS scans these exact barcodes at checkout and deducts stock across warehouses in real time.",
-    joinWaitlistBtn: "Try Synctra Free",
+      "Printing labels is just step one. Stop counting stock by hand. Zynveo Smart POS scans these exact barcodes at checkout and deducts stock across warehouses in real time.",
+    joinWaitlistBtn: "Try Zynveo Free",
   },
   si: {
     badge: "GS1 ජාත්‍යන්තර ප්‍රමිතීන් • POS මැෂින් සඳහා • 4x ඉහළ ගුණාත්මකභාවය",
@@ -189,8 +189,8 @@ export const BARCODE_DICT = {
     printBtn: "මුද්‍රණය කරන්න (Print)",
     upsellTitle: "ඔබේ සියලුම වෙළඳසැල්වල බිල්පත් කිරීම හා තොග ස්වයංක්‍රීය කරන්න",
     upsellDesc:
-      "බාර්කෝඩ් මුද්‍රණය පළමු පියවර පමණි. අතින් තොග ගණන් කිරීම නවත්වන්න. Synctra Smart POS මගින් බිල්පත් කිරීමේදී මෙම කේත ස්කෑන් කර තොග ස්වයංක්‍රීයව අඩු කරයි.",
-    joinWaitlistBtn: "Synctra නොමිලේ අත්හදා බලන්න",
+      "බාර්කෝඩ් මුද්‍රණය පළමු පියවර පමණි. අතින් තොග ගණන් කිරීම නවත්වන්න. Zynveo Smart POS මගින් බිල්පත් කිරීමේදී මෙම කේත ස්කෑන් කර තොග ස්වයංක්‍රීයව අඩු කරයි.",
+    joinWaitlistBtn: "Zynveo නොමිලේ අත්හදා බලන්න",
   },
   ta: {
     badge: "GS1 சான்றளிக்கப்பட்ட தரநிலைகள் • POS தயார் • Thermal Print 4x",
@@ -281,7 +281,7 @@ export const BARCODE_DICT = {
     printBtn: "அச்சிடு (Print)",
     upsellTitle: "உங்கள் கடைகள் முழுவதும் பில்லிங் & கையிருப்பில் தானியங்கு",
     upsellDesc:
-      "லேபிள்களை அச்சிடுவது முதல் படி மட்டுமே. கைகளால் கையிருப்பைக் கணக்கிடுவதை நிறுத்துங்கள். Synctra Smart POS செக்அவுட்டின் போது இவற்றை ஸ்கேன் செய்து சரக்கை தானாக கழிக்கிறது.",
-    joinWaitlistBtn: "Synctra இலவசமாக முயற்சிக்க",
+      "லேபிள்களை அச்சிடுவது முதல் படி மட்டுமே. கைகளால் கையிருப்பைக் கணக்கிடுவதை நிறுத்துங்கள். Zynveo Smart POS செக்அவுட்டின் போது இவற்றை ஸ்கேன் செய்து சரக்கை தானாக கழிக்கிறது.",
+    joinWaitlistBtn: "Zynveo இலவசமாக முயற்சிக்க",
   },
 } as const;

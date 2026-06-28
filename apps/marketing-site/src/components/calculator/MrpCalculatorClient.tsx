@@ -342,7 +342,7 @@ export function MrpCalculatorClient() {
             <Sparkles className="h-5 w-5 animate-pulse" />
           </div>
           <div className="text-left">
-            <span className="font-extrabold text-neutral-text tracking-tight text-lg sm:text-xl block leading-tight">Synctra</span>
+            <span className="font-extrabold text-neutral-text tracking-tight text-lg sm:text-xl block leading-tight">Zynveo</span>
             <span className="text-[11px] font-extrabold uppercase tracking-widest text-accent block">Pricing Intelligence</span>
           </div>
         </div>

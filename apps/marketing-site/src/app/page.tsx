@@ -11,7 +11,7 @@ export default function MarketingHomepage() {
     "@graph": [
       {
         "@type": "SoftwareApplication",
-        name: "Synctra ERP & POS Suite",
+        name: "Zynveo ERP & POS Suite",
         applicationCategory: "BusinessApplication",
         operatingSystem: "Cloud, Web, Android, iOS",
         offers: {
@@ -38,12 +38,12 @@ export default function MarketingHomepage() {
             name: "Do I need to create an account to generate invoices or barcodes?",
             acceptedAnswer: {
               "@type": "Answer",
-              text: "No! Synctra provides viral free utility tools including our MRP Calculator, No-Login Invoice Generator, and Barcode Maker completely free without sign-ups or passwords.",
+              text: "No! Zynveo provides viral free utility tools including our MRP Calculator, No-Login Invoice Generator, and Barcode Maker completely free without sign-ups or passwords.",
             },
           },
           {
             "@type": "Question",
-            name: "Can Synctra POS work offline during network outages?",
+            name: "Can Zynveo POS work offline during network outages?",
             acceptedAnswer: {
               "@type": "Answer",
               text: "Yes, our mobile and tablet POS applications support offline caching. Transactions automatically sync to the central cloud database as soon as internet connectivity is restored.",
@@ -154,7 +154,7 @@ export default function MarketingHomepage() {
                 
                 <div className="flex items-center gap-2 bg-slate-800/90 hover:bg-slate-800 px-4 py-1.5 rounded-full border border-slate-700 text-slate-300 text-xs shadow-inner transition-colors">
                   <Lock className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                  <span className="font-mono tracking-tight text-[11px] sm:text-xs text-slate-200">app.synctrahq.com/enterprise</span>
+                  <span className="font-mono tracking-tight text-[11px] sm:text-xs text-slate-200">app.zynveo.com/enterprise</span>
                 </div>
 
                 <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs bg-emerald-950/50 px-3 py-1 rounded-full border border-emerald-800/50">
@@ -532,7 +532,7 @@ export default function MarketingHomepage() {
               Stop Leaking Profits to Margin Errors
             </h2>
             <p className="text-indigo-100 text-lg font-medium leading-relaxed">
-              Confusing markup with margin drains millions from FMCG businesses every year. Synctra embeds strict reverse-margin calculations directly into your daily invoices and stock pricing workflows.
+              Confusing markup with margin drains millions from FMCG businesses every year. Zynveo embeds strict reverse-margin calculations directly into your daily invoices and stock pricing workflows.
             </p>
             <ul className="space-y-3.5 pt-2 text-indigo-100 font-semibold text-sm sm:text-base">
               <li className="flex items-center gap-3">
@@ -560,7 +560,7 @@ export default function MarketingHomepage() {
               </span>
             </div>
             <p className="text-sm font-medium text-slate-300 leading-relaxed">
-              Supermarkets calculate margin backward from the shelf price (MRP). See how Synctra protects your true brand retention:
+              Supermarkets calculate margin backward from the shelf price (MRP). See how Zynveo protects your true brand retention:
             </p>
             <div className="space-y-5 text-xs font-bold">
               <div>
@@ -740,7 +740,7 @@ export default function MarketingHomepage() {
             Frequently Asked Questions
           </h2>
           <p className="text-lg font-medium text-neutral-muted max-w-xl mx-auto">
-            Everything you need to know about Synctra, retail margin math, and our instant free tools.
+            Everything you need to know about Zynveo, retail margin math, and our instant free tools.
           </p>
         </div>
 
@@ -752,14 +752,14 @@ export default function MarketingHomepage() {
             },
             {
               q: "Do I need to create an account to generate invoices or barcodes?",
-              a: "No! Synctra provides viral free utility tools including our Dual-Mode MRP Calculator, No-Login Invoice Generator, and Printable Barcode Maker completely free without sign-ups or passwords."
+              a: "No! Zynveo provides viral free utility tools including our Dual-Mode MRP Calculator, No-Login Invoice Generator, and Printable Barcode Maker completely free without sign-ups or passwords."
             },
             {
-              q: "Can Synctra POS work offline during network outages?",
+              q: "Can Zynveo POS work offline during network outages?",
               a: "Yes, our mobile and tablet POS applications support offline caching. Transactions automatically sync to the central cloud database as soon as internet connectivity is restored."
             },
             {
-              q: "How does Synctra protect sensitive branch financial data?",
+              q: "How does Zynveo protect sensitive branch financial data?",
               a: "We utilize bank-grade encryption powered by Supabase Auth and Row Level Security (RLS). Strict kernel-level database rules ensure staff can only access data relevant to their assigned branches."
             }
           ].map((faq, idx) => (
