@@ -12,8 +12,8 @@ export function Navbar() {
       <div className="container mx-auto flex h-20 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 shrink-0 group focus:outline-none">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-primary via-indigo-600 to-accent text-white shadow-md shadow-primary/30 group-hover:scale-105 transition-transform duration-200">
-            <Zap className="h-6 w-6 fill-current" />
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white p-1.5 shadow-md border border-neutral-border/80 group-hover:scale-105 transition-transform duration-200">
+            <img src="/logo.png" alt="Zynveo Logo" className="h-full w-full object-contain" />
           </div>
           <div className="flex flex-col">
             <span className="text-2xl font-black tracking-tight text-neutral-text leading-none">

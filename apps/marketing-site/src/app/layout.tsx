@@ -15,6 +15,11 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://zynveo.com"),
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
   title: {
     default: "Zynveo | The Next-Gen Cloud OS For Retail, ERP, POS & Inventory",
     template: "%s | Zynveo",

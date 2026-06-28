@@ -13,8 +13,8 @@ export function Footer() {
           {/* Brand Column */}
           <div className="space-y-4 sm:col-span-2 lg:col-span-1">
             <Link href="/" className="flex items-center gap-2.5 group focus:outline-none">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-accent to-orange-500 text-white shadow-lg shadow-accent/30 group-hover:scale-105 transition-transform duration-200">
-                <Zap className="h-5 w-5 fill-current" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white p-1.5 shadow-lg group-hover:scale-105 transition-transform duration-200">
+                <img src="/logo.png" alt="Zynveo Logo" className="h-full w-full object-contain" />
               </div>
               <span className="text-2xl font-black tracking-tight text-white">
                 Zyn<span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-orange-400">veo</span>

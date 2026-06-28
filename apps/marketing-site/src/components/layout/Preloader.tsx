@@ -63,9 +63,9 @@ export function Preloader() {
           <div className="absolute -inset-4 rounded-3xl bg-gradient-to-tr from-primary via-indigo-500 to-accent opacity-40 blur-xl animate-spin" style={{ animationDuration: '10s' }} />
           
           <div className="relative flex items-center gap-4 px-6 py-4 rounded-3xl bg-slate-900/90 border border-white/10 shadow-2xl backdrop-blur-xl">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-primary via-indigo-600 to-accent text-white shadow-lg shadow-primary/40 relative overflow-hidden">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white p-2 shadow-lg relative overflow-hidden">
               <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full animate-[shimmer_2s_infinite]" />
-              <Zap className="h-8 w-8 fill-current" />
+              <img src="/logo.png" alt="Zynveo Logo" className="h-full w-full object-contain" />
             </div>
             <div className="flex flex-col text-left">
               <span className="text-4xl font-black tracking-tight text-white leading-none">
