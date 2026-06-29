@@ -68,7 +68,7 @@ const PayslipPreview = forwardRef<HTMLDivElement, PayslipPreviewProps>(
               {data?.companyName || "Your Company Name"}
             </h1>
             {data?.companyAddress && (
-              <p className="text-[11px] text-slate-500 whitespace-pre-wrap leading-relaxed font-medium">
+              <p className="text-[13px] text-slate-600 whitespace-pre-wrap leading-relaxed font-semibold mt-1">
                 {data.companyAddress}
               </p>
             )}
@@ -269,7 +269,7 @@ const PayslipPreview = forwardRef<HTMLDivElement, PayslipPreviewProps>(
           <span>This is a system-generated payslip.</span>
           <span>
             Generated via{" "}
-            <span className="font-bold text-indigo-600 underline">
+            <span data-pdf-link="zynveo" className="font-bold text-indigo-600 underline">
               zynveo.com
             </span>
           </span>

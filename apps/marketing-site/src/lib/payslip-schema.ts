@@ -9,7 +9,7 @@ export const MONTHS = [
   "July", "August", "September", "October", "November", "December",
 ] as const;
 
-export const YEARS = Array.from({ length: 10 }, (_, i) => String(2024 + i));
+export const YEARS = Array.from({ length: 101 }, (_, i) => String(1950 + i));
 
 // ── Zod Schemas ───────────────────────────────────────────────────────────────
 
@@ -30,8 +30,8 @@ export const payslipSchema = z.object({
   companyLogo: z.string().default(""),
 
   // Pay Period
-  month: z.string().default("June"),
-  year: z.string().default("2026"),
+  month: z.string().default(MONTHS[new Date().getMonth()]),
+  year: z.string().default(String(new Date().getFullYear())),
   payDate: z.string().default(""),
   paidDays: z.coerce.number().min(0).max(31).default(30),
   lopDays: z.coerce.number().min(0).max(31).default(0),

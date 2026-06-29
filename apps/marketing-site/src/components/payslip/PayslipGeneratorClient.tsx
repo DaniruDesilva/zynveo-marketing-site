@@ -15,7 +15,7 @@ import {
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
-import { payslipSchema, PayslipData } from "@/lib/payslip-schema";
+import { payslipSchema, PayslipData, MONTHS } from "@/lib/payslip-schema";
 import PayslipEditor from "@/components/payslip/PayslipEditor";
 import PayslipPreview from "@/components/payslip/PayslipPreview";
 
@@ -23,8 +23,8 @@ const DEFAULT_VALUES: PayslipData = {
   companyName: "",
   companyAddress: "",
   companyLogo: "",
-  month: "June",
-  year: "2026",
+  month: MONTHS[new Date().getMonth()],
+  year: String(new Date().getFullYear()),
   payDate: "",
   paidDays: 30,
   lopDays: 0,
@@ -83,6 +83,27 @@ export function PayslipGeneratorClient() {
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+
+      // Dynamically measure the exact position of only the zynveo.com text
+      const linkEl = printRef.current.querySelector('[data-pdf-link="zynveo"]');
+      if (linkEl) {
+        const containerRect = printRef.current.getBoundingClientRect();
+        const linkRect = linkEl.getBoundingClientRect();
+
+        const relX = linkRect.left - containerRect.left;
+        const relY = linkRect.top - containerRect.top;
+        const scaleRatio = pdfWidth / 794;
+        const pad = 2 * scaleRatio;
+
+        pdf.link(
+          relX * scaleRatio - pad,
+          relY * scaleRatio - pad,
+          linkRect.width * scaleRatio + pad * 2,
+          linkRect.height * scaleRatio + pad * 2,
+          { url: "https://zynveo.com", target: "_blank", newWindow: true } as any
+        );
+      }
+
       pdf.save(
         `Payslip_${(formData.employeeName || "Employee").replace(/\s+/g, "_")}_${formData.month}_${formData.year}.pdf`
       );
