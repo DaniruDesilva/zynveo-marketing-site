@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Calculator, ArrowRight, Zap, FileText, Tag, Menu, X, Sparkles } from "lucide-react";
+import { Calculator, ArrowRight, Zap, FileText, Tag, Menu, X, Sparkles, DollarSign } from "lucide-react";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -153,6 +153,25 @@ export function Navbar() {
                   <div>
                     <div className="text-base font-black leading-tight">SKU & Barcode Generator</div>
                     <div className="text-xs font-medium text-slate-500 mt-0.5">Thermal sticker ready</div>
+                  </div>
+                </div>
+                <span className="rounded-md bg-accent px-2.5 py-1 text-[10px] font-black text-white uppercase tracking-wider shadow-sm">
+                  New
+                </span>
+              </Link>
+
+              <Link
+                href="/payslip-generator"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center justify-between min-h-[56px] p-4 rounded-2xl bg-gradient-to-r from-teal-50 to-cyan-50/50 text-teal-700 border border-teal-100 active:scale-98 transition-transform"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="p-2.5 rounded-xl bg-teal-600 text-white shadow-sm">
+                    <DollarSign className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="text-base font-black leading-tight">Payslip & Salary Slip Maker</div>
+                    <div className="text-xs font-medium text-slate-500 mt-0.5">Instant PDF salary stubs</div>
                   </div>
                 </div>
                 <span className="rounded-md bg-accent px-2.5 py-1 text-[10px] font-black text-white uppercase tracking-wider shadow-sm">

@@ -42,10 +42,10 @@ export default function MarketingHomepage() {
           },
           {
             "@type": "Question",
-            name: "Do I need to create an account to generate invoices or barcodes?",
+            name: "Do I need to create an account to generate invoices, barcodes, or payslips?",
             acceptedAnswer: {
               "@type": "Answer",
-              text: "No! Zynveo provides viral free utility tools including our MRP Calculator, No-Login Invoice Generator, and Barcode Maker completely free without sign-ups or passwords.",
+              text: "No! Zynveo provides viral free utility tools including our MRP Calculator, No-Login Invoice Generator, Barcode Maker, and Payslip Generator completely free without sign-ups or passwords.",
             },
           },
           {
@@ -167,7 +167,7 @@ export default function MarketingHomepage() {
           </div>
 
           {/* 3-Column Free Tool Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 sm:gap-8">
             {/* Tool Card 1: MRP Calculator */}
             <div className="rounded-2xl bg-white p-5 sm:p-8 border border-neutral-border shadow-lg hover:shadow-2xl hover:border-primary transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full pointer-events-none group-hover:scale-110 transition-transform" />
@@ -301,6 +301,51 @@ export default function MarketingHomepage() {
                   className="w-full min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-purple-600 text-white font-bold text-sm shadow-md hover:bg-purple-700 transition-all group-hover:translate-x-1"
                 >
                   <span>Click to Use Barcode Maker</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+            {/* Tool Card 4: Payslip Generator */}
+            <div className="rounded-2xl bg-white p-5 sm:p-8 border border-neutral-border shadow-lg hover:shadow-2xl hover:border-teal-600 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-teal-50 rounded-bl-full pointer-events-none group-hover:scale-110 transition-transform" />
+              <div className="space-y-5 relative z-10">
+                <div className="flex flex-wrap justify-between items-center gap-2">
+                  <div className="p-3.5 rounded-2xl bg-teal-600 text-white shadow-md shadow-teal-500/25">
+                    <DollarSign className="h-7 w-7" />
+                  </div>
+                  <span className="rounded-full bg-accent/10 text-accent border border-accent/20 px-3 py-1 text-xs font-black uppercase tracking-wider whitespace-nowrap">
+                    New
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-neutral-text group-hover:text-teal-600 transition-colors">
+                    Payslip & Salary Stub Maker
+                  </h3>
+                  <p className="text-sm font-medium text-neutral-muted mt-2 leading-relaxed">
+                    Generate professional PDF payslips with dynamic earnings, deductions, and net pay calculations for bank loans, visas, or records.
+                  </p>
+                </div>
+                <ul className="space-y-2.5 pt-2 text-xs font-bold text-slate-700">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                    <span>Instant A4 PDF salary slip download</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                    <span>Dynamic earnings & deductions rows</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                    <span>Multi-currency & amount in words</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="pt-8 relative z-10">
+                <Link
+                  href="/payslip-generator"
+                  className="w-full min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 text-white font-bold text-sm shadow-md hover:bg-teal-700 transition-all group-hover:translate-x-1"
+                >
+                  <span>Click to Use Payslip Maker</span>
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
@@ -644,6 +689,7 @@ export default function MarketingHomepage() {
                 "Viral MRP & Margin Calculator",
                 "No-Login Invoice Generator",
                 "SKU & Barcode Maker",
+                "Payslip & Salary Slip Maker",
                 "Zero Registration Needed"
               ],
               cta: "Launch Free Tools",

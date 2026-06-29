@@ -9,6 +9,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/mrp-calculator",
     "/invoice-generator",
     "/barcode-generator",
+    "/payslip-generator",
     "/about",
     "/contact",
     "/blog",

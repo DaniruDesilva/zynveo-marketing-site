@@ -73,6 +73,17 @@ export function Footer() {
                   </span>
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/payslip-generator"
+                  className="group flex items-center justify-between text-slate-300 hover:text-white transition-colors py-1"
+                >
+                  <span>Payslip & Salary Slip Maker</span>
+                  <span className="rounded bg-accent/20 text-accent border border-accent/30 px-1.5 py-0.5 text-[9px] font-black uppercase">
+                    New
+                  </span>
+                </Link>
+              </li>
               <li className="pt-2 border-t border-primary/20">
                 <Link
                   href="/#free-tools"
