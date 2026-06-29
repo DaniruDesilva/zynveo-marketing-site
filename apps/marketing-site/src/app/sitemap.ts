@@ -3,18 +3,32 @@ import { MetadataRoute } from "next";
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://zynveo.com";
 
-  // Core static pages
-  const staticPages = [
+  // Primary navigation pages (Highest Sitelinks priority)
+  const primaryPages = [
     "",
     "/mrp-calculator",
     "/invoice-generator",
     "/barcode-generator",
+    "/about",
+    "/contact",
     "/blog",
   ].map((route) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date(),
     changeFrequency: route === "" ? ("daily" as const) : ("weekly" as const),
-    priority: route === "" ? 1.0 : 0.9,
+    priority: route === "" ? 1.0 : route === "/about" || route === "/contact" ? 0.9 : 0.85,
+  }));
+
+  // Legal and secondary pages
+  const secondaryPages = [
+    "/privacy",
+    "/terms",
+    "/legal",
+  ].map((route) => ({
+    url: `${baseUrl}${route}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly" as const,
+    priority: 0.5,
   }));
 
   // Blog post routes
@@ -28,8 +42,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     url: `${baseUrl}/blog/${slug}`,
     lastModified: new Date(),
     changeFrequency: "monthly" as const,
-    priority: 0.8,
+    priority: 0.7,
   }));
 
-  return [...staticPages, ...blogPages];
+  return [...primaryPages, ...secondaryPages, ...blogPages];
 }

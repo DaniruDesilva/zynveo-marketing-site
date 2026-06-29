@@ -1,9 +1,16 @@
 import React from "react";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { 
   ArrowRight, CheckCircle2, Zap, Shield, TrendingUp, Layers, 
   Calculator, FileText, ShoppingBag, PieChart, Users, Star, Tag, Sparkles, Lock, Clock, ArrowUpRight, BarChart3, Bell, RefreshCw, Plus, Search, DollarSign, Briefcase, Truck, Database, Smartphone, ShieldCheck, HeartHandshake
 } from "lucide-react";
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/",
+  },
+};
 
 export default function MarketingHomepage() {
   const jsonLd = {
