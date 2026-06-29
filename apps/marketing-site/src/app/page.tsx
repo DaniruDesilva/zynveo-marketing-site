@@ -145,136 +145,6 @@ export default function MarketingHomepage() {
               </div>
             </div>
           </div>
-
-          {/* ULTIMATE BLURRED ERP DASHBOARD MOCKUP WITH COMING SOON OVERLAY */}
-          <div className="relative max-w-5xl mx-auto px-1 sm:px-0">
-            {/* Gradient Outer Glow Frame */}
-            <div className="p-1 sm:p-2 rounded-[28px] sm:rounded-[36px] bg-gradient-to-b from-slate-300 via-slate-200/60 to-slate-300 shadow-2xl shadow-indigo-500/10 relative overflow-hidden">
-              {/* Browser Header Bar */}
-              <div className="flex items-center justify-between px-4 py-3 bg-slate-900 rounded-t-[24px] sm:rounded-t-[30px] border-b border-slate-800 text-xs text-slate-400 font-semibold select-none">
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-rose-500 hover:opacity-80 transition-opacity" />
-                  <div className="h-3 w-3 rounded-full bg-amber-500 hover:opacity-80 transition-opacity" />
-                  <div className="h-3 w-3 rounded-full bg-emerald-500 hover:opacity-80 transition-opacity" />
-                </div>
-                
-                <div className="flex items-center gap-2 bg-slate-800/90 hover:bg-slate-800 px-4 py-1.5 rounded-full border border-slate-700 text-slate-300 text-xs shadow-inner transition-colors">
-                  <Lock className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                  <span className="font-mono tracking-tight text-[11px] sm:text-xs text-slate-200">app.zynveo.com/enterprise</span>
-                </div>
-
-                <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs bg-emerald-950/50 px-3 py-1 rounded-full border border-emerald-800/50">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span className="hidden xs:inline">Live Cloud OS</span>
-                  <span className="xs:hidden">Live</span>
-                </div>
-              </div>
-
-              {/* Underlying Dashboard UI Content (Blurred behind the glass overlay) */}
-              <div className="bg-slate-50 p-4 sm:p-8 rounded-b-[24px] sm:rounded-b-[30px] text-left space-y-4 sm:space-y-6 filter blur-[6px] sm:blur-[8px] opacity-80 select-none pointer-events-none transform scale-[0.99] transition-all h-[420px] sm:h-[480px] md:h-[540px] overflow-hidden relative">
-                {/* Dashboard Top Banner */}
-                <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100/80">
-                  <div>
-                    <h3 className="text-base sm:text-2xl font-black text-slate-800">Welcome back, Enterprise Administrator!</h3>
-                    <p className="text-[10px] sm:text-xs text-slate-400 font-semibold mt-1">Synced across 50 active multi-branch retail locations</p>
-                  </div>
-                  <div className="hidden md:flex gap-2">
-                    <span className="px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold shadow-sm">Enterprise V2</span>
-                    <span className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold">POS Terminal Active</span>
-                  </div>
-                </div>
-
-                {/* Quick Actions Row */}
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
-                  {["New Invoice", "Add Customer", "Record Payment", "Add GRN Stock", "View Reports"].map((action, i) => (
-                    <div key={i} className={`bg-white p-3 sm:p-4 rounded-xl border border-slate-100 text-center shadow-sm space-y-1 sm:space-y-2 ${i >= 3 ? 'hidden sm:block' : ''}`}>
-                      <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-lg bg-indigo-50 text-primary mx-auto flex items-center justify-center font-black text-sm sm:text-base">+</div>
-                      <div className="text-[10px] sm:text-xs font-bold text-slate-700">{action}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Metrics Row */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                  <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm space-y-1 sm:space-y-2 border-l-4 border-l-primary">
-                    <div className="text-[9px] sm:text-[10px] font-black uppercase text-slate-400">Today's Revenue</div>
-                    <div className="text-base sm:text-2xl font-black text-slate-800">Rs. 1,450,800</div>
-                    <div className="text-[9px] sm:text-[10px] text-emerald-500 font-bold">↑ 18.4% vs yesterday</div>
-                  </div>
-                  <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm space-y-1 sm:space-y-2 border-l-4 border-l-amber-500">
-                    <div className="text-[9px] sm:text-[10px] font-black uppercase text-slate-400">Total Customers</div>
-                    <div className="text-base sm:text-2xl font-black text-slate-800">14,280</div>
-                    <div className="text-[9px] sm:text-[10px] text-slate-400 font-bold">Active trade accounts</div>
-                  </div>
-                  <div className="hidden sm:block bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-2 border-l-4 border-l-blue-500">
-                    <div className="text-[10px] font-black uppercase text-slate-400">Warehouse Stock</div>
-                    <div className="text-2xl font-black text-slate-800">98.4%</div>
-                    <div className="text-[10px] text-blue-500 font-bold">Optimal turnover rate</div>
-                  </div>
-                  <div className="hidden sm:block bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-2 border-l-4 border-l-emerald-500">
-                    <div className="text-[10px] font-black uppercase text-slate-400">Net Profit Margin</div>
-                    <div className="text-2xl font-black text-slate-800">28.4%</div>
-                    <div className="text-[10px] text-emerald-500 font-bold">Verified shelf margin</div>
-                  </div>
-                </div>
-
-                {/* Charts Placeholder Row */}
-                <div className="hidden md:grid grid-cols-2 gap-4">
-                  <div className="h-44 bg-white rounded-2xl border border-slate-100 p-6 flex flex-col justify-end">
-                    <div className="flex items-end gap-3 h-24">
-                      <div className="w-1/6 bg-primary/20 h-1/2 rounded-t" />
-                      <div className="w-1/6 bg-primary/40 h-3/4 rounded-t" />
-                      <div className="w-1/6 bg-primary h-full rounded-t" />
-                      <div className="w-1/6 bg-primary/60 h-4/5 rounded-t" />
-                      <div className="w-1/6 bg-accent h-full rounded-t" />
-                      <div className="w-1/6 bg-indigo-600 h-2/3 rounded-t" />
-                    </div>
-                  </div>
-                  <div className="h-44 bg-white rounded-2xl border border-slate-100 p-6 flex flex-col justify-end">
-                    <div className="h-24 w-full bg-gradient-to-tr from-emerald-500/20 to-primary/20 rounded-xl border border-emerald-500/30" />
-                  </div>
-                </div>
-              </div>
-
-              {/* BEST UI/UX MODERN GLASS OVERLAY BADGE */}
-              <div className="absolute inset-0 z-20 flex items-center justify-center p-3 sm:p-6 bg-slate-950/45 backdrop-blur-[5px]">
-                <div className="max-w-xl w-full p-6 sm:p-10 rounded-2xl sm:rounded-3xl bg-slate-950/90 border border-white/20 shadow-[0_0_80px_-15px_rgba(79,46,229,0.5)] text-center space-y-5 sm:space-y-6 text-white backdrop-blur-2xl relative overflow-hidden transform hover:scale-[1.01] transition-all duration-300">
-                  {/* Subtle top shimmer glow */}
-                  <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-80" />
-                  
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-primary/30 via-indigo-500/30 to-accent/30 border border-white/15 text-white text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/20">
-                    <Sparkles className="h-3.5 w-3.5 text-accent animate-spin" style={{ animationDuration: '8s' }} />
-                    <span>Next-Gen Cloud OS Launching Soon</span>
-                  </div>
-                  
-                  <div className="space-y-2 sm:space-y-3">
-                    <h3 className="text-3xl sm:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300 drop-shadow-sm">
-                      COMING SOON
-                    </h3>
-                    <p className="text-xs sm:text-base text-slate-300 font-medium max-w-md mx-auto leading-relaxed">
-                      Our enterprise ERP, AI margin analytics, and multi-branch POS platform is launching soon. Meanwhile, enjoy our <strong className="text-accent font-bold underline decoration-2 underline-offset-2">100% Free Viral Utility Suite</strong> below!
-                    </p>
-                  </div>
-
-                  <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-                    <Link
-                      href="#free-tools"
-                      className="w-full sm:w-auto min-h-[48px] px-8 rounded-xl bg-gradient-to-r from-accent via-orange-500 to-amber-600 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-xl shadow-accent/30 hover:shadow-2xl hover:shadow-accent/50 hover:scale-105 transition-all duration-200 active:scale-95"
-                    >
-                      <span>Use Free Tools Now</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                    <Link
-                      href="#coming-soon"
-                      className="w-full sm:w-auto min-h-[48px] px-6 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-sm flex items-center justify-center transition-all border border-white/15 active:scale-95"
-                    >
-                      <span>Explore Software Roadmap</span>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -452,6 +322,136 @@ export default function MarketingHomepage() {
           <p className="text-lg font-medium text-neutral-muted max-w-3xl mx-auto">
             Below current free utilities, we are engineering high-demand cloud OS software modules. These enterprise tools will transform how you manage retail inventory, cashier POS counters, and customer relationships.
           </p>
+        </div>
+
+        {/* ULTIMATE BLURRED ERP DASHBOARD MOCKUP WITH COMING SOON OVERLAY */}
+        <div className="relative max-w-5xl mx-auto px-1 sm:px-0 mb-16 sm:mb-20">
+          {/* Gradient Outer Glow Frame */}
+          <div className="p-1 sm:p-2 rounded-[28px] sm:rounded-[36px] bg-gradient-to-b from-slate-300 via-slate-200/60 to-slate-300 shadow-2xl shadow-indigo-500/10 relative overflow-hidden">
+            {/* Browser Header Bar */}
+            <div className="flex items-center justify-between px-4 py-3 bg-slate-900 rounded-t-[24px] sm:rounded-t-[30px] border-b border-slate-800 text-xs text-slate-400 font-semibold select-none">
+              <div className="flex items-center gap-2">
+                <div className="h-3 w-3 rounded-full bg-rose-500 hover:opacity-80 transition-opacity" />
+                <div className="h-3 w-3 rounded-full bg-amber-500 hover:opacity-80 transition-opacity" />
+                <div className="h-3 w-3 rounded-full bg-emerald-500 hover:opacity-80 transition-opacity" />
+              </div>
+              
+              <div className="flex items-center gap-2 bg-slate-800/90 hover:bg-slate-800 px-4 py-1.5 rounded-full border border-slate-700 text-slate-300 text-xs shadow-inner transition-colors">
+                <Lock className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                <span className="font-mono tracking-tight text-[11px] sm:text-xs text-slate-200">app.zynveo.com/enterprise</span>
+              </div>
+
+              <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs bg-emerald-950/50 px-3 py-1 rounded-full border border-emerald-800/50">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+                <span className="hidden xs:inline">Live Cloud OS</span>
+                <span className="xs:hidden">Live</span>
+              </div>
+            </div>
+
+            {/* Underlying Dashboard UI Content (Blurred behind the glass overlay) */}
+            <div className="bg-slate-50 p-4 sm:p-8 rounded-b-[24px] sm:rounded-b-[30px] text-left space-y-4 sm:space-y-6 filter blur-[6px] sm:blur-[8px] opacity-80 select-none pointer-events-none transform scale-[0.99] transition-all h-[420px] sm:h-[480px] md:h-[540px] overflow-hidden relative">
+              {/* Dashboard Top Banner */}
+              <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100/80">
+                <div>
+                  <h3 className="text-base sm:text-2xl font-black text-slate-800">Welcome back, Enterprise Administrator!</h3>
+                  <p className="text-[10px] sm:text-xs text-slate-400 font-semibold mt-1">Synced across 50 active multi-branch retail locations</p>
+                </div>
+                <div className="hidden md:flex gap-2">
+                  <span className="px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold shadow-sm">Enterprise V2</span>
+                  <span className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold">POS Terminal Active</span>
+                </div>
+              </div>
+
+              {/* Quick Actions Row */}
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
+                {["New Invoice", "Add Customer", "Record Payment", "Add GRN Stock", "View Reports"].map((action, i) => (
+                  <div key={i} className={`bg-white p-3 sm:p-4 rounded-xl border border-slate-100 text-center shadow-sm space-y-1 sm:space-y-2 ${i >= 3 ? 'hidden sm:block' : ''}`}>
+                    <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-lg bg-indigo-50 text-primary mx-auto flex items-center justify-center font-black text-sm sm:text-base">+</div>
+                    <div className="text-[10px] sm:text-xs font-bold text-slate-700">{action}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Metrics Row */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm space-y-1 sm:space-y-2 border-l-4 border-l-primary">
+                  <div className="text-[9px] sm:text-[10px] font-black uppercase text-slate-400">Today's Revenue</div>
+                  <div className="text-base sm:text-2xl font-black text-slate-800">Rs. 1,450,800</div>
+                  <div className="text-[9px] sm:text-[10px] text-emerald-500 font-bold">↑ 18.4% vs yesterday</div>
+                </div>
+                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm space-y-1 sm:space-y-2 border-l-4 border-l-amber-500">
+                  <div className="text-[9px] sm:text-[10px] font-black uppercase text-slate-400">Total Customers</div>
+                  <div className="text-base sm:text-2xl font-black text-slate-800">14,280</div>
+                  <div className="text-[9px] sm:text-[10px] text-slate-400 font-bold">Active trade accounts</div>
+                </div>
+                <div className="hidden sm:block bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-2 border-l-4 border-l-blue-500">
+                  <div className="text-[10px] font-black uppercase text-slate-400">Warehouse Stock</div>
+                  <div className="text-2xl font-black text-slate-800">98.4%</div>
+                  <div className="text-[10px] text-blue-500 font-bold">Optimal turnover rate</div>
+                </div>
+                <div className="hidden sm:block bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-2 border-l-4 border-l-emerald-500">
+                  <div className="text-[10px] font-black uppercase text-slate-400">Net Profit Margin</div>
+                  <div className="text-2xl font-black text-slate-800">28.4%</div>
+                  <div className="text-[10px] text-emerald-500 font-bold">Verified shelf margin</div>
+                </div>
+              </div>
+
+              {/* Charts Placeholder Row */}
+              <div className="hidden md:grid grid-cols-2 gap-4">
+                <div className="h-44 bg-white rounded-2xl border border-slate-100 p-6 flex flex-col justify-end">
+                  <div className="flex items-end gap-3 h-24">
+                    <div className="w-1/6 bg-primary/20 h-1/2 rounded-t" />
+                    <div className="w-1/6 bg-primary/40 h-3/4 rounded-t" />
+                    <div className="w-1/6 bg-primary h-full rounded-t" />
+                    <div className="w-1/6 bg-primary/60 h-4/5 rounded-t" />
+                    <div className="w-1/6 bg-accent h-full rounded-t" />
+                    <div className="w-1/6 bg-indigo-600 h-2/3 rounded-t" />
+                  </div>
+                </div>
+                <div className="h-44 bg-white rounded-2xl border border-slate-100 p-6 flex flex-col justify-end">
+                  <div className="h-24 w-full bg-gradient-to-tr from-emerald-500/20 to-primary/20 rounded-xl border border-emerald-500/30" />
+                </div>
+              </div>
+            </div>
+
+            {/* BEST UI/UX MODERN GLASS OVERLAY BADGE */}
+            <div className="absolute inset-0 z-20 flex items-center justify-center p-3 sm:p-6 bg-slate-950/45 backdrop-blur-[5px]">
+              <div className="max-w-xl w-full p-6 sm:p-10 rounded-2xl sm:rounded-3xl bg-slate-950/90 border border-white/20 shadow-[0_0_80px_-15px_rgba(79,46,229,0.5)] text-center space-y-5 sm:space-y-6 text-white backdrop-blur-2xl relative overflow-hidden transform hover:scale-[1.01] transition-all duration-300">
+                {/* Subtle top shimmer glow */}
+                <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-80" />
+                
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-primary/30 via-indigo-500/30 to-accent/30 border border-white/15 text-white text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/20">
+                  <Sparkles className="h-3.5 w-3.5 text-accent animate-spin" style={{ animationDuration: '8s' }} />
+                  <span>Next-Gen Cloud OS Launching Soon</span>
+                </div>
+                
+                <div className="space-y-2 sm:space-y-3">
+                  <h3 className="text-3xl sm:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300 drop-shadow-sm">
+                    COMING SOON
+                  </h3>
+                  <p className="text-xs sm:text-base text-slate-300 font-medium max-w-md mx-auto leading-relaxed">
+                    Our enterprise ERP, AI margin analytics, and multi-branch POS platform is launching soon. Meanwhile, enjoy our <strong className="text-accent font-bold underline decoration-2 underline-offset-2">100% Free Viral Utility Suite</strong> above!
+                  </p>
+                </div>
+
+                <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <Link
+                    href="#free-tools"
+                    className="w-full sm:w-auto min-h-[48px] px-8 rounded-xl bg-gradient-to-r from-accent via-orange-500 to-amber-600 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-xl shadow-accent/30 hover:shadow-2xl hover:shadow-accent/50 hover:scale-105 transition-all duration-200 active:scale-95"
+                  >
+                    <span>Use Free Tools Above</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  <Link
+                    href="#coming-soon"
+                    className="w-full sm:w-auto min-h-[48px] px-6 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-sm flex items-center justify-center transition-all border border-white/15 active:scale-95"
+                  >
+                    <span>Explore Software Roadmap</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
