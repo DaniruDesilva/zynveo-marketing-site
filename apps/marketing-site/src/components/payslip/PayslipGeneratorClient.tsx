@@ -193,10 +193,12 @@ export function PayslipGeneratorClient() {
           </div>
 
           {/* Scaled A4 Sheet Container */}
-          <div className="w-full bg-slate-200/70 rounded-3xl p-2 sm:p-8 flex justify-center overflow-x-auto min-h-[500px] sm:min-h-[850px] border border-slate-300/60 shadow-inner">
-            <div className="origin-top transform scale-[0.36] xs:scale-[0.48] sm:scale-[0.72] md:scale-[0.88] lg:scale-100 transition-transform duration-300">
-              <div className="shadow-2xl rounded-sm overflow-hidden">
-                <PayslipPreview ref={previewRef} data={formData} />
+          <div className="w-full bg-slate-200/70 rounded-3xl p-4 sm:p-8 flex justify-center items-center overflow-hidden border border-slate-300/60 shadow-inner">
+            <div className="h-[430px] w-[305px] xs:h-[625px] xs:w-[440px] sm:h-[815px] sm:w-[580px] md:h-[995px] md:w-[705px] lg:h-[1130px] lg:w-[800px] flex justify-center items-start transition-all duration-300">
+              <div className="origin-top transform scale-[0.38] xs:scale-[0.55] sm:scale-[0.72] md:scale-[0.88] lg:scale-100 transition-transform duration-300">
+                <div className="shadow-2xl rounded-sm overflow-hidden bg-white">
+                  <PayslipPreview ref={previewRef} data={formData} />
+                </div>
               </div>
             </div>
           </div>
