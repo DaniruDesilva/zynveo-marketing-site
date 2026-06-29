@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Zap, Sparkles, ShieldCheck, Cpu } from "lucide-react";
 
 const loadingSteps = [
@@ -10,28 +11,118 @@ const loadingSteps = [
   { progress: 100, text: "CLOUD OS LIVE • LAUNCHING ZYNVEO..." },
 ];
 
-export function Preloader() {
+function PreloaderContent() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [progress, setProgress] = useState(0);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isHidden, setIsHidden] = useState(false);
+  const [customText, setCustomText] = useState<string | null>(null);
 
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  const [prevSearchParams, setPrevSearchParams] = useState(searchParams?.toString() || "");
+
+  // Helper to trigger preloader on navigation or section clicks
+  const triggerPreloader = (text: string) => {
+    setCustomText(text);
+    setIsHidden(false);
+    setIsLoading(true);
+    setProgress(15);
+  };
+
+  // Helper to complete loading animation
+  const completePreloader = () => {
+    setProgress(100);
+    setTimeout(() => setIsLoading(false), 300);
+    setTimeout(() => setIsHidden(true), 800);
+  };
+
+  // 1. Progress progression effect
   useEffect(() => {
-    // Simulate realistic, fast high-tech loading progression
+    if (!isLoading) return;
+
     const interval = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setTimeout(() => setIsLoading(false), 300);
-          setTimeout(() => setIsHidden(true), 1000);
-          return 100;
-        }
-        const next = prev + Math.floor(Math.random() * 8) + 4;
-        return next > 100 ? 100 : next;
+        if (prev >= 92) return 92; // Hold at 92% until route completes
+        const next = prev + Math.floor(Math.random() * 10) + 5;
+        return next > 92 ? 92 : next;
       });
     }, 45);
 
     return () => clearInterval(interval);
+  }, [isLoading]);
+
+  // 2. Initial page load auto-complete
+  useEffect(() => {
+    const initialTimer = setTimeout(() => {
+      completePreloader();
+    }, 700);
+    return () => clearTimeout(initialTimer);
+  }, []);
+
+  // 3. Detect route or search param changes
+  useEffect(() => {
+    const currentSearch = searchParams?.toString() || "";
+    if (pathname !== prevPathname || currentSearch !== prevSearchParams) {
+      setPrevPathname(pathname);
+      setPrevSearchParams(currentSearch);
+      completePreloader();
+    }
+  }, [pathname, searchParams, prevPathname, prevSearchParams]);
+
+  // 4. Global click listener for all redirect buttons & navigation links
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      const targetLink = (e.target as HTMLElement).closest("a");
+      if (!targetLink) return;
+
+      const href = targetLink.getAttribute("href");
+      if (!href) return;
+
+      // Ignore external tabs or modifier key clicks
+      if (targetLink.target === "_blank" || e.metaKey || e.ctrlKey || e.shiftKey) return;
+      if (href.startsWith("http") && !href.includes(window.location.host)) return;
+      if (href.startsWith("mailto:") || href.startsWith("tel:")) return;
+
+      // If clicking an anchor link on the same page
+      if (href.startsWith("#")) {
+        triggerPreloader("NAVIGATING TO WORKSPACE SECTION...");
+        setTimeout(() => {
+          completePreloader();
+        }, 500);
+        return;
+      }
+
+      // If clicking internal routing navigation link
+      try {
+        const targetUrl = new URL(targetLink.href, window.location.href);
+        const currentUrl = new URL(window.location.href);
+
+        if (targetUrl.pathname !== currentUrl.pathname || targetUrl.search !== currentUrl.search) {
+          let text = "LOADING ZYNVEO CLOUD WORKSPACE...";
+          if (href.includes("mrp-calculator")) text = "LOADING MRP & MARGIN ENGINE...";
+          else if (href.includes("invoice-generator")) text = "LOADING INVOICE GENERATOR ENGINE...";
+          else if (href.includes("barcode-generator")) text = "LOADING BARCODE GENERATOR ENGINE...";
+          else if (href.includes("contact")) text = "CONNECTING TO ENTERPRISE SUPPORT...";
+          else if (href.includes("about")) text = "LOADING ABOUT ZYNVEO CLOUD OS...";
+          else if (href.includes("blog")) text = "LOADING RETAIL INSIGHTS KNOWLEDGEBASE...";
+
+          triggerPreloader(text);
+          // Safety timeout in case navigation stalls
+          setTimeout(() => completePreloader(), 5000);
+        } else if (targetUrl.hash && targetUrl.hash !== currentUrl.hash) {
+          triggerPreloader("NAVIGATING TO WORKSPACE SECTION...");
+          setTimeout(() => completePreloader(), 500);
+        }
+      } catch (err) {
+        // ignore invalid URL
+      }
+    };
+
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
   }, []);
 
   useEffect(() => {
@@ -42,6 +133,10 @@ export function Preloader() {
   }, [progress]);
 
   if (isHidden) return null;
+
+  const displayText = customText
+    ? (progress >= 100 ? "READY IN MILLISECONDS • LAUNCHING..." : customText)
+    : loadingSteps[currentStepIndex].text;
 
   return (
     <div
@@ -86,7 +181,7 @@ export function Preloader() {
           <div className="flex items-center justify-between text-xs font-mono font-bold">
             <span className="text-slate-400 flex items-center gap-1.5 truncate max-w-[240px] sm:max-w-none">
               <Cpu className="h-3.5 w-3.5 text-indigo-400 animate-spin shrink-0" style={{ animationDuration: '3s' }} />
-              <span className="truncate">{loadingSteps[currentStepIndex].text}</span>
+              <span className="truncate">{displayText}</span>
             </span>
             <span className="text-accent font-black text-sm ml-2">{progress}%</span>
           </div>
@@ -117,5 +212,13 @@ export function Preloader() {
         </div>
       </div>
     </div>
+  );
+}
+
+export function Preloader() {
+  return (
+    <Suspense fallback={null}>
+      <PreloaderContent />
+    </Suspense>
   );
 }
