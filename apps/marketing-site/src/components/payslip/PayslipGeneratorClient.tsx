@@ -93,15 +93,31 @@ export function PayslipGeneratorClient() {
         const relX = linkRect.left - containerRect.left;
         const relY = linkRect.top - containerRect.top;
         const scaleRatio = pdfWidth / 794;
-        const pad = 2 * scaleRatio;
+        const padX = 6 * scaleRatio;
+        const padY = 4 * scaleRatio;
 
         pdf.link(
-          relX * scaleRatio - pad,
-          relY * scaleRatio - pad,
-          linkRect.width * scaleRatio + pad * 2,
-          linkRect.height * scaleRatio + pad * 2,
-          { url: "https://zynveo.com", target: "_blank", newWindow: true } as any
+          relX * scaleRatio - padX,
+          relY * scaleRatio - padY,
+          linkRect.width * scaleRatio + padX * 2,
+          linkRect.height * scaleRatio + padY * 2,
+          { url: "https://zynveo.com" } as any
         );
+
+        // Intercept internal buffer write during save to reliably append /NewWindow true while preserving 100% accurate xref byte offsets
+        const origWrite = (pdf.internal as any).write;
+        (pdf.internal as any).write = function (...args: any[]) {
+          const modifiedArgs = args.map((arg) => {
+            if (typeof arg === "string" && arg.includes("/URI (https://zynveo.com)")) {
+              return arg.replace(
+                /\/A\s*<<\s*\/S\s*\/URI\s*\/URI\s*\(([^)]+)\)\s*>>/g,
+                "/A <</S /URI /URI ($1) /NewWindow true >>"
+              );
+            }
+            return arg;
+          });
+          return origWrite.apply(this, modifiedArgs);
+        };
       }
 
       pdf.save(

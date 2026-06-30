@@ -81,6 +81,43 @@ export function InvoiceGeneratorClient() {
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+
+      // Dynamically measure the exact position of only the zynveo.com text
+      const linkEl = printRef.current.querySelector('[data-pdf-link="zynveo"]');
+      if (linkEl) {
+        const containerRect = printRef.current.getBoundingClientRect();
+        const linkRect = linkEl.getBoundingClientRect();
+
+        const relX = linkRect.left - containerRect.left;
+        const relY = linkRect.top - containerRect.top;
+        const scaleRatio = pdfWidth / 794;
+        const padX = 6 * scaleRatio;
+        const padY = 4 * scaleRatio;
+
+        pdf.link(
+          relX * scaleRatio - padX,
+          relY * scaleRatio - padY,
+          linkRect.width * scaleRatio + padX * 2,
+          linkRect.height * scaleRatio + padY * 2,
+          { url: "https://zynveo.com" } as any
+        );
+
+        // Intercept internal buffer write during save to reliably append /NewWindow true while preserving 100% accurate xref byte offsets
+        const origWrite = (pdf.internal as any).write;
+        (pdf.internal as any).write = function (...args: any[]) {
+          const modifiedArgs = args.map((arg) => {
+            if (typeof arg === "string" && arg.includes("/URI (https://zynveo.com)")) {
+              return arg.replace(
+                /\/A\s*<<\s*\/S\s*\/URI\s*\/URI\s*\(([^)]+)\)\s*>>/g,
+                "/A <</S /URI /URI ($1) /NewWindow true >>"
+              );
+            }
+            return arg;
+          });
+          return origWrite.apply(this, modifiedArgs);
+        };
+      }
+
       pdf.save(`Invoice_${formData.invoiceNumber || "INV-001"}.pdf`);
     } catch (error) {
       console.error("Error generating PDF:", error);
