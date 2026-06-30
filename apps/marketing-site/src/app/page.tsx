@@ -5,6 +5,7 @@ import {
   ArrowRight, CheckCircle2, Zap, Shield, TrendingUp, Layers, 
   Calculator, FileText, ShoppingBag, PieChart, Users, Star, Tag, Sparkles, Lock, Clock, ArrowUpRight, BarChart3, Bell, RefreshCw, Plus, Search, DollarSign, Briefcase, Truck, Database, Smartphone, ShieldCheck, HeartHandshake
 } from "lucide-react";
+import { WishlistSection } from "@/components/sections/WishlistSection";
 
 export const metadata: Metadata = {
   alternates: {
@@ -828,6 +829,9 @@ export default function MarketingHomepage() {
           ))}
         </div>
       </section>
+
+      {/* 7. VIP LAUNCH WAITLIST SECTION */}
+      <WishlistSection />
     </div>
   );
 }

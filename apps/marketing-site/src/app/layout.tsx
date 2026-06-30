@@ -6,6 +6,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Analytics } from "@/components/analytics/Analytics";
 import { Preloader } from "@/components/layout/Preloader";
+import { FeedbackWidget } from "@/components/sections/FeedbackWidget";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -181,6 +182,7 @@ export default function RootLayout({
         <Navbar />
         <main className="flex-1 flex flex-col">{children}</main>
         <Footer />
+        <FeedbackWidget />
         <Analytics />
       </body>
     </html>

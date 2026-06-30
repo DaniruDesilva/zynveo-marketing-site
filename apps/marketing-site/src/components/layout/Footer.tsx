@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { Zap, Mail, Phone, MapPin, Sparkles, ArrowUpRight } from "lucide-react";
+import { NewsletterSection } from "@/components/sections/NewsletterSection";
 
 export function Footer() {
   return (
@@ -156,7 +157,10 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-16 pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6 text-xs text-slate-500 font-medium text-center sm:text-left">
+        {/* Newsletter Subscription Bar */}
+        <NewsletterSection />
+
+        <div className="mt-8 pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6 text-xs text-slate-500 font-medium text-center sm:text-left">
           <p>© 2026 Zynveo Technologies. All rights reserved.</p>
           <div className="flex flex-wrap gap-3 sm:gap-6 justify-center">
             <Link href="/llms.txt" className="hover:text-slate-300 transition-colors">AI Index (llms.txt)</Link>

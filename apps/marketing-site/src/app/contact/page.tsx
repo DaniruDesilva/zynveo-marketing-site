@@ -2,19 +2,52 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Mail, Phone, MapPin, Send, CheckCircle2, MessageSquare, Sparkles, Clock, HelpCircle } from "lucide-react";
+import { Mail, Phone, MapPin, Send, CheckCircle2, MessageSquare, Sparkles, Clock, HelpCircle, AlertCircle } from "lucide-react";
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    company: "",
+    subject: "",
+    message: "",
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    setError("");
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Something went wrong. Please try again.");
+        return;
+      }
+
       setSubmitted(true);
-    }, 1000);
+      setFormData({ fullName: "", email: "", phone: "", company: "", subject: "", message: "" });
+    } catch {
+      setError("Network error. Please check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const jsonLd = {
@@ -145,7 +178,7 @@ export default function ContactPage() {
                   <div className="space-y-2">
                     <h3 className="text-3xl font-black text-slate-900">Message Received!</h3>
                     <p className="text-slate-600 max-w-md mx-auto font-medium leading-relaxed">
-                      Thank you for reaching out. One of our enterprise solutions engineers will review your inquiry and contact you shortly.
+                      Thank you for reaching out. We've sent a confirmation to your email. One of our enterprise solutions engineers will respond within 2 hours.
                     </p>
                   </div>
                   <div className="pt-4">
@@ -165,12 +198,22 @@ export default function ContactPage() {
                     <p className="text-sm font-medium text-slate-500">Fill out the fields below and we'll connect you with the right specialist.</p>
                   </div>
 
+                  {error && (
+                    <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-semibold">
+                      <AlertCircle className="h-5 w-5 shrink-0" />
+                      <span>{error}</span>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label className="text-xs font-black uppercase tracking-wider text-slate-700">Full Name *</label>
                       <input
                         required
                         type="text"
+                        name="fullName"
+                        value={formData.fullName}
+                        onChange={handleChange}
                         placeholder="Daniru De Silva"
                         className="w-full h-12 px-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-medium text-sm text-slate-800 placeholder:text-slate-400 bg-slate-50/50"
                       />
@@ -180,6 +223,9 @@ export default function ContactPage() {
                       <input
                         required
                         type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
                         placeholder="name@company.com"
                         className="w-full h-12 px-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-medium text-sm text-slate-800 placeholder:text-slate-400 bg-slate-50/50"
                       />
@@ -192,6 +238,9 @@ export default function ContactPage() {
                       <input
                         required
                         type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
                         placeholder="+94 77 123 4567"
                         className="w-full h-12 px-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-medium text-sm text-slate-800 placeholder:text-slate-400 bg-slate-50/50"
                       />
@@ -200,6 +249,9 @@ export default function ContactPage() {
                       <label className="text-xs font-black uppercase tracking-wider text-slate-700">Company / Brand Name</label>
                       <input
                         type="text"
+                        name="company"
+                        value={formData.company}
+                        onChange={handleChange}
                         placeholder="Zynveo Retailers"
                         className="w-full h-12 px-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-medium text-sm text-slate-800 placeholder:text-slate-400 bg-slate-50/50"
                       />
@@ -210,14 +262,17 @@ export default function ContactPage() {
                     <label className="text-xs font-black uppercase tracking-wider text-slate-700">How Can We Help You? *</label>
                     <select
                       required
+                      name="subject"
+                      value={formData.subject}
+                      onChange={handleChange}
                       className="w-full h-12 px-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-medium text-sm text-slate-800 bg-slate-50/50"
                     >
                       <option value="">Select a subject...</option>
-                      <option value="enterprise">Enterprise Cloud ERP Inquiry</option>
-                      <option value="pos">Smart Retail POS Demo</option>
-                      <option value="tools">Free Utility Tools Support</option>
-                      <option value="partnership">Wholesale Partnership</option>
-                      <option value="other">General Question</option>
+                      <option value="Enterprise Cloud ERP Inquiry">Enterprise Cloud ERP Inquiry</option>
+                      <option value="Smart Retail POS Demo">Smart Retail POS Demo</option>
+                      <option value="Free Utility Tools Support">Free Utility Tools Support</option>
+                      <option value="Wholesale Partnership">Wholesale Partnership</option>
+                      <option value="General Question">General Question</option>
                     </select>
                   </div>
 
@@ -225,6 +280,9 @@ export default function ContactPage() {
                     <label className="text-xs font-black uppercase tracking-wider text-slate-700">Message Details *</label>
                     <textarea
                       required
+                      name="message"
+                      value={formData.message}
+                      onChange={handleChange}
                       rows={4}
                       placeholder="Tell us about your number of branch locations, current billing setup, or question..."
                       className="w-full p-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-medium text-sm text-slate-800 placeholder:text-slate-400 bg-slate-50/50 resize-none"
