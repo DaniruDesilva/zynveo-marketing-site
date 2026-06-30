@@ -12,6 +12,7 @@ import {
   Calculator, ArrowRight, Download, Share2, Sparkles, AlertCircle, 
   CheckCircle2, DollarSign, PieChart, Layers, HelpCircle, X, Globe
 } from "lucide-react";
+import { CURRENCIES } from "@/lib/invoice-schema";
 
 // Multi-language translation dictionary (English, Sinhala & Tamil)
 const TRANSLATIONS = {
@@ -27,9 +28,9 @@ const TRANSLATIONS = {
     mode3Desc: "💡 Use Mode 3 when distributors or supermarket chains demand a fixed flat commission percentage taken directly out of the shelf MRP.",
     inputVars: "Pricing Details",
     realtimeActive: "Real-time active",
-    costLabel: "Cost per Unit (Rs.)",
+    costLabel: "Cost per Unit",
     costSub: "Total cost to manufacture or buy 1 unit",
-    targetMrpLabel: "Target Selling Price - MRP (Rs.)",
+    targetMrpLabel: "Target Selling Price - MRP",
     targetMrpSub: "Final price the customer pays in the store",
     brandMargin: "Your Brand Profit (%)",
     distributorCut: "Distributor Margin (%)",
@@ -67,7 +68,7 @@ const TRANSLATIONS = {
     rule2Title: "💡 Mode 2 Note: Fixed Price Deduction",
     rule2Text: "When your shelf sticker price (MRP) is already fixed by market competition, we work backward. We take the final MRP, deduct government tax, retailer margin, and distributor commission to reveal the exact net cash profit left for your brand.",
     rule3Title: "💡 Mode 3 Note: Flat Commission %",
-    rule3Text: (ptw: string, tax: string, margin: string) => `In FMCG and supermarket chains, shop commissions are deducted flat from the sticker price. Out of your shelf MRP, retailers and wholesalers take their % cuts directly. Your wholesale selling price is Rs. ${ptw}, and after paying Rs. ${tax} tax, your true brand net profit margin is ${margin}%.`,
+    rule3Text: (ptw: string, tax: string, margin: string, curr: string = "$") => `In FMCG and supermarket chains, shop commissions are deducted flat from the sticker price. Out of your shelf MRP, retailers and wholesalers take their % cuts directly. Your wholesale selling price is ${curr} ${ptw}, and after paying ${curr} ${tax} tax, your true brand net profit margin is ${margin}%.`,
     guideTitle: "💡 Quick Guide: What numbers should I enter?",
     costHint: "Include ingredients, packaging box, sticker, and direct labor required to make 1 single item.",
     targetMrpHint: "Enter the exact price sticker/tag printed on the box that the final retail shop customer pays.",
@@ -95,9 +96,9 @@ const TRANSLATIONS = {
     mode3Desc: "💡 බෙදාහරින්නන් හෝ සුපිරි වෙළඳසැල් ජාල මුද්‍රිත විකුණුම් මිලෙන් (MRP) කෙළින්ම ස්ථාවර කොමිස් ප්‍රතිශතයක් (%) ඉල්ලන විට මෙය භාවිතා කරන්න.",
     inputVars: "මිල ගණන් පිළිබඳ විස්තර",
     realtimeActive: "සජීවී ක්‍රියාකාරී",
-    costLabel: "ඒකකයක වියදම (රු.)",
+    costLabel: "ඒකකයක වියදම",
     costSub: "එක් ඒකකයක් නිපදවීමට යන මුළු වියදම",
-    targetMrpLabel: "ඉලක්ක විකුණුම් මිල - MRP (රු.)",
+    targetMrpLabel: "ඉලක්ක විකුණුම් මිල - MRP",
     targetMrpSub: "පාරිභෝගිකයා මිලදී ගන්නා අවසාන සිල්ලර මිල",
     brandMargin: "ඔබේ සන්නාමයේ ලාභය (%)",
     distributorCut: "බෙදාහරින්නාගේ ලාභය (%)",
@@ -135,7 +136,7 @@ const TRANSLATIONS = {
     rule2Title: "💡 ක්‍රමය 2 උපදෙස: ස්ථාවර මිලෙන් ලාභය ගණනය",
     rule2Text: "වෙළඳපොළ තරඟකාරීත්වය අනුව ඔබේ සිල්ලර මිල (MRP) කලින්ම ස්ථාවර වී ඇති විට අපි ආපසු පියවර ගණනය කරමු. අවසාන MRP මිලෙන් රජයේ බදු, සිල්ලර කඩයේ සහ බෙදාහරින්නාගේ කොමිස් අඩු කර ඔබේ සන්නාමයට ඉතිරි වන සත්‍ය මුදල් ලාභය මෙහි පෙන්වයි.",
     rule3Title: "💡 ක්‍රමය 3 උපදෙස: සිල්ලර මිලෙන් සෘජු කොමිස්",
-    rule3Text: (ptw: string, tax: string, margin: string) => `FMCG සහ සුපිරි වෙළඳසැල් ජාල තුළ කොමිස් මුදල් අඩු කරන්නේ අවසාන සිල්ලර මිලෙනි (Flat % from MRP). ඔබේ තොග බිල්පත් මිල රු. ${ptw} වන අතර, රජයේ බදු (රු. ${tax}) ගෙවූ පසු ඔබේ සන්නාමයේ සත්‍ය ශුද්ධ ලාභ ප්‍රතිශතය ${margin}% වේ.`,
+    rule3Text: (ptw: string, tax: string, margin: string, curr: string = "$") => `FMCG සහ සුපිරි වෙළඳසැල් ජාල තුළ කොමිස් මුදල් අඩු කරන්නේ අවසාන සිල්ලර මිලෙනි (Flat % from MRP). ඔබේ තොග බිල්පත් මිල ${curr} ${ptw} වන අතර, රජයේ බදු (${curr} ${tax}) ගෙවූ පසු ඔබේ සන්නාමයේ සත්‍ය ශුද්ධ ලාභ ප්‍රතිශතය ${margin}% වේ.`,
     guideTitle: "💡 කෙටි උපදෙස්: එක් එක් කොටසට ඇතුළත් කළ යුත්තේ කුමක්ද?",
     costHint: "අමුද්‍රව්‍ය, පෙට්ටිය, පැකේජිං සහ කුලී ඇතුළුව භාණ්ඩ 1ක් හදන්න යන මුළු වියදම මෙහි දමන්න.",
     targetMrpHint: "කඩෙන් බඩු ගන්නා අවසාන පාරිභෝගිකයා ගෙවන මුද්‍රිත සිල්ලර මිල (MRP) මෙහි දමන්න.",
@@ -163,9 +164,9 @@ const TRANSLATIONS = {
     mode3Desc: "💡 விநியோகஸ்தர்கள் அல்லது பல்பொருள் அங்காடிகள் அச்சிடப்பட்ட MRP விலையிலிருந்து நேரடியாக குறிப்பிட்ட சதவீத கமிஷன் கேட்கும்போது இதைப் பயன்படுத்தவும்.",
     inputVars: "விலை விவரங்கள்",
     realtimeActive: "நேரலை கணிப்பு",
-    costLabel: "ஒரு அலகின் செலவு (ரூ.)",
+    costLabel: "ஒரு அலகின் செலவு",
     costSub: "ஒரு அலகை உருவாக்க ஆகும் மொத்த செலவு",
-    targetMrpLabel: "இலக்கு விற்பனை விலை - MRP (ரூ.)",
+    targetMrpLabel: "இலக்கு விற்பனை விலை - MRP",
     targetMrpSub: "வாடிக்கையாளர் வாங்கும் இறுதி சில்லறை விலை",
     brandMargin: "உங்கள் பிராண்ட் இலாபம் (%)",
     distributorCut: "விநியோகஸ்தர் இலாபம் (%)",
@@ -203,7 +204,7 @@ const TRANSLATIONS = {
     rule2Title: "💡 முறை 2 வழிகாட்டி: நிலையான விலையில் இலாப கணிப்பு",
     rule2Text: "சந்தை போட்டி காரணமாக உங்கள் இறுதி சில்லறை விலை (MRP) ஏற்கனவே நிர்ணயிக்கப்பட்டிருந்தால், நாங்கள் பின்னோக்கி கணக்கிடுவோம். இறுதி MRP விலையில் இருந்து அரசு வரி, சில்லறை கடை மற்றும் விநியோகஸ்தர் கமிஷன்களை கழித்து உங்கள் பிராண்டிற்கு கிடைக்கும் தேறிய இலாபத்தைக் காட்டுவோம்.",
     rule3Title: "💡 முறை 3 வழிகாட்டி: நேரடி கமிஷன் கணிப்பு",
-    rule3Text: (ptw: string, tax: string, margin: string) => `FMCG மற்றும் பல்பொருள் அங்காடி வலைப்பின்னல்களில் கமிஷன்கள் இறுதி சில்லறை விலையில் இருந்தே நேரடியாக கழிக்கப்படுகின்றன. உங்கள் மொத்த பில்லிங் விலை ரூ. ${ptw} ஆகும். அரசு வரி (ரூ. ${tax}) செலுத்திய பின் உங்கள் பிராண்டின் தேறிய இலாப சதவீதம் ${margin}% ஆகும்.`,
+    rule3Text: (ptw: string, tax: string, margin: string, curr: string = "$") => `FMCG மற்றும் பல்பொருள் அங்காடி வலைப்பின்னல்களில் கமிஷன்கள் இறுதி சில்லறை விலையில் இருந்தே நேரடியாக கழிக்கப்படுகின்றன. உங்கள் மொத்த பில்லிங் விலை ${curr} ${ptw} ஆகும். அரசு வரி (${curr} ${tax}) செலுத்திய பின் உங்கள் பிராண்டின் தேறிய இலாப சதவீதம் ${margin}% ஆகும்.`,
     guideTitle: "💡 வழிகாட்டி: எந்தெந்த மதிப்புகளை உள்ளிட வேண்டும்?",
     costHint: "மூலப்பொருட்கள், பெட்டி, பேக்கிங் மற்றும் கூலி உட்பட 1 பொருள் செய்ய ஆகும் மொத்த செலவு.",
     targetMrpHint: "கடையில் வாடிக்கையாளர் செலுத்தும் அச்சிடப்பட்ட இறுதி சில்லறை விலை (MRP).",
@@ -235,6 +236,13 @@ type CalculatorFormValues = z.infer<typeof calculatorSchema>;
 
 export function MrpCalculatorClient() {
   const [lang, setLang] = useState<"en" | "si" | "ta">("en");
+  const [currencyCode, setCurrencyCode] = useState<string>("USD");
+  const currObj = CURRENCIES.find((c) => c.code === currencyCode) || {
+    symbol: "$",
+    code: "USD",
+    name: "USD - US Dollar ($)",
+  };
+  const currency = currObj.symbol;
   const [mode, setMode] = useState<"cost-plus" | "target-price" | "distributor-mrp">("cost-plus");
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
   const [leadEmail, setLeadEmail] = useState("");
@@ -250,12 +258,12 @@ export function MrpCalculatorClient() {
   } = useForm<CalculatorFormValues>({
     resolver: zodResolver(calculatorSchema),
     defaultValues: {
-      cost: 500,
+      cost: 25,
       brandMargin: 20,
       wholesalerMargin: 10,
       retailerMargin: 25,
       taxRate: 15,
-      targetMrp: 1064.81,
+      targetMrp: 53.24,
     },
     mode: "onChange",
   });
@@ -475,7 +483,7 @@ export function MrpCalculatorClient() {
           layout 
           className="lg:col-span-7 rounded-3xl glass-panel p-4 sm:p-8 shadow-xl border border-white/80 space-y-6"
         >
-          <div className="flex items-center justify-between border-b border-neutral-border pb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-neutral-border pb-4 gap-3">
             <h2 className="font-bold text-neutral-text flex items-center gap-2 text-xl">
               <Calculator className="h-5 w-5 text-primary shrink-0" />
               <span>{t.inputVars}</span>
@@ -486,19 +494,37 @@ export function MrpCalculatorClient() {
             </span>
           </div>
 
-          <form className="space-y-5">
+          <form className="space-y-5 pt-1">
+            {/* Currency Selector matching Invoice/Payslip generator UI */}
+            <div>
+              <label className="block text-[11px] font-bold text-neutral-muted uppercase mb-1.5 tracking-wider">
+                {lang === "si" ? "මුදල් වර්ගය (CURRENCY)" : lang === "ta" ? "நாணயம் (CURRENCY)" : "CURRENCY"}
+              </label>
+              <select
+                value={currencyCode}
+                onChange={(e) => setCurrencyCode(e.target.value)}
+                className="w-full text-sm sm:text-[15px] p-3.5 rounded-xl bg-neutral-bg border border-neutral-border font-bold text-neutral-text focus:bg-white focus:ring-2 focus:ring-primary focus:outline-none transition-all cursor-pointer shadow-2xs"
+              >
+                {CURRENCIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Common Field: Production Cost */}
             <div>
               <label className="block mb-1.5 flex flex-wrap justify-between items-center gap-1">
                 <span className="text-sm font-semibold text-neutral-text">
-                  {t.costLabel}
+                  {t.costLabel} ({currency.trim()})
                 </span>
                 <span className="text-xs sm:text-[13px] font-semibold text-slate-500">
                   {t.costSub}
                 </span>
               </label>
               <div className="relative">
-                <span className="absolute left-4 top-3.5 text-neutral-muted font-bold">Rs.</span>
+                <span className="absolute left-4 top-3.5 text-neutral-muted font-bold">{currency.trim()}</span>
                 <input
                   type="number"
                   step="0.01"
@@ -520,14 +546,14 @@ export function MrpCalculatorClient() {
                 >
                   <label className="block mb-1.5 flex flex-wrap justify-between items-center gap-1">
                     <span className="text-sm font-bold text-primary">
-                      {t.targetMrpLabel}
+                      {t.targetMrpLabel} ({currency.trim()})
                     </span>
                     <span className="text-xs sm:text-[13px] font-semibold text-primary/80">
                       {t.targetMrpSub}
                     </span>
                   </label>
                   <div className="relative">
-                    <span className="absolute left-4 top-3.5 text-primary font-bold">Rs.</span>
+                    <span className="absolute left-4 top-3.5 text-primary font-bold">{currency.trim()}</span>
                     <input
                       type="number"
                       step="0.01"
@@ -643,7 +669,7 @@ export function MrpCalculatorClient() {
               <AlertCircle className="h-5 w-5 text-cyan-600 shrink-0 mt-0.5" />
               <div>
                 <strong className="text-cyan-900 font-extrabold mr-1">{t.rule3Title}</strong>
-                {t.rule3Text(activePtw.toFixed(2), activeTaxAmount.toFixed(2), activeBrandMargin.toFixed(1))}
+                {t.rule3Text(activePtw.toFixed(2), activeTaxAmount.toFixed(2), activeBrandMargin.toFixed(1), currency)}
               </div>
             </div>
           )}
@@ -670,7 +696,7 @@ export function MrpCalculatorClient() {
               {mode === "cost-plus" ? t.calcMrpTitle : t.trueProfitTitle}
             </div>
             <div className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white">
-              Rs. {mode === "cost-plus" ? activeMrp.toFixed(2) : activeBrandProfit.toFixed(2)}
+              {currency.trim()} {mode === "cost-plus" ? activeMrp.toFixed(2) : activeBrandProfit.toFixed(2)}
             </div>
             <div className="flex items-center gap-1 pt-1 text-xs text-indigo-200 font-medium">
               <span>{t.trueNetMargin}</span>
@@ -693,7 +719,7 @@ export function MrpCalculatorClient() {
                   <XAxis type="number" hide />
                   <YAxis dataKey="name" type="category" width={lang === "ta" ? 125 : lang === "si" ? 115 : 85} tick={{ fill: "#E2E8F0", fontSize: lang === "ta" ? 11 : lang === "si" ? 12 : 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
                   <Tooltip 
-                    formatter={(val: number) => [`Rs. ${val.toFixed(2)}`, lang === "si" ? "මුදල" : lang === "ta" ? "தொகை" : "Amount"]}
+                    formatter={(val: number) => [`${currency.trim()} ${val.toFixed(2)}`, lang === "si" ? "මුදල" : lang === "ta" ? "தொகை" : "Amount"]}
                     contentStyle={{ background: "#1E293B", border: "1px solid #475569", borderRadius: "12px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.5)", padding: "10px 14px" }}
                     labelStyle={{ color: "#F8FAFC", fontWeight: 800, fontSize: "13px", marginBottom: "4px" }}
                     itemStyle={{ color: "#38BDF8", fontWeight: 700, fontSize: "13px" }}
@@ -713,35 +739,35 @@ export function MrpCalculatorClient() {
             {/* Tier 1: Brand Manufacturing & Billing */}
             <div className="flex justify-between items-baseline gap-3">
               <span className="truncate pr-1">{t.landedCostTitle}</span>
-              <span className="font-mono font-extrabold shrink-0 text-right">Rs. {cost.toFixed(2)}</span>
+              <span className="font-mono font-extrabold shrink-0 text-right">{currency.trim()} {cost.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-baseline gap-3 text-emerald-300 font-extrabold">
               <span className="truncate pr-1">{t.netBrandProfitTitle}</span>
-              <span className="font-mono font-extrabold shrink-0 text-right">Rs. {activeBrandProfit.toFixed(2)}</span>
+              <span className="font-mono font-extrabold shrink-0 text-right">{currency.trim()} {activeBrandProfit.toFixed(2)}</span>
             </div>
             {activeTaxAmount > 0 && (
               <div className="flex justify-between items-baseline gap-3 text-amber-300 font-bold">
                 <span className="truncate pr-1">{t.govTaxTitle} ({taxRate * 100}%)</span>
-                <span className="font-mono font-extrabold shrink-0 text-right">Rs. {activeTaxAmount.toFixed(2)}</span>
+                <span className="font-mono font-extrabold shrink-0 text-right">{currency.trim()} {activeTaxAmount.toFixed(2)}</span>
               </div>
             )}
             <div className="flex justify-between items-baseline gap-3 border-t border-b border-white/10 py-2 my-1 font-bold text-white text-sm bg-white/5 px-2 rounded-lg">
               <span className="truncate pr-1">{t.ptwTitle}</span>
-              <span className="font-mono font-extrabold shrink-0 text-right">Rs. {activePtw.toFixed(2)}</span>
+              <span className="font-mono font-extrabold shrink-0 text-right">{currency.trim()} {activePtw.toFixed(2)}</span>
             </div>
 
             {/* Tier 2: Channel Margins & Final Shelf Price */}
             <div className="flex justify-between items-baseline gap-3 text-cyan-300 pt-1 px-1">
               <span className="truncate pr-1">{t.wholesalerCutTitle}</span>
-              <span className="font-mono font-extrabold shrink-0 text-right">Rs. {activeWholesalerCut.toFixed(2)}</span>
+              <span className="font-mono font-extrabold shrink-0 text-right">{currency.trim()} {activeWholesalerCut.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-baseline gap-3 text-emerald-400 px-1">
               <span className="truncate pr-1">{t.retailerCutTitle}</span>
-              <span className="font-mono font-extrabold shrink-0 text-right">Rs. {activeRetailerCut.toFixed(2)}</span>
+              <span className="font-mono font-extrabold shrink-0 text-right">{currency.trim()} {activeRetailerCut.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-baseline gap-3 border-t border-white/20 pt-2.5 font-extrabold text-white text-base">
               <span className="truncate pr-1">{t.calcMrpTitle}</span>
-              <span className="font-mono font-extrabold shrink-0 text-right">Rs. {activeMrp.toFixed(2)}</span>
+              <span className="font-mono font-extrabold shrink-0 text-right">{currency.trim()} {activeMrp.toFixed(2)}</span>
             </div>
           </div>
 
@@ -865,7 +891,7 @@ export function MrpCalculatorClient() {
             </span>
           </div>
           <div className="text-xl sm:text-2xl font-black text-white tracking-tight truncate font-mono">
-            Rs. {mode === "cost-plus" ? activeMrp.toFixed(2) : activeBrandProfit.toFixed(2)}
+            {currency.trim()} {mode === "cost-plus" ? activeMrp.toFixed(2) : activeBrandProfit.toFixed(2)}
           </div>
         </div>
         
