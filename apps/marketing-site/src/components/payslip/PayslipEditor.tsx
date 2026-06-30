@@ -63,8 +63,8 @@ export default function PayslipEditor({ form }: PayslipEditorProps) {
   const currencyCode = watch("currency");
 
   const currObj = CURRENCIES.find((c) => c.code === currencyCode) || {
-    symbol: currencyCode || "Rs.",
-    code: currencyCode || "LKR",
+    symbol: "$",
+    code: currencyCode || "USD",
   };
 
   const grossEarnings = earnings.reduce(

@@ -12,13 +12,13 @@ const PayslipPreview = forwardRef<HTMLDivElement, PayslipPreviewProps>(
   ({ data }, ref) => {
     const earnings = data?.earnings || [];
     const deductions = data?.deductions || [];
-    const currencyCode = data?.currency || "LKR";
+    const currencyCode = data?.currency || "USD";
     const customEmployeeFields = data?.customEmployeeFields || [];
     const customPaySummaryFields = data?.customPaySummaryFields || [];
 
     const currObj = CURRENCIES.find((c) => c.code === currencyCode) || {
-      symbol: currencyCode || "Rs.",
-      code: currencyCode || "LKR",
+      symbol: "$",
+      code: currencyCode || "USD",
     };
 
     const grossEarnings = earnings.reduce(

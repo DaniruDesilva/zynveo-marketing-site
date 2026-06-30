@@ -33,7 +33,7 @@ const DEFAULT_VALUES: PayslipData = {
   designation: "",
   department: "",
   panNumber: "",
-  currency: "LKR",
+  currency: "USD",
   earnings: [
     { label: "Basic Salary", amount: 0 },
     { label: "HRA", amount: 0 },

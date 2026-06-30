@@ -44,7 +44,7 @@ export const payslipSchema = z.object({
   panNumber: z.string().default(""),
 
   // Currency
-  currency: z.string().default("LKR"),
+  currency: z.string().default("USD"),
 
   // Dynamic Salary Components
   earnings: z.array(salaryComponentSchema).min(1, "At least one earning is required"),
