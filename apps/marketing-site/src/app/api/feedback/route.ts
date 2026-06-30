@@ -6,12 +6,30 @@ import { feedbackUserEmail, feedbackAdminEmail } from "@/lib/email-templates";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, type, message } = body;
+    const { name, email, type, message } = body || {};
+    // ── Normalization & Validation ──────────────────────────────
+    const normalizedName = String(name || "").trim();
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const normalizedMessage = String(message || "").trim();
 
-    // ── Validation ──────────────────────────────────────────────
-    if (!email || !type || !message) {
+    if (!normalizedEmail || !type || !normalizedMessage) {
       return NextResponse.json(
         { error: "Email, type, and message are required." },
+        { status: 400 }
+      );
+    }
+
+    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      return NextResponse.json(
+        { error: "Please enter a valid email address." },
+        { status: 400 }
+      );
+    }
+
+    if (normalizedMessage.length < 5) {
+      return NextResponse.json(
+        { error: "Please provide a more detailed message (at least 5 characters)." },
         { status: 400 }
       );
     }
@@ -24,14 +42,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── Insert into Supabase ────────────────────────────────────
+    // ── Insert into Supabase (Unlimited submissions allowed per email) ──
     const { error: dbError } = await supabase
       .from("feedback_submissions")
       .insert({
-        name: name || null,
-        email,
+        name: normalizedName || null,
+        email: normalizedEmail,
         type,
-        message,
+        message: normalizedMessage,
       });
 
     if (dbError) {
@@ -44,11 +62,11 @@ export async function POST(req: NextRequest) {
 
     // ── Send dual emails ────────────────────────────────────────
     await sendDualEmail({
-      userEmail: email,
+      userEmail: normalizedEmail,
       userSubject: "Thanks for your feedback! 🙏 — Zynveo",
-      userHtml: feedbackUserEmail(name || ""),
-      adminSubject: `${type === "issue" ? "🐛" : type === "idea" ? "💡" : "💬"} New ${type} from ${name || email}`,
-      adminHtml: feedbackAdminEmail({ name: name || "", email, type, message }),
+      userHtml: feedbackUserEmail(normalizedName || ""),
+      adminSubject: `${type === "issue" ? "🐛" : type === "idea" ? "💡" : "💬"} New ${type} from ${normalizedName || normalizedEmail}`,
+      adminHtml: feedbackAdminEmail({ name: normalizedName || "", email: normalizedEmail, type, message: normalizedMessage }),
     });
 
     return NextResponse.json({ success: true });

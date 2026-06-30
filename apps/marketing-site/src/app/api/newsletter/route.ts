@@ -6,23 +6,38 @@ import { newsletterUserEmail, newsletterAdminEmail } from "@/lib/email-templates
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email } = body;
+    const { email } = body || {};
+    // ── Normalization & Validation ──────────────────────────────
+    const normalizedEmail = String(email || "").trim().toLowerCase();
 
-    // ── Validation ──────────────────────────────────────────────
-    if (!email || !email.includes("@")) {
+    if (!normalizedEmail) {
       return NextResponse.json(
-        { error: "A valid email address is required." },
+        { error: "An email address is required." },
         { status: 400 }
       );
     }
 
-    // ── Insert into Supabase (handle duplicate subscriptions cleanly) ──
+    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      return NextResponse.json(
+        { error: "Please enter a valid email address." },
+        { status: 400 }
+      );
+    }
+
+    // ── Insert into Supabase ────────────────────────────────────
     const { error: dbError } = await supabase
       .from("newsletter_subscribers")
-      .insert({ email });
+      .insert({ email: normalizedEmail });
 
-    // Ignore duplicate key error (23505 means email is already subscribed)
-    if (dbError && dbError.code !== "23505") {
+    if (dbError) {
+      // 23505 means unique constraint violation (email already subscribed)
+      if (dbError.code === "23505") {
+        return NextResponse.json(
+          { error: "This email address is already subscribed to our newsletter!" },
+          { status: 400 }
+        );
+      }
       console.error("[Newsletter API] Supabase error:", dbError);
       return NextResponse.json(
         { error: "Failed to subscribe. Please try again." },
@@ -30,13 +45,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── Send dual emails ────────────────────────────────────────
+    // ── Send dual emails only for new subscriptions ─────────────
     await sendDualEmail({
-      userEmail: email,
+      userEmail: normalizedEmail,
       userSubject: "Welcome to Zynveo Updates! 📬",
       userHtml: newsletterUserEmail(),
-      adminSubject: `📰 New Newsletter Subscriber: ${email}`,
-      adminHtml: newsletterAdminEmail(email),
+      adminSubject: `📰 New Newsletter Subscriber: ${normalizedEmail}`,
+      adminHtml: newsletterAdminEmail(normalizedEmail),
     });
 
     return NextResponse.json({ success: true });

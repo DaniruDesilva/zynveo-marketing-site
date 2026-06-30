@@ -6,23 +6,47 @@ import { wishlistUserEmail, wishlistAdminEmail } from "@/lib/email-templates";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { fullName, email, phone } = body;
+    const { fullName, email, phone } = body || {};
+    // ── Normalization & Validation ──────────────────────────────
+    const normalizedName = String(fullName || "").trim();
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const normalizedPhone = String(phone || "").trim();
 
-    // ── Validation ──────────────────────────────────────────────
-    if (!fullName || !email || !phone) {
+    if (!normalizedName || !normalizedEmail || !normalizedPhone) {
       return NextResponse.json(
         { error: "Name, email, and phone number are required." },
         { status: 400 }
       );
     }
 
-    // ── Insert into Supabase (handle duplicate re-signups cleanly) ──
+    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      return NextResponse.json(
+        { error: "Please enter a valid email address." },
+        { status: 400 }
+      );
+    }
+
+    if (normalizedName.length < 2) {
+      return NextResponse.json(
+        { error: "Please enter your full name (at least 2 characters)." },
+        { status: 400 }
+      );
+    }
+
+    // ── Insert into Supabase ────────────────────────────────────
     const { error: dbError } = await supabase
       .from("wishlist_signups")
-      .insert({ full_name: fullName, email, phone });
+      .insert({ full_name: normalizedName, email: normalizedEmail, phone: normalizedPhone });
 
-    // Ignore duplicate key error (23505 means email is already registered)
-    if (dbError && dbError.code !== "23505") {
+    if (dbError) {
+      // 23505 means unique constraint violation (email already registered)
+      if (dbError.code === "23505") {
+        return NextResponse.json(
+          { error: "This email address is already registered on the VIP wishlist!" },
+          { status: 400 }
+        );
+      }
       console.error("[Wishlist API] Supabase error:", dbError);
       return NextResponse.json(
         { error: "Failed to join the waitlist. Please try again." },
@@ -30,13 +54,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── Send dual emails ────────────────────────────────────────
+    // ── Send dual emails only for new registrations ─────────────
     await sendDualEmail({
-      userEmail: email,
-      userSubject: `You're on the VIP Launch List, ${fullName}! 🎉 — Zynveo`,
-      userHtml: wishlistUserEmail(fullName),
-      adminSubject: `New Waitlist Registration: ${fullName} (${email})`,
-      adminHtml: wishlistAdminEmail({ name: fullName, email, phone }),
+      userEmail: normalizedEmail,
+      userSubject: `You're on the VIP Launch List, ${normalizedName}! 🎉 — Zynveo`,
+      userHtml: wishlistUserEmail(normalizedName),
+      adminSubject: `New Waitlist Registration: ${normalizedName} (${normalizedEmail})`,
+      adminHtml: wishlistAdminEmail({ name: normalizedName, email: normalizedEmail, phone: normalizedPhone }),
     });
 
     return NextResponse.json({ success: true });

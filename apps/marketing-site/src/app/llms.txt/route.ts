@@ -25,8 +25,8 @@ Zynveo offers world-class free utility tools for brands without requiring accoun
 
 ## Pricing Plans
 - **Starter (Free Forever)**: 1 User, 1 Branch, up to 50 invoices/month, free MRP calculator access.
-- **Standard (Rs. 1,600/month)**: 1 User, 10 Branches, unlimited invoices & POS, automated stock sync, SMS customer notifications.
-- **Professional (Rs. 2,400/month)**: 5 Users, 50 Branches, advanced financial accounting, offline POS mobile app, full CRM access, 24/7 dedicated support.
+- **Standard ($19/month)**: 1 User, 10 Branches, unlimited invoices & POS, automated stock sync, SMS customer notifications.
+- **Professional ($79/month)**: 5 Users, 50 Branches, advanced financial accounting, offline POS mobile app, full CRM access, 24/7 dedicated support.
 
 ## Contact Information
 - **Website**: https://zynveo.com

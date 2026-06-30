@@ -699,7 +699,7 @@ export default function MarketingHomepage() {
             },
             {
               name: "Standard ERP",
-              price: "Rs. 1,600",
+              price: "$19",
               period: "/month",
               desc: "Most Popular for growing retail brands and multi-store distributors.",
               features: [
@@ -715,7 +715,7 @@ export default function MarketingHomepage() {
             },
             {
               name: "Professional OS",
-              price: "Rs. 2,400",
+              price: "$79",
               period: "/month",
               desc: "Built for multi-branch powerhouses and regional wholesale chains.",
               features: [
