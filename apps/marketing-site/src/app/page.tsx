@@ -351,6 +351,51 @@ export default function MarketingHomepage() {
                 </Link>
               </div>
             </div>
+            {/* Tool Card 5: Break-Even Calculator */}
+            <div className="rounded-2xl bg-white p-5 sm:p-8 border border-neutral-border shadow-lg hover:shadow-2xl hover:border-amber-600 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden lg:col-span-2">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-bl-full pointer-events-none group-hover:scale-110 transition-transform" />
+              <div className="space-y-5 relative z-10">
+                <div className="flex flex-wrap justify-between items-center gap-2">
+                  <div className="p-3.5 rounded-2xl bg-amber-600 text-white shadow-md shadow-amber-500/25">
+                    <BarChart3 className="h-7 w-7" />
+                  </div>
+                  <span className="rounded-full bg-accent/10 text-accent border border-accent/20 px-3 py-1 text-xs font-black uppercase tracking-wider whitespace-nowrap">
+                    New
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-neutral-text group-hover:text-amber-600 transition-colors">
+                    Break-Even Point Calculator
+                  </h3>
+                  <p className="text-sm font-medium text-neutral-muted mt-2 leading-relaxed">
+                    Discover exactly how many units you need to sell each month to cover all costs. Interactive charts show the exact point where revenue crosses total costs.
+                  </p>
+                </div>
+                <ul className="space-y-2.5 pt-2 text-xs font-bold text-slate-700">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                    <span>Simple & advanced cost breakdown modes</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                    <span>Interactive break-even line chart</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                    <span>Target profit goal calculator</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="pt-8 relative z-10">
+                <Link
+                  href="/break-even-calculator"
+                  className="w-full min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-amber-600 text-white font-bold text-sm shadow-md hover:bg-amber-700 transition-all group-hover:translate-x-1"
+                >
+                  <span>Click to Use Break-Even Calculator</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -691,6 +736,7 @@ export default function MarketingHomepage() {
                 "No-Login Invoice Generator",
                 "SKU & Barcode Maker",
                 "Payslip & Salary Slip Maker",
+                "Break-Even Point Calculator",
                 "Zero Registration Needed"
               ],
               cta: "Launch Free Tools",

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Calculator, ArrowRight, Zap, FileText, Tag, Menu, X, Sparkles, DollarSign } from "lucide-react";
+import { Calculator, ArrowRight, Zap, FileText, Tag, Menu, X, Sparkles, DollarSign, BarChart3 } from "lucide-react";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -172,6 +172,25 @@ export function Navbar() {
                   <div>
                     <div className="text-base font-black leading-tight">Payslip & Salary Slip Maker</div>
                     <div className="text-xs font-medium text-slate-500 mt-0.5">Instant PDF salary stubs</div>
+                  </div>
+                </div>
+                <span className="rounded-md bg-accent px-2.5 py-1 text-[10px] font-black text-white uppercase tracking-wider shadow-sm">
+                  New
+                </span>
+              </Link>
+
+              <Link
+                href="/break-even-calculator"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center justify-between min-h-[56px] p-4 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50/50 text-amber-700 border border-amber-100 active:scale-98 transition-transform"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="p-2.5 rounded-xl bg-amber-600 text-white shadow-sm">
+                    <BarChart3 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="text-base font-black leading-tight">Break-Even Calculator</div>
+                    <div className="text-xs font-medium text-slate-500 mt-0.5">Know your profit threshold</div>
                   </div>
                 </div>
                 <span className="rounded-md bg-accent px-2.5 py-1 text-[10px] font-black text-white uppercase tracking-wider shadow-sm">

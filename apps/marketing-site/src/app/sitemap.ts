@@ -10,6 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/invoice-generator",
     "/barcode-generator",
     "/payslip-generator",
+    "/break-even-calculator",
     "/about",
     "/contact",
     "/blog",
