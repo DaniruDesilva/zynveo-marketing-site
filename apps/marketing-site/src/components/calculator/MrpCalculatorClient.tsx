@@ -13,6 +13,7 @@ import {
   CheckCircle2, DollarSign, PieChart, Layers, HelpCircle, X, Globe
 } from "lucide-react";
 import { CURRENCIES } from "@/lib/invoice-schema";
+import { generateAndDownloadToolPDF } from "@/lib/report-pdf";
 
 // Multi-language translation dictionary (English, Sinhala & Tamil)
 const TRANSLATIONS = {
@@ -330,15 +331,79 @@ export function MrpCalculatorClient() {
     ...(activeTaxAmount > 0 ? [{ name: t.chartNames.tax, amount: activeTaxAmount, color: "#F59E0B" }] : []),
   ];
 
-  const handleLeadSubmit = (e: React.FormEvent) => {
+  const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!leadEmail) return;
+
+    const formatCurr = (val: number) =>
+      new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: currencyCode,
+        maximumFractionDigits: 2,
+      }).format(val);
+
+    const summaryRows = [
+      {
+        label: "Pricing Mode",
+        value:
+          mode === "cost-plus"
+            ? "Cost-Plus Pricing (Target Brand Margin)"
+            : mode === "target-price"
+            ? "Reverse-Engineer Shelf MRP"
+            : "Distributor Requested Margin Mode",
+      },
+      { label: "Production / Landed Unit Cost", value: formatCurr(cost) },
+      { label: "Recommended / Target Shelf MRP", value: formatCurr(activeMrp) },
+      { label: "Net Brand Profit per Unit", value: formatCurr(activeBrandProfit) },
+      { label: "Brand Net Profit Margin %", value: `${activeBrandMargin.toFixed(1)}%` },
+      {
+        label: "Wholesaler / Distributor Cut",
+        value: `${formatCurr(activeWholesalerCut)} (${(wholesalerMargin * 100).toFixed(1)}%)`,
+      },
+      {
+        label: "Retailer / Store Margin Cut",
+        value: `${formatCurr(activeRetailerCut)} (${(retailerMargin * 100).toFixed(1)}%)`,
+      },
+      ...(activeTaxAmount > 0
+        ? [{ label: "Tax / VAT Amount Included", value: `${formatCurr(activeTaxAmount)} (${taxRate}%)` }]
+        : []),
+      { label: "Price to Wholesaler (PTW)", value: formatCurr(activePtw) },
+    ];
+
+    // 1. Immediately trigger instant vector PDF download
+    try {
+      generateAndDownloadToolPDF({
+        toolName: "Reverse MRP & Margin Calculator",
+        title: "Product Pricing & Margin Intelligence Report",
+        summaryRows,
+        fileName: `Zynveo_MRP_Margin_Report_${new Date().toISOString().split("T")[0]}.pdf`,
+      });
+    } catch (err) {
+      console.error("PDF download exception:", err);
+    }
+
+    // 2. Asynchronously save email (without duplicates) & send dual email via API
+    try {
+      await fetch("/api/tool-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: leadEmail,
+          toolName: "Reverse MRP & Margin Calculator",
+          reportTitle: "Your Product Pricing & Margin Intelligence Report",
+          summaryData: summaryRows,
+        }),
+      });
+    } catch (err) {
+      console.error("API report exception:", err);
+    }
+
     setIsSubmitted(true);
     setTimeout(() => {
       setIsLeadModalOpen(false);
       setIsSubmitted(false);
       setLeadEmail("");
-    }, 2000);
+    }, 2500);
   };
 
   return (

@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
+import { generateAndDownloadToolPDF } from "@/lib/report-pdf";
 
 const BreakEvenChart = dynamic(() => import("./BreakEvenChart"), {
   ssr: false,
@@ -574,16 +575,92 @@ export function BreakEvenCalculatorClient() {
     setter(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
   };
 
-  // ─── Lead Capture ───
-  const handleLeadSubmit = (e: React.FormEvent) => {
+  // ─── Lead Capture & Simultaneous PDF Export ───
+  const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!leadEmail) return;
+
+    const summaryRows = [
+      {
+        label: "Business Model",
+        value:
+          businessModel === "single"
+            ? "Single Product / Manufacturer"
+            : businessModel === "multi-mix"
+            ? "Service & Menu Mix (Salon/Restaurant)"
+            : "Supermarket / Retail Margin Mode",
+      },
+      { label: "Total Fixed Monthly Costs", value: formatCurrency(totalFixedCost) },
+      ...(targetProfit > 0 ? [{ label: "Target Monthly Profit Goal", value: formatCurrency(targetProfit) }] : []),
+      ...(businessModel !== "retail-margin"
+        ? [{ label: "Required Break-Even Units", value: `${formatNumber(activeBreakEvenUnits)} units/mo` }]
+        : []),
+      {
+        label: "Required Break-Even Revenue / Turnover",
+        value: `${formatCurrency(activeBreakEvenRevenue)}${businessModel === "retail-margin" ? "/month" : ""}`,
+      },
+      ...(businessModel === "retail-margin"
+        ? [
+            { label: "Required Daily Register Target", value: `${formatCurrency(retailBreakEvenDaily)}/day` },
+            { label: "Gross Contribution Margin %", value: `${(retailCMRatio * 100).toFixed(1)}%` },
+          ]
+        : []),
+      ...(activeTargetRevenue > activeBreakEvenRevenue
+        ? [{ label: "Target Revenue (for Profit Goal)", value: formatCurrency(activeTargetRevenue) }]
+        : []),
+    ];
+
+    const tableHeaders =
+      businessModel === "multi-mix"
+        ? ["Service/Item Name", "Price", "Variable Cost", "Contrib. Margin", "Monthly Vol."]
+        : undefined;
+    const tableRows =
+      businessModel === "multi-mix"
+        ? mixItems.map((item) => [
+            String(item.name || "Item"),
+            formatCurrency(Number(item.price) || 0),
+            formatCurrency(Number(item.cost) || 0),
+            formatCurrency((Number(item.price) || 0) - (Number(item.cost) || 0)),
+            `${Number(item.volume) || 0} units`,
+          ])
+        : undefined;
+
+    // 1. Immediately trigger instant vector PDF download
+    try {
+      generateAndDownloadToolPDF({
+        toolName: "Break-Even Point Calculator",
+        title: "Break-Even & Contribution Margin Report",
+        summaryRows,
+        tableHeaders,
+        tableRows,
+        fileName: `Zynveo_BreakEven_Report_${new Date().toISOString().split("T")[0]}.pdf`,
+      });
+    } catch (err) {
+      console.error("PDF download exception:", err);
+    }
+
+    // 2. Asynchronously save email (without duplicates) & send dual email via API
+    try {
+      await fetch("/api/tool-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: leadEmail,
+          toolName: "Break-Even Point Calculator",
+          reportTitle: "Your Break-Even Point & Contribution Margin Report",
+          summaryData: summaryRows,
+        }),
+      });
+    } catch (err) {
+      console.error("API report exception:", err);
+    }
+
     setIsSubmitted(true);
     setTimeout(() => {
       setIsLeadModalOpen(false);
       setIsSubmitted(false);
       setLeadEmail("");
-    }, 2000);
+    }, 2500);
   };
 
   // ─── Chart Axis Formatter ───
