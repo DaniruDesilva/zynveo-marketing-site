@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabase, runSupabaseSafe } from "@/lib/supabase";
 import { sendDualEmail } from "@/lib/email";
 import { wishlistUserEmail, wishlistAdminEmail } from "@/lib/email-templates";
 
@@ -34,19 +34,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── Insert into Supabase ────────────────────────────────────
-    const { error: dbError } = await supabase
-      .from("wishlist_signups")
-      .insert({ full_name: normalizedName, email: normalizedEmail, phone: normalizedPhone });
+    // ── Insert into Supabase with resilience ────────────────────
+    const { error: dbError, isUniqueViolation, isNetworkError } = await runSupabaseSafe(
+      supabase.from("wishlist_signups").insert({ full_name: normalizedName, email: normalizedEmail, phone: normalizedPhone }),
+      { timeoutMs: 1800, context: "Wishlist API" }
+    );
 
-    if (dbError) {
-      // 23505 means unique constraint violation (email already registered)
-      if (dbError.code === "23505") {
-        return NextResponse.json(
-          { error: "This email address is already registered on the VIP wishlist!" },
-          { status: 400 }
-        );
-      }
+    if (isUniqueViolation) {
+      return NextResponse.json(
+        { error: "This email address is already registered on the VIP wishlist!" },
+        { status: 400 }
+      );
+    }
+
+    if (dbError && !isNetworkError) {
       console.error("[Wishlist API] Supabase error:", dbError);
       return NextResponse.json(
         { error: "Failed to join the waitlist. Please try again." },

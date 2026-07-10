@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -13,7 +13,9 @@ import {
   CheckCircle2, DollarSign, PieChart, Layers, HelpCircle, X, Globe
 } from "lucide-react";
 import { CURRENCIES } from "@/lib/invoice-schema";
-import { generateAndDownloadToolPDF } from "@/lib/report-pdf";
+import { exportDOMToPDF } from "@/lib/report-pdf";
+import MrpReportPreview from "@/components/calculator/MrpReportPreview";
+import { ReportLang } from "@/components/breakeven/BreakEvenReportPreview";
 
 // Multi-language translation dictionary (English, Sinhala & Tamil)
 const TRANSLATIONS = {
@@ -248,6 +250,7 @@ export function MrpCalculatorClient() {
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
   const [leadEmail, setLeadEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
 
   const t = TRANSLATIONS[lang];
   const isIndic = lang === "si" || lang === "ta";
@@ -370,14 +373,12 @@ export function MrpCalculatorClient() {
       { label: "Price to Wholesaler (PTW)", value: formatCurr(activePtw) },
     ];
 
-    // 1. Immediately trigger instant vector PDF download
+    // 1. Immediately trigger instant vector PDF download using HD multi-language DOM preview
     try {
-      generateAndDownloadToolPDF({
-        toolName: "Reverse MRP & Margin Calculator",
-        title: "Product Pricing & Margin Intelligence Report",
-        summaryRows,
-        fileName: `Zynveo_MRP_Margin_Report_${new Date().toISOString().split("T")[0]}.pdf`,
-      });
+      await exportDOMToPDF(
+        printRef.current,
+        `Zynveo_MRP_Margin_Report_${new Date().toISOString().split("T")[0]}.pdf`
+      );
     } catch (err) {
       console.error("PDF download exception:", err);
     }
@@ -1043,6 +1044,29 @@ export function MrpCalculatorClient() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Off-screen fixed unscaled render node for high-definition multi-language A4 PDF export */}
+      <div style={{ position: "fixed", left: "-9999px", top: 0, width: "794px", zIndex: -50, opacity: 1, pointerEvents: "none" }}>
+        <MrpReportPreview
+          ref={printRef}
+          lang={(lang as ReportLang) || "en"}
+          data={{
+            mode,
+            cost,
+            activeMrp,
+            activeBrandProfit,
+            activeBrandMargin,
+            activeWholesalerCut,
+            wholesalerMargin,
+            activeRetailerCut,
+            retailerMargin,
+            activeTaxAmount,
+            taxRate,
+            activePtw,
+            currencyCode,
+          }}
+        />
+      </div>
     </div>
   );
 }

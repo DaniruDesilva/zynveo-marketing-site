@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabase, runSupabaseSafe } from "@/lib/supabase";
 import { sendDualEmail } from "@/lib/email";
 import { newsletterUserEmail, newsletterAdminEmail } from "@/lib/email-templates";
 
@@ -25,19 +25,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── Insert into Supabase ────────────────────────────────────
-    const { error: dbError } = await supabase
-      .from("newsletter_subscribers")
-      .insert({ email: normalizedEmail });
+    // ── Insert into Supabase with resilience ────────────────────
+    const { error: dbError, isUniqueViolation, isNetworkError } = await runSupabaseSafe(
+      supabase.from("newsletter_subscribers").insert({ email: normalizedEmail }),
+      { timeoutMs: 1800, context: "Newsletter API" }
+    );
 
-    if (dbError) {
-      // 23505 means unique constraint violation (email already subscribed)
-      if (dbError.code === "23505") {
-        return NextResponse.json(
-          { error: "This email address is already subscribed to our newsletter!" },
-          { status: 400 }
-        );
-      }
+    if (isUniqueViolation) {
+      return NextResponse.json(
+        { error: "This email address is already subscribed to our newsletter!" },
+        { status: 400 }
+      );
+    }
+
+    if (dbError && !isNetworkError) {
       console.error("[Newsletter API] Supabase error:", dbError);
       return NextResponse.json(
         { error: "Failed to subscribe. Please try again." },

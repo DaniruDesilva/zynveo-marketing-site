@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
-import { generateAndDownloadToolPDF } from "@/lib/report-pdf";
+import { exportDOMToPDF } from "@/lib/report-pdf";
+import BreakEvenReportPreview, { ReportLang } from "@/components/breakeven/BreakEvenReportPreview";
 
 const BreakEvenChart = dynamic(() => import("./BreakEvenChart"), {
   ssr: false,
@@ -364,6 +365,7 @@ export function BreakEvenCalculatorClient() {
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
   const [leadEmail, setLeadEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
 
   const currObj = CURRENCIES.find((c) => c.code === currencyCode) || {
     symbol: "Rs.",
@@ -625,16 +627,12 @@ export function BreakEvenCalculatorClient() {
           ])
         : undefined;
 
-    // 1. Immediately trigger instant vector PDF download
+    // 1. Immediately trigger instant vector PDF download using HD multi-language DOM preview
     try {
-      generateAndDownloadToolPDF({
-        toolName: "Break-Even Point Calculator",
-        title: "Break-Even & Contribution Margin Report",
-        summaryRows,
-        tableHeaders,
-        tableRows,
-        fileName: `Zynveo_BreakEven_Report_${new Date().toISOString().split("T")[0]}.pdf`,
-      });
+      await exportDOMToPDF(
+        printRef.current,
+        `Zynveo_BreakEven_Report_${new Date().toISOString().split("T")[0]}.pdf`
+      );
     } catch (err) {
       console.error("PDF download exception:", err);
     }
@@ -1707,6 +1705,26 @@ export function BreakEvenCalculatorClient() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Off-screen fixed unscaled render node for high-definition multi-language A4 PDF export */}
+      <div style={{ position: "fixed", left: "-9999px", top: 0, width: "794px", zIndex: -50, opacity: 1, pointerEvents: "none" }}>
+        <BreakEvenReportPreview
+          ref={printRef}
+          lang={(lang as ReportLang) || "en"}
+          data={{
+            businessModel,
+            totalFixedCost,
+            targetProfit,
+            activeBreakEvenUnits,
+            activeBreakEvenRevenue,
+            activeTargetRevenue,
+            retailBreakEvenDaily,
+            retailCMRatio,
+            currencyCode,
+            mixItems,
+          }}
+        />
+      </div>
     </div>
   );
 }

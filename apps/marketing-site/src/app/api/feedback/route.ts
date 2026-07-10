@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabase, runSupabaseSafe } from "@/lib/supabase";
 import { sendDualEmail } from "@/lib/email";
 import { feedbackUserEmail, feedbackAdminEmail } from "@/lib/email-templates";
 
@@ -42,17 +42,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── Insert into Supabase (Unlimited submissions allowed per email) ──
-    const { error: dbError } = await supabase
-      .from("feedback_submissions")
-      .insert({
+    // ── Insert into Supabase with resilience ────────────────────
+    const { error: dbError, isNetworkError } = await runSupabaseSafe(
+      supabase.from("feedback_submissions").insert({
         name: normalizedName || null,
         email: normalizedEmail,
         type,
         message: normalizedMessage,
-      });
+      }),
+      { timeoutMs: 1800, context: "Feedback API" }
+    );
 
-    if (dbError) {
+    if (dbError && !isNetworkError) {
       console.error("[Feedback API] Supabase error:", dbError);
       return NextResponse.json(
         { error: "Failed to submit feedback. Please try again." },

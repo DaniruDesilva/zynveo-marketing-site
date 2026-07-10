@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabase, runSupabaseSafe } from "@/lib/supabase";
 import { sendDualEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
@@ -26,26 +26,24 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Save Email to Supabase WITHOUT Duplicates (Upsert / Ignore) ──
-    // We insert into newsletter_subscribers with onConflict ignore so duplicate emails are never inserted twice.
-    const { error: dbError } = await supabase
-      .from("newsletter_subscribers")
-      .upsert({ email: normalizedEmail }, { onConflict: "email", ignoreDuplicates: true });
-
-    if (dbError) {
-      console.warn("[Tool Report API] Supabase upsert notice:", dbError);
-    }
-
-    // Also attempt to save to tool_inquiries / tool_leads if table exists (ignore if table not found)
-    try {
-      await supabase
-        .from("tool_leads")
-        .upsert(
-          { email: normalizedEmail, tool_name: toolName || "Calculator", created_at: new Date().toISOString() },
-          { onConflict: "email,tool_name", ignoreDuplicates: true }
-        );
-    } catch (e) {
-      // Ignore if tool_leads table does not exist
-    }
+    // Run both queries concurrently with fast timeout resilience so offline or paused Supabase doesn't delay or spam traces.
+    await Promise.all([
+      runSupabaseSafe(
+        supabase
+          .from("newsletter_subscribers")
+          .upsert({ email: normalizedEmail }, { onConflict: "email", ignoreDuplicates: true }),
+        { timeoutMs: 1800, context: "Tool Report API - newsletter_subscribers" }
+      ),
+      runSupabaseSafe(
+        supabase
+          .from("tool_leads")
+          .upsert(
+            { email: normalizedEmail, tool_name: toolName || "Calculator", created_at: new Date().toISOString() },
+            { onConflict: "email,tool_name", ignoreDuplicates: true }
+          ),
+        { timeoutMs: 1800, context: "Tool Report API - tool_leads" }
+      ),
+    ]);
 
     // ── Build Email Content ─────────────────────────────────────
     const rowsHtml = Array.isArray(summaryData)
