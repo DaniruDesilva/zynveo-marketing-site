@@ -1,7 +1,7 @@
 import { eq, and, sql } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { documents, documentLines, journalEntries, journalLines, documentStatusEnum } from '@erp/database';
-import { InventoryService } from '@erp/core-inventory';
+import { documents, documentLines, journalEntries, journalLines, documentStatusEnum } from '@zynveo/database';
+import { InventoryService } from '@zynveo/core-inventory';
 
 export class InvoicingService {
   constructor(

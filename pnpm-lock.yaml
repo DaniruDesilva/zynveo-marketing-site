@@ -104,16 +104,16 @@ importers:
 
   apps/web:
     dependencies:
-      '@erp/core-reporting':
+      '@zynveo/core-reporting':
         specifier: workspace:*
         version: link:../../packages/core-modules/core-reporting
-      '@erp/database':
+      '@zynveo/database':
         specifier: workspace:*
         version: link:../../packages/database
-      '@erp/sync':
+      '@zynveo/sync':
         specifier: workspace:*
         version: link:../../packages/sync
-      '@erp/ui':
+      '@zynveo/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       '@supabase/supabase-js':
@@ -165,7 +165,7 @@ importers:
 
   packages/core-modules/core-accounting:
     dependencies:
-      '@erp/database':
+      '@zynveo/database':
         specifier: workspace:*
         version: link:../../database
       drizzle-orm:
@@ -178,7 +178,7 @@ importers:
 
   packages/core-modules/core-crm:
     dependencies:
-      '@erp/database':
+      '@zynveo/database':
         specifier: workspace:*
         version: link:../../database
       drizzle-orm:
@@ -191,7 +191,7 @@ importers:
 
   packages/core-modules/core-inventory:
     dependencies:
-      '@erp/database':
+      '@zynveo/database':
         specifier: workspace:*
         version: link:../../database
       drizzle-orm:
@@ -204,10 +204,10 @@ importers:
 
   packages/core-modules/core-invoicing:
     dependencies:
-      '@erp/core-inventory':
+      '@zynveo/core-inventory':
         specifier: workspace:*
         version: link:../core-inventory
-      '@erp/database':
+      '@zynveo/database':
         specifier: workspace:*
         version: link:../../database
       drizzle-orm:
@@ -220,7 +220,7 @@ importers:
 
   packages/core-modules/core-projects:
     dependencies:
-      '@erp/database':
+      '@zynveo/database':
         specifier: workspace:*
         version: link:../../database
       drizzle-orm:
@@ -233,7 +233,7 @@ importers:
 
   packages/core-modules/core-reporting:
     dependencies:
-      '@erp/database':
+      '@zynveo/database':
         specifier: workspace:*
         version: link:../../database
       date-fns:

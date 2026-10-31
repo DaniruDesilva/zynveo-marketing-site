@@ -1,0 +1,23 @@
+{
+  "name": "@zynveo/svc-bi-reporting",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "tsc -w -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@zynveo/contracts": "workspace:*",
+    "@zynveo/database": "workspace:*",
+    "@zynveo/microservice-chassis": "workspace:*",
+    "drizzle-orm": "^0.30.10",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5.4.5"
+  }
+}

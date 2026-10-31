@@ -1,11 +1,11 @@
 {
-  "name": "@erp/core-invoicing",
+  "name": "@zynveo/core-invoicing",
   "version": "0.1.0",
   "private": true,
   "main": "src/index.ts",
   "dependencies": {
-    "@erp/database": "workspace:*",
-    "@erp/core-inventory": "workspace:*",
+    "@zynveo/database": "workspace:*",
+    "@zynveo/core-inventory": "workspace:*",
     "drizzle-orm": "^0.30.10"
   },
   "devDependencies": {

@@ -3,7 +3,7 @@ import {
   accounts, 
   journalEntries, 
   journalLines 
-} from '@erp/database';
+} from '@zynveo/database';
 
 export class AccountingService {
   constructor(private db: NodePgDatabase<any>) {}

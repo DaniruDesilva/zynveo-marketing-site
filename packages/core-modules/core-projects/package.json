@@ -1,10 +1,10 @@
 {
-  "name": "@erp/core-projects",
+  "name": "@zynveo/core-projects",
   "version": "0.1.0",
   "private": true,
   "main": "src/index.ts",
   "dependencies": {
-    "@erp/database": "workspace:*",
+    "@zynveo/database": "workspace:*",
     "drizzle-orm": "^0.30.10"
   },
   "devDependencies": {

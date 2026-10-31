@@ -26,15 +26,18 @@
       "@/*": [
         "./src/*"
       ],
-      "@erp/ui": [
+      "@zynveo/contracts": [
+        "../../packages/contracts/src/index.ts"
+      ],
+      "@zynveo/ui": [
         "../../packages/ui/src/index.tsx",
         "../../packages/ui/index.tsx"
       ],
-      "@erp/database": [
+      "@zynveo/database": [
         "../../packages/database/src/index.ts",
         "../../packages/database/index.ts"
       ],
-      "@erp/sync": [
+      "@zynveo/sync": [
         "../../packages/sync/src/index.ts",
         "../../packages/sync/index.ts"
       ]

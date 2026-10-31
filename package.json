@@ -1,20 +1,24 @@
 {
-  "name": "erp",
+  "name": "zynveo-erp",
   "version": "1.0.0",
   "private": true,
-  "scripts": {
-    "dev": "turbo dev",
-    "build": "turbo build",
-    "lint": "turbo lint",
-    "clean": "turbo clean"
+  "engines": {
+    "node": ">=20.11.0"
   },
-  "workspaces": [
-    "apps/web",
-    "packages/*",
-    "packages/core-modules/*"
-  ],
-  "pnpm.overrides": {
-    "next": "file:./next-14.2.15.tgz",
-    "@next/swc-win32-x64-msvc": "file:./swc-win32-x64-msvc-14.2.15.tgz"
+  "scripts": {
+    "dev": "pnpm -r --parallel --if-present run dev",
+    "build": "pnpm -r --if-present run build",
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "lint": "pnpm -r --if-present run lint",
+    "test": "pnpm -r --if-present run test",
+    "clean": "pnpm -r --if-present run clean",
+    "db:generate": "pnpm --filter @zynveo/database run generate",
+    "db:push": "pnpm --filter @zynveo/database run push",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "infra:logs": "docker compose logs -f"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
   }
 }

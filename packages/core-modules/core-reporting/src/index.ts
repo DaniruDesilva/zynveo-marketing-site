@@ -8,7 +8,7 @@ import {
   accounts,
   stockLevels,
   productVariants
-} from '@erp/database';
+} from '@zynveo/database';
 
 export class ReportingService {
   constructor(private db: NodePgDatabase<any>) {}

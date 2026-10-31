@@ -1,0 +1,33 @@
+{
+  "name": "@zynveo/contracts",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./patterns": {
+      "types": "./dist/patterns.d.ts",
+      "default": "./dist/patterns.js"
+    },
+    "./common": {
+      "types": "./dist/common.schema.d.ts",
+      "default": "./dist/common.schema.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "tsc -p tsconfig.build.json && node --test dist/__tests__/contracts.test.js"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5.4.5"
+  }
+}

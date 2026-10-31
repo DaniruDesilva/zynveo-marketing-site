@@ -6,26 +6,36 @@ node_modules
 # Testing
 coverage/
 
-# Next.js
+# Next.js & Turborepo
 .next/
 out/
+.turbo/
 
-# Production
+# Production & Build Artifacts
 build/
 dist/
+
+# Docker & LocalStack Volumes
+.localstack/
+volume/
 
 # Misc
 .DS_Store
 *.pem
+Thumbs.db
 
-# Debug
+# Debug Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+*.log
 
-# Local environment variables (keep secrets safe)
-.env*.local
+# Local environment variables (keep secrets safe, allow .env.example)
 .env
+.env*.local
+.env.*
+!.env.example
 
 # Vercel
 .vercel

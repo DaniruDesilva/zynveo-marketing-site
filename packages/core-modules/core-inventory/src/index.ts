@@ -1,6 +1,6 @@
 import { eq, and, sql } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { stockLevels, productVariants, warehouses } from '@erp/database';
+import { stockLevels, productVariants, warehouses } from '@zynveo/database';
 
 /**
  * Service to manage inventory and stock levels

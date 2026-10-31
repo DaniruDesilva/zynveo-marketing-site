@@ -1,10 +1,13 @@
 packages:
   - 'apps/*'
+  - 'apps/services/*'
   - 'packages/*'
   - 'packages/core-modules/*'
+overrides:
+  next: 'file:./next-14.2.15.tgz'
 allowBuilds:
   '@journeyapps/wa-sqlite': true
-  core-js: set this to true or false
+  core-js: false
   es5-ext: true
   esbuild: true
   unrs-resolver: true

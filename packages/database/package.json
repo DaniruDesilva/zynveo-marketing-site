@@ -1,9 +1,63 @@
 {
-  "name": "@erp/database",
-  "version": "0.1.0",
+  "name": "@zynveo/database",
+  "version": "1.0.0",
   "private": true,
-  "main": "src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
+    },
+    "./shared": {
+      "types": "./dist/shared/index.d.ts",
+      "default": "./dist/shared/index.js"
+    },
+    "./iam": {
+      "types": "./dist/schemas/iam.d.ts",
+      "default": "./dist/schemas/iam.js"
+    },
+    "./finance": {
+      "types": "./dist/schemas/finance.d.ts",
+      "default": "./dist/schemas/finance.js"
+    },
+    "./hr": {
+      "types": "./dist/schemas/hr.d.ts",
+      "default": "./dist/schemas/hr.js"
+    },
+    "./scm": {
+      "types": "./dist/schemas/scm.d.ts",
+      "default": "./dist/schemas/scm.js"
+    },
+    "./inventory": {
+      "types": "./dist/schemas/inventory.d.ts",
+      "default": "./dist/schemas/inventory.js"
+    },
+    "./manufacturing": {
+      "types": "./dist/schemas/manufacturing.d.ts",
+      "default": "./dist/schemas/manufacturing.js"
+    },
+    "./sales_crm": {
+      "types": "./dist/schemas/sales_crm.d.ts",
+      "default": "./dist/schemas/sales_crm.js"
+    },
+    "./sales-crm": {
+      "types": "./dist/schemas/sales_crm.d.ts",
+      "default": "./dist/schemas/sales_crm.js"
+    },
+    "./bi": {
+      "types": "./dist/schemas/bi.d.ts",
+      "default": "./dist/schemas/bi.js"
+    }
+  },
   "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "tsc -p tsconfig.build.json && node --test dist/__tests__/schemas.test.js",
     "generate": "drizzle-kit generate:pg",
     "push": "drizzle-kit push:pg",
     "seed": "npx tsx src/seed.ts"
@@ -12,6 +66,7 @@
     "drizzle-orm": "^0.30.10"
   },
   "devDependencies": {
+    "@types/node": "^20",
     "drizzle-kit": "^0.20.18",
     "pg": "^8.11.3",
     "typescript": "^5.4.5"

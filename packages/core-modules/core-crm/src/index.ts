@@ -4,7 +4,7 @@ import {
   customers, 
   communicationLogs, 
   complaintTickets 
-} from '@erp/database';
+} from '@zynveo/database';
 
 export class CrmService {
   constructor(private db: NodePgDatabase<any>) {}

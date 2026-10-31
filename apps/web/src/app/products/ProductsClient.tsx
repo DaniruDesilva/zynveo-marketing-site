@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { 
   Card, CardContent, CardHeader, CardTitle, 
   Button, Input, Table, TableHeader, TableRow, TableHead, TableBody, TableCell 
-} from '@erp/ui';
+} from '@zynveo/ui';
 import { Plus, Edit2, Trash2, PackageSearch, Image as ImageIcon, CheckCircle, XCircle, Search } from 'lucide-react';
 
 export default function ProductsClient() {

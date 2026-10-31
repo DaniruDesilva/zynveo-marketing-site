@@ -5,7 +5,7 @@ import {
   tasks, 
   rentalAssets, 
   rentals 
-} from '@erp/database';
+} from '@zynveo/database';
 
 export class ProjectService {
   constructor(private db: NodePgDatabase<any>) {}

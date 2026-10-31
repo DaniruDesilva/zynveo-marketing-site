@@ -1,6 +1,6 @@
 import React from 'react';
 import ProductsClient from './ProductsClient';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@erp/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@zynveo/ui';
 
 export const metadata = {
   title: 'Product Catalog Management | Delight ERP',

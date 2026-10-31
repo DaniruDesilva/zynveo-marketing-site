@@ -2,9 +2,28 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "baseUrl": ".",
+    "noEmit": true,
     "paths": {
-      "@erp/database": ["packages/database/src/schema/index.ts"],
-      "@erp/sync": ["packages/sync/src/index.ts"]
+      "@zynveo/contracts": ["packages/contracts/src/index.ts"],
+      "@zynveo/microservice-chassis": ["packages/microservice-chassis/src/index.ts"],
+      "@zynveo/database": ["packages/database/src/index.ts"],
+      "@zynveo/database/client": ["packages/database/src/client.ts"],
+      "@zynveo/database/shared": ["packages/database/src/shared/index.ts"],
+      "@zynveo/database/iam": ["packages/database/src/schemas/iam.ts"],
+      "@zynveo/database/finance": ["packages/database/src/schemas/finance.ts"],
+      "@zynveo/database/hr": ["packages/database/src/schemas/hr.ts"],
+      "@zynveo/database/scm": ["packages/database/src/schemas/scm.ts"],
+      "@zynveo/database/inventory": ["packages/database/src/schemas/inventory.ts"],
+      "@zynveo/database/manufacturing": ["packages/database/src/schemas/manufacturing.ts"],
+      "@zynveo/database/sales_crm": ["packages/database/src/schemas/sales_crm.ts"],
+      "@zynveo/database/bi": ["packages/database/src/schemas/bi.ts"],
+      "@zynveo/sync": ["packages/sync/src/index.ts"],
+      "@zynveo/core-accounting": ["packages/core-modules/core-accounting/src/index.ts"],
+      "@zynveo/core-crm": ["packages/core-modules/core-crm/src/index.ts"],
+      "@zynveo/core-inventory": ["packages/core-modules/core-inventory/src/index.ts"],
+      "@zynveo/core-invoicing": ["packages/core-modules/core-invoicing/src/index.ts"],
+      "@zynveo/core-projects": ["packages/core-modules/core-projects/src/index.ts"],
+      "@zynveo/core-reporting": ["packages/core-modules/core-reporting/src/index.ts"]
     }
   },
   "include": [
@@ -12,6 +31,7 @@
   ],
   "exclude": [
     "node_modules",
-    "**/node_modules"
+    "**/node_modules",
+    "**/dist"
   ]
 }
