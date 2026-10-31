@@ -9,11 +9,17 @@ import {
   EventEnvelope,
   GetTrialBalanceDto,
   GetTrialBalanceSchema,
+  GrnApprovedEvent,
+  GrnApprovedEventSchema,
   InvoiceFinalizedEvent,
   InvoiceFinalizedEventSchema,
+  PayrollDisbursedEvent,
+  PayrollDisbursedEventSchema,
   PostJournalEntryDto,
   PostJournalEntrySchema,
   TrialBalanceResponse,
+  WorkOrderCompletedEvent,
+  WorkOrderCompletedEventSchema,
 } from '@zynveo/contracts';
 import {
   buildInvoiceFinalizedJournalLines,
@@ -38,9 +44,15 @@ import {
 const DEFAULT_COA_SPECS = [
   { code: '1100', name: 'Accounts Receivable', type: 'ASSET' as const, normalBalance: 'DEBIT' as const },
   { code: '1300', name: 'Inventory Asset', type: 'ASSET' as const, normalBalance: 'DEBIT' as const },
+  { code: '2000', name: 'Accounts Payable (GRNI)', type: 'LIABILITY' as const, normalBalance: 'CREDIT' as const },
   { code: '2100', name: 'Output Tax Payable', type: 'LIABILITY' as const, normalBalance: 'CREDIT' as const },
+  { code: '2200', name: 'Net Salaries Payable', type: 'LIABILITY' as const, normalBalance: 'CREDIT' as const },
+  { code: '2210', name: 'Statutory EPF/ETF/APIT Payable', type: 'LIABILITY' as const, normalBalance: 'CREDIT' as const },
   { code: '4000', name: 'Sales Revenue', type: 'REVENUE' as const, normalBalance: 'CREDIT' as const },
   { code: '5000', name: 'Cost of Goods Sold', type: 'EXPENSE' as const, normalBalance: 'DEBIT' as const },
+  { code: '5100', name: 'Production Absorption / WIP', type: 'EXPENSE' as const, normalBalance: 'CREDIT' as const },
+  { code: '5200', name: 'Salaries & Wages Expense', type: 'EXPENSE' as const, normalBalance: 'DEBIT' as const },
+  { code: '5210', name: 'Employer EPF/ETF Contribution Expense', type: 'EXPENSE' as const, normalBalance: 'DEBIT' as const },
 ];
 
 @Controller()
@@ -318,6 +330,257 @@ export class FinanceController {
     );
   }
 
+  /**
+   * BullMQ Durable Consumer (`event.scm.grn_approved`):
+   * Idempotently posts the GRNI / Accounts Payable Double-Entry Journal:
+   *   Dr 1300 Inventory Asset = totalAcceptedCost
+   *   Cr 2000 Accounts Payable = totalAcceptedCost
+   * and creates an open Payable in `finance.accounts_payable`.
+   */
+  @EventPattern(ERP_EVENT_PATTERNS.GRN_APPROVED)
+  async handleGrnApproved(@Payload() envelope: EventEnvelope<GrnApprovedEvent>) {
+    const event = GrnApprovedEventSchema.parse(envelope.payload);
+
+    return this.inboxService.consumeIdempotently(
+      this.db,
+      financeSchema.financeProcessedEvents,
+      'svc-finance',
+      envelope,
+      async (tx: any) => {
+        const accountMap = await this.resolveOrSeedPostingAccounts(tx, event.tenantId);
+        const amount = new Decimal(event.totalAcceptedCost)
+          .toDecimalPlaces(2, Decimal.ROUND_HALF_UP)
+          .toFixed(2);
+
+        const lines = [
+          {
+            accountId: accountMap.inventoryAssetAccountId,
+            debit: amount,
+            credit: '0.00',
+            description: `Inventory Receipt — GRN ${event.grnNumber}`,
+          },
+          {
+            accountId: accountMap.accountsPayableAccountId,
+            debit: '0.00',
+            credit: amount,
+            description: `Accounts Payable / GRNI — GRN ${event.grnNumber}`,
+          },
+        ];
+
+        verifyDoubleEntryBalance(lines);
+
+        const [entry] = await tx
+          .insert(financeSchema.journalEntries)
+          .values({
+            tenantId: event.tenantId,
+            entryNumber: `JE-GRN-${event.grnNumber}`,
+            date: new Date(),
+            description: `Automated Procurement GRN Posting for ${event.grnNumber}`,
+            reference: event.grnNumber,
+            sourceModule: 'PROCUREMENT',
+            sourceDocumentId: event.grnId,
+            status: 'POSTED',
+            postedByUserId: event.actorUserId,
+          })
+          .returning();
+
+        await tx.insert(financeSchema.journalLines).values(
+          lines.map((l) => ({
+            tenantId: event.tenantId,
+            journalEntryId: entry.id,
+            accountId: l.accountId,
+            debit: l.debit,
+            credit: l.credit,
+            description: l.description,
+          })),
+        );
+
+        const [payable] = await tx
+          .insert(financeSchema.accountsPayable)
+          .values({
+            tenantId: event.tenantId,
+            supplierId: event.supplierId,
+            grnId: event.grnId,
+            referenceNumber: event.grnNumber,
+            journalEntryId: entry.id,
+            originalAmount: amount,
+            paidAmount: '0.00',
+            balanceAmount: amount,
+            status: 'OPEN',
+          })
+          .returning();
+
+        return { journalEntryId: entry.id, payableId: payable.id };
+      },
+    );
+  }
+
+  /**
+   * BullMQ Durable Consumer (`event.mfg.work_order_completed`):
+   * Idempotently posts the Production Absorption / Finished Goods Double-Entry Journal:
+   *   Dr 1300 Inventory Asset (FG) = totalProductionCost
+   *   Cr 5100 Production Absorption / WIP = totalProductionCost
+   */
+  @EventPattern(ERP_EVENT_PATTERNS.WORK_ORDER_COMPLETED)
+  async handleWorkOrderCompleted(@Payload() envelope: EventEnvelope<WorkOrderCompletedEvent>) {
+    const event = WorkOrderCompletedEventSchema.parse(envelope.payload);
+
+    return this.inboxService.consumeIdempotently(
+      this.db,
+      financeSchema.financeProcessedEvents,
+      'svc-finance',
+      envelope,
+      async (tx: any) => {
+        const accountMap = await this.resolveOrSeedPostingAccounts(tx, event.tenantId);
+        const amount = new Decimal(event.totalProductionCost)
+          .toDecimalPlaces(2, Decimal.ROUND_HALF_UP)
+          .toFixed(2);
+
+        const lines = [
+          {
+            accountId: accountMap.inventoryAssetAccountId,
+            debit: amount,
+            credit: '0.00',
+            description: `Finished Goods Yield — WO ${event.workOrderNumber}`,
+          },
+          {
+            accountId: accountMap.productionWipAccountId,
+            debit: '0.00',
+            credit: amount,
+            description: `Production Cost Absorption — WO ${event.workOrderNumber}`,
+          },
+        ];
+
+        verifyDoubleEntryBalance(lines);
+
+        const [entry] = await tx
+          .insert(financeSchema.journalEntries)
+          .values({
+            tenantId: event.tenantId,
+            entryNumber: `JE-WO-${event.workOrderNumber}`,
+            date: new Date(),
+            description: `Automated Manufacturing Costing for ${event.workOrderNumber}`,
+            reference: event.workOrderNumber,
+            sourceModule: 'MANUFACTURING',
+            sourceDocumentId: event.workOrderId,
+            status: 'POSTED',
+            postedByUserId: event.actorUserId,
+          })
+          .returning();
+
+        await tx.insert(financeSchema.journalLines).values(
+          lines.map((l) => ({
+            tenantId: event.tenantId,
+            journalEntryId: entry.id,
+            accountId: l.accountId,
+            debit: l.debit,
+            credit: l.credit,
+            description: l.description,
+          })),
+        );
+
+        return { journalEntryId: entry.id };
+      },
+    );
+  }
+
+  /**
+   * BullMQ Durable Consumer (`event.hr.payroll_disbursed`):
+   * Idempotently posts the Statutory Payroll Double-Entry Journal:
+   *   Dr 5200 Salaries & Wages Expense               = totalGrossSalary
+   *   Dr 5210 Employer EPF (12%) & ETF (3%) Expense  = totalEmployerEpf12 + totalEmployerEtf3
+   *   Cr 2200 Net Salaries Payable                   = totalNetPayable
+   *   Cr 2210 Statutory EPF/ETF/APIT Payable         = totalEmployeeEpf8 + totalEmployerEpf12 + totalEmployerEtf3 + totalApitTax
+   */
+  @EventPattern(ERP_EVENT_PATTERNS.PAYROLL_DISBURSED)
+  async handlePayrollDisbursed(@Payload() envelope: EventEnvelope<PayrollDisbursedEvent>) {
+    const event = PayrollDisbursedEventSchema.parse(envelope.payload);
+
+    return this.inboxService.consumeIdempotently(
+      this.db,
+      financeSchema.financeProcessedEvents,
+      'svc-finance',
+      envelope,
+      async (tx: any) => {
+        const accountMap = await this.resolveOrSeedPostingAccounts(tx, event.tenantId);
+
+        const gross = new Decimal(event.totalGrossSalary);
+        const empEpf8 = new Decimal(event.totalEmployeeEpf8);
+        const emprEpf12 = new Decimal(event.totalEmployerEpf12);
+        const emprEtf3 = new Decimal(event.totalEmployerEtf3);
+        const apit = new Decimal(event.totalApitTax);
+        const netPayable = new Decimal(event.totalNetPayable);
+
+        const employerContribExpense = emprEpf12
+          .plus(emprEtf3)
+          .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+        const statutoryPayable = empEpf8
+          .plus(emprEpf12)
+          .plus(emprEtf3)
+          .plus(apit)
+          .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+
+        const lines = [
+          {
+            accountId: accountMap.salariesExpenseAccountId,
+            debit: gross.toFixed(2),
+            credit: '0.00',
+            description: `Gross Salaries Expense (${event.periodYear}-${event.periodMonth})`,
+          },
+          {
+            accountId: accountMap.employerEpfEtfExpenseAccountId,
+            debit: employerContribExpense.toFixed(2),
+            credit: '0.00',
+            description: `Employer EPF 12% & ETF 3% Expense (${event.periodYear}-${event.periodMonth})`,
+          },
+          {
+            accountId: accountMap.netSalariesPayableAccountId,
+            debit: '0.00',
+            credit: netPayable.toFixed(2),
+            description: `Net Salaries Payable (${event.periodYear}-${event.periodMonth})`,
+          },
+          {
+            accountId: accountMap.statutoryPayableAccountId,
+            debit: '0.00',
+            credit: statutoryPayable.toFixed(2),
+            description: `Statutory EPF/ETF/APIT Payable (${event.periodYear}-${event.periodMonth})`,
+          },
+        ];
+
+        verifyDoubleEntryBalance(lines);
+
+        const periodCode = `${event.periodYear}${String(event.periodMonth).padStart(2, '0')}`;
+        const [entry] = await tx
+          .insert(financeSchema.journalEntries)
+          .values({
+            tenantId: event.tenantId,
+            entryNumber: `JE-PAY-${periodCode}`,
+            date: new Date(),
+            description: `Automated Statutory Payroll Posting (${event.periodYear}-${event.periodMonth})`,
+            reference: `PAYROLL-${periodCode}`,
+            sourceModule: 'HR_PAYROLL',
+            sourceDocumentId: event.payrollRunId,
+            status: 'POSTED',
+            postedByUserId: event.actorUserId,
+          })
+          .returning();
+
+        await tx.insert(financeSchema.journalLines).values(
+          lines.map((l) => ({
+            tenantId: event.tenantId,
+            journalEntryId: entry.id,
+            accountId: l.accountId,
+            debit: l.debit,
+            credit: l.credit,
+            description: l.description,
+          })),
+        );
+
+        return { journalEntryId: entry.id, lineCount: lines.length };
+      },
+    );
+  }
+
   private async resolveOrSeedPostingAccounts(tx: any, tenantId: string) {
     const existing = await tx
       .select()
@@ -348,11 +611,17 @@ export class FinanceController {
 
     const ar = byCode.get('1100');
     const inv = byCode.get('1300');
+    const ap = byCode.get('2000');
     const tax = byCode.get('2100');
+    const salPay = byCode.get('2200');
+    const statPay = byCode.get('2210');
     const rev = byCode.get('4000');
     const cogs = byCode.get('5000');
+    const wip = byCode.get('5100');
+    const salExp = byCode.get('5200');
+    const epfExp = byCode.get('5210');
 
-    if (!ar || !inv || !tax || !rev || !cogs) {
+    if (!ar || !inv || !ap || !tax || !salPay || !statPay || !rev || !cogs || !wip || !salExp || !epfExp) {
       throw new ErpRpcException(
         'COA_MISSING',
         'Failed to resolve mandatory Chart of Accounts for automated posting',
@@ -363,9 +632,15 @@ export class FinanceController {
     return {
       accountsReceivableAccountId: ar.id,
       inventoryAssetAccountId: inv.id,
+      accountsPayableAccountId: ap.id,
       taxPayableAccountId: tax.id,
+      netSalariesPayableAccountId: salPay.id,
+      statutoryPayableAccountId: statPay.id,
       salesRevenueAccountId: rev.id,
       cogsExpenseAccountId: cogs.id,
+      productionWipAccountId: wip.id,
+      salariesExpenseAccountId: salExp.id,
+      employerEpfEtfExpenseAccountId: epfExp.id,
     };
   }
 }

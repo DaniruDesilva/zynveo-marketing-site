@@ -92,6 +92,21 @@ export const supabase = {
       }
     })
   },
+  auth: {
+    getSession: async (): Promise<{ data: { session: { access_token: string } | null }; error: null }> => {
+      if (typeof window !== 'undefined') {
+        const token = window.localStorage.getItem('zynveo_access_token') || SUPABASE_ANON_KEY;
+        return {
+          data: { session: token ? { access_token: token } : null },
+          error: null,
+        };
+      }
+      return {
+        data: { session: SUPABASE_ANON_KEY ? { access_token: SUPABASE_ANON_KEY } : null },
+        error: null,
+      };
+    },
+  },
   channel: (name: string) => ({ on: (event: string, opts: any, callback: any) => ({ subscribe: () => {} }) }),
   removeChannel: (channel: any) => {}
 };

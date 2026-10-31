@@ -1,0 +1,57 @@
+# PowerSync Read-Only Multi-Tenant Replication Rules across the 8 Isolated Zynveo ERP Schemas
+bucket_definitions:
+  tenant_erp_data:
+    parameters:
+      - SELECT request.jwt() ->> 'tenant_id' AS tenant_id
+    data:
+      # 1. IAM Schema (iam.*)
+      - SELECT id, name, slug, base_currency, is_active, created_at, updated_at FROM iam.tenants WHERE id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, code, name, address, phone, is_active, created_at, updated_at FROM iam.branches WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, branch_id, user_id, role, is_active, created_at, updated_at FROM iam.tenant_users WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+
+      # 2. Finance Schema (finance.*)
+      - SELECT id, tenant_id, code, name, type, normal_balance, description, is_active, parent_id, created_at, updated_at FROM finance.accounts WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, entry_number, date, description, reference, source_module, source_document_id, status, created_at, updated_at FROM finance.journal_entries WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, journal_entry_id, account_id, debit, credit, description, created_at, updated_at FROM finance.journal_lines WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, customer_id, invoice_id, invoice_number, journal_entry_id, due_date, original_amount, paid_amount, balance_amount, status, created_at, updated_at FROM finance.accounts_receivable WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, supplier_id, grn_id, supplier_bill_id, reference_number, journal_entry_id, due_date, original_amount, paid_amount, balance_amount, status, created_at FROM finance.accounts_payable WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+
+      # 3. Inventory & WMS Schema (inventory.*)
+      - SELECT id, tenant_id, name, description, category, brand, reorder_threshold, is_active, created_at, updated_at FROM inventory.products WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, product_id, sku, barcode, name, price, cost, wac_cost, is_active, created_at, updated_at FROM inventory.product_variants WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, code, name, location, is_active, created_at, updated_at FROM inventory.warehouses WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, product_id, variant_id, warehouse_id, quantity, reserved_quantity, unit_wac_cost, batch_number, expiration_date, created_at, updated_at FROM inventory.stock_levels WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, warehouse_id, product_id, variant_id, reason, reference_document_id, batch_number, quantity_delta, balance_after, unit_cost_at_movement, total_valuation_delta, created_at FROM inventory.stock_movements WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+
+      # 4. Supply Chain & Procurement Schema (scm.*)
+      - SELECT id, tenant_id, name, email, phone, address, is_active, created_at, updated_at FROM scm.suppliers WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, po_number, supplier_id, warehouse_id, status, order_date, expected_delivery_date, subtotal_amount, tax_amount, total_amount, notes, created_at, updated_at FROM scm.purchase_orders WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, purchase_order_id, product_id, sku, ordered_qty, received_qty, unit_cost, line_total, created_at, updated_at FROM scm.po_lines WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, grn_number, purchase_order_id, supplier_id, warehouse_id, status, date, total, notes, created_at, updated_at FROM scm.goods_received_notes WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, grn_id, po_line_id, product_id, variant_id, sku, description, ordered_qty, quantity, rejected_qty, unit_cost, line_total, batch_number, expiry_date, created_at, updated_at FROM scm.grn_lines WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+
+      # 5. Manufacturing Schema (manufacturing.*)
+      - SELECT id, tenant_id, finished_product_id, bom_code, version, labor_cost_per_unit, overhead_cost_per_unit, is_active, created_at, updated_at FROM manufacturing.bills_of_materials WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, work_order_number, bom_id, finished_product_id, source_raw_warehouse_id, target_finished_warehouse_id, planned_qty, actual_produced_qty, output_batch_number, total_production_cost, status, created_at, updated_at FROM manufacturing.work_orders WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+
+      # 6. HR & Payroll Schema (hr.*)
+      - SELECT id, tenant_id, employee_number, first_name, last_name, email, phone, epf_number, is_active, created_at, updated_at FROM hr.employees WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, run_number, period_month, period_year, status, total_gross_salary, total_employee_epf_8, total_employer_epf_12, total_employer_etf_3, total_apit_tax, total_net_payable, created_at FROM hr.payroll_runs WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+
+      # 7. Sales & CRM Schema (sales_crm.*)
+      - SELECT id, tenant_id, name, email, phone, address, company, tier, credit_limit, is_active, created_at, updated_at FROM sales_crm.customers WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, customer_id, subject, description, severity, status, sla_deadline, resolution_notes, created_at, updated_at FROM sales_crm.complaint_tickets WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, invoice_number, sales_order_id, customer_id, warehouse_id, currency, invoice_date, due_date, subtotal_amount, discount_amount, tax_amount, total_amount, total_cogs_amount, status, journal_entry_id, notes, terms, created_at, updated_at FROM sales_crm.invoices WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, invoice_id, product_id, variant_id, sku, description, quantity, unit_price, discount_amount, tax_rate_percent, tax_amount, line_total, created_at, updated_at FROM sales_crm.invoice_lines WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, type, document_number, status, customer_id, warehouse_id, date, due_date, subtotal, tax_total, discount_total, total, total_cogs, notes, terms, linked_document_id, journal_entry_id, created_at, updated_at FROM sales_crm.documents WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, document_id, product_id, variant_id, sku, description, quantity, unit_price, discount, tax_rate, line_total, created_at, updated_at FROM sales_crm.document_lines WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, customer_id, name, description, status, budget, start_date, end_date, created_at, updated_at FROM sales_crm.projects WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, project_id, title, description, status, estimated_hours, logged_hours, due_date, created_at, updated_at FROM sales_crm.tasks WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, name, serial_number, daily_rate, status, created_at, updated_at FROM sales_crm.rental_assets WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+      - SELECT id, tenant_id, customer_id, asset_id, project_id, status, start_date, end_date, total_cost, created_at, updated_at FROM sales_crm.rentals WHERE tenant_id = bucket.tenant_id AND deleted_at IS NULL
+
+      # 8. BI Materialized Views (bi.mv_*)
+      - SELECT tenant_id || ':' || sale_date AS id, tenant_id, sale_date, invoices_count, net_revenue, total_tax, gross_revenue, total_cogs FROM bi.mv_daily_sales_summary WHERE tenant_id = bucket.tenant_id
+      - SELECT tenant_id || ':' || warehouse_id || ':' || variant_id AS id, tenant_id, warehouse_id, variant_id, sku, quantity_on_hand, unit_wac_cost, total_valuation FROM bi.mv_inventory_valuation_wac WHERE tenant_id = bucket.tenant_id
+      - SELECT tenant_id || ':' || customer_id AS id, tenant_id, customer_id, bucket_current, bucket_1_30, bucket_31_60, bucket_61_90, bucket_over_90, total_receivable FROM bi.mv_ar_aging_buckets WHERE tenant_id = bucket.tenant_id
+      - SELECT tenant_id || ':' || account_id AS id, tenant_id, account_id, account_code, account_name, account_type, normal_balance, total_debit, total_credit, net_balance FROM bi.mv_trial_balance WHERE tenant_id = bucket.tenant_id

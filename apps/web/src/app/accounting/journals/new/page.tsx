@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { usePowerSync } from "../../../../components/PowerSyncProvider";
+import { erpApi } from "../../../../lib/api";
 import { ArrowLeft, Plus, Trash2, Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -9,26 +10,28 @@ import { useRouter } from "next/navigation";
 export default function NewJournalEntryPage() {
   const db = usePowerSync();
   const router = useRouter();
-  
+
   const [accounts, setAccounts] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   const [header, setHeader] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toISOString().split("T")[0],
     reference: "",
     description: "",
   });
 
   const [lines, setLines] = useState<any[]>([
-    { id: crypto.randomUUID(), accountId: "", description: "", debit: 0, credit: 0 },
-    { id: crypto.randomUUID(), accountId: "", description: "", debit: 0, credit: 0 },
+    { id: "line-1", accountId: "", description: "", debit: "0.00", credit: "0.00" },
+    { id: "line-2", accountId: "", description: "", debit: "0.00", credit: "0.00" },
   ]);
 
   const fetchAccounts = useCallback(async () => {
     if (!db) return;
     try {
-      const result = await db.getAll("SELECT id, code, name, type FROM accounts WHERE is_active = 1 OR is_active = 'true' ORDER BY code ASC");
+      const result = await db.getAll(
+        "SELECT id, code, name, type FROM accounts WHERE is_active = 1 OR is_active = 'true' ORDER BY code ASC"
+      );
       setAccounts(result);
     } catch (e) {
       console.error(e);
@@ -40,18 +43,18 @@ export default function NewJournalEntryPage() {
   }, [fetchAccounts]);
 
   const handleHeaderChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setHeader(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    setHeader((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleLineChange = (index: number, field: string, value: any) => {
-    setLines(prev => {
+    setLines((prev) => {
       const newLines = [...prev];
-      if (field === 'debit') {
-        newLines[index].debit = Number(value);
-        if (Number(value) > 0) newLines[index].credit = 0; // Clear credit if debit is entered
-      } else if (field === 'credit') {
-        newLines[index].credit = Number(value);
-        if (Number(value) > 0) newLines[index].debit = 0; // Clear debit if credit is entered
+      if (field === "debit") {
+        newLines[index].debit = value;
+        if (Number(value) > 0) newLines[index].credit = "0.00";
+      } else if (field === "credit") {
+        newLines[index].credit = value;
+        if (Number(value) > 0) newLines[index].debit = "0.00";
       } else {
         newLines[index][field] = value;
       }
@@ -60,33 +63,42 @@ export default function NewJournalEntryPage() {
   };
 
   const addLine = () => {
-    setLines(prev => [...prev, { id: crypto.randomUUID(), accountId: "", description: "", debit: 0, credit: 0 }]);
+    setLines((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), accountId: "", description: "", debit: "0.00", credit: "0.00" },
+    ]);
   };
 
   const removeLine = (index: number) => {
-    if (lines.length <= 2) return; // Enforce minimum 2 lines
-    setLines(prev => prev.filter((_, i) => i !== index));
+    if (lines.length <= 2) return;
+    setLines((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const totalDebit = lines.reduce((sum, line) => sum + (Number(line.debit) || 0), 0);
-  const totalCredit = lines.reduce((sum, line) => sum + (Number(line.credit) || 0), 0);
-  const isBalanced = totalDebit === totalCredit && totalDebit > 0;
+  const totalDebitCents = lines.reduce(
+    (sum, line) => sum + Math.round((Number(line.debit) || 0) * 100),
+    0
+  );
+  const totalCreditCents = lines.reduce(
+    (sum, line) => sum + Math.round((Number(line.credit) || 0) * 100),
+    0
+  );
+  const totalDebit = totalDebitCents / 100;
+  const totalCredit = totalCreditCents / 100;
+  const isBalanced = totalDebitCents === totalCreditCents && totalDebitCents > 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!db) return;
     if (!isBalanced) {
       setError("Total Debits must equal Total Credits.");
       return;
     }
-    
-    // Validate lines
+
     for (let i = 0; i < lines.length; i++) {
       if (!lines[i].accountId) {
         setError(`Please select an account for line ${i + 1}.`);
         return;
       }
-      if (lines[i].debit === 0 && lines[i].credit === 0) {
+      if (Number(lines[i].debit) === 0 && Number(lines[i].credit) === 0) {
         setError(`Line ${i + 1} must have a debit or credit amount.`);
         return;
       }
@@ -96,32 +108,30 @@ export default function NewJournalEntryPage() {
     setError("");
 
     try {
-      const tenantRes = await db.getAll("SELECT id FROM tenants LIMIT 1");
-      const tenantId = tenantRes.length > 0 ? tenantRes[0].id : crypto.randomUUID();
+      const referenceNumber = header.reference.trim() || `JE-${Date.now().toString().slice(-6)}`;
+      const postingDate = new Date(`${header.date}T00:00:00.000Z`).toISOString();
 
-      const journalId = crypto.randomUUID();
-      // Generate dummy entry number
-      const entryNumber = `JE-${Date.now().toString().slice(-6)}`;
+      await erpApi.finance.postJournalEntry({
+        referenceNumber,
+        sourceModule: "MANUAL",
+        postingDate,
+        narration: header.description.trim() || `Manual Journal ${referenceNumber}`,
+        lines: lines.map((line) => {
+          const acct = accounts.find((a) => a.id === line.accountId);
+          return {
+            accountId: line.accountId,
+            accountCode: acct?.code || "1000",
+            description: line.description || header.description || undefined,
+            debit: (Number(line.debit) || 0).toFixed(2),
+            credit: (Number(line.credit) || 0).toFixed(2),
+          };
+        }),
+      });
 
-      await db.execute(
-        `INSERT INTO journal_entries (id, tenant_id, entry_number, date, description, reference, status, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, 'posted', datetime('now'), datetime('now'))`,
-        [journalId, tenantId, entryNumber, header.date, header.description, header.reference]
-      );
-
-      for (const line of lines) {
-        const lineId = crypto.randomUUID();
-        await db.execute(
-          `INSERT INTO journal_lines (id, tenant_id, journal_entry_id, account_id, debit, credit, description, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
-          [lineId, tenantId, journalId, line.accountId, line.debit, line.credit, line.description || header.description]
-        );
-      }
-
-      router.push('/accounting/journals');
+      router.push("/accounting/journals");
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Failed to save journal entry.");
+      setError(err.message || "Failed to post journal entry via API Gateway.");
       setIsSubmitting(false);
     }
   };
@@ -145,7 +155,7 @@ export default function NewJournalEntryPage() {
         <div className="p-6 border-b border-slate-100 grid grid-cols-3 gap-6">
           <div className="space-y-1">
             <label className="text-sm font-medium text-slate-700">Date</label>
-            <input 
+            <input
               required
               type="date"
               name="date"
@@ -156,24 +166,24 @@ export default function NewJournalEntryPage() {
           </div>
           <div className="space-y-1">
             <label className="text-sm font-medium text-slate-700">Reference</label>
-            <input 
+            <input
               type="text"
               name="reference"
               value={header.reference}
               onChange={handleHeaderChange}
               className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g. Invoice #1234"
+              placeholder="e.g. JE-2026-001"
             />
           </div>
           <div className="space-y-1 col-span-3">
-            <label className="text-sm font-medium text-slate-700">Description</label>
-            <textarea 
+            <label className="text-sm font-medium text-slate-700">Narration / Description</label>
+            <textarea
               name="description"
               value={header.description}
               onChange={handleHeaderChange}
               rows={2}
               className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Internal notes or description for this journal..."
+              placeholder="Internal notes or narration for this double-entry journal..."
             />
           </div>
         </div>
@@ -196,11 +206,11 @@ export default function NewJournalEntryPage() {
                     <select
                       required
                       value={line.accountId}
-                      onChange={(e) => handleLineChange(index, 'accountId', e.target.value)}
+                      onChange={(e) => handleLineChange(index, "accountId", e.target.value)}
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Select Account...</option>
-                      {accounts.map(acc => (
+                      {accounts.map((acc) => (
                         <option key={acc.id} value={acc.id}>
                           {acc.code} - {acc.name}
                         </option>
@@ -208,42 +218,42 @@ export default function NewJournalEntryPage() {
                     </select>
                   </td>
                   <td className="p-4">
-                    <input 
+                    <input
                       type="text"
                       value={line.description}
-                      onChange={(e) => handleLineChange(index, 'description', e.target.value)}
+                      onChange={(e) => handleLineChange(index, "description", e.target.value)}
                       className="w-full px-3 py-2 border border-transparent hover:border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
                       placeholder="Line description (optional)"
                     />
                   </td>
                   <td className="p-4">
-                    <input 
+                    <input
                       type="number"
                       step="0.01"
                       min="0"
-                      value={line.debit || ""}
-                      onChange={(e) => handleLineChange(index, 'debit', e.target.value)}
+                      value={line.debit}
+                      onChange={(e) => handleLineChange(index, "debit", e.target.value)}
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="0.00"
                     />
                   </td>
                   <td className="p-4">
-                    <input 
+                    <input
                       type="number"
                       step="0.01"
                       min="0"
-                      value={line.credit || ""}
-                      onChange={(e) => handleLineChange(index, 'credit', e.target.value)}
+                      value={line.credit}
+                      onChange={(e) => handleLineChange(index, "credit", e.target.value)}
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="0.00"
                     />
                   </td>
                   <td className="p-4 text-center">
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => removeLine(index)}
                       disabled={lines.length <= 2}
-                      className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400"
+                      className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -254,7 +264,7 @@ export default function NewJournalEntryPage() {
             <tfoot>
               <tr className="bg-slate-50">
                 <td colSpan={2} className="p-4">
-                  <button 
+                  <button
                     type="button"
                     onClick={addLine}
                     className="flex items-center space-x-2 text-sm font-medium text-blue-600 hover:text-blue-700"
@@ -264,17 +274,17 @@ export default function NewJournalEntryPage() {
                   </button>
                 </td>
                 <td className="p-4 text-right font-semibold text-slate-800">
-                  {totalDebit.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                  {totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </td>
                 <td className="p-4 text-right font-semibold text-slate-800">
-                  {totalCredit.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                  {totalCredit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </td>
                 <td></td>
               </tr>
               {!isBalanced && totalDebit > 0 && totalCredit > 0 && (
                 <tr className="bg-red-50/50">
                   <td colSpan={5} className="p-3 text-center text-sm font-medium text-red-600">
-                    Difference: {Math.abs(totalDebit - totalCredit).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                    Difference: {Math.abs(totalDebit - totalCredit).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </td>
                 </tr>
               )}
@@ -286,7 +296,7 @@ export default function NewJournalEntryPage() {
           <Link href="/accounting/journals" className="px-6 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors">
             Cancel
           </Link>
-          <button 
+          <button
             type="submit"
             disabled={!isBalanced || isSubmitting}
             className="flex items-center space-x-2 px-6 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"

@@ -173,4 +173,101 @@ describe('svc-finance Double-Entry Engine & Idempotent Sub-Ledger Consumer', () 
     assert.equal(tb.totalDebit, '16300.00');
     assert.equal(tb.totalCredit, '16300.00');
   });
+
+  it('idempotently consumes GRN_APPROVED, WORK_ORDER_COMPLETED, and PAYROLL_DISBURSED keeping Trial Balance balanced', async () => {
+    const { db } = createInMemoryFinanceDb();
+    const controller = new FinanceController(db, new OutboxService(), new InboxService());
+
+    // 1. GRN_APPROVED (12,000.00)
+    await controller.handleGrnApproved({
+      eventId: '99999999-9999-4999-8999-999999999991',
+      eventName: ERP_EVENT_PATTERNS.GRN_APPROVED,
+      sourceService: 'svc-procurement',
+      tenantId: TENANT_ID,
+      occurredAt: new Date().toISOString(),
+      payload: {
+        tenantId: TENANT_ID,
+        actorUserId: USER_ID,
+        correlationId: '99999999-9999-4999-8999-999999999991',
+        grnId: '66666666-6666-4666-8666-666666666661',
+        grnNumber: 'GRN-5001',
+        purchaseOrderId: '66666666-6666-4666-8666-666666666662',
+        supplierId: '66666666-6666-4666-8666-666666666663',
+        warehouseId: '66666666-6666-4666-8666-666666666664',
+        totalAcceptedCost: '12000.00',
+        lines: [
+          {
+            productId: '66666666-6666-4666-8666-666666666665',
+            sku: 'RAW-CLOVE-1KG',
+            poLineId: '66666666-6666-4666-8666-666666666666',
+            orderedQty: '50.0000',
+            receivedQty: '50.0000',
+            rejectedQty: '0.0000',
+            unitCost: '240.00',
+            lineTotalCost: '12000.00',
+            batchNumber: 'LOT-01',
+          },
+        ],
+      },
+    });
+
+    // 2. WORK_ORDER_COMPLETED (14,000.00)
+    await controller.handleWorkOrderCompleted({
+      eventId: '99999999-9999-4999-8999-999999999992',
+      eventName: ERP_EVENT_PATTERNS.WORK_ORDER_COMPLETED,
+      sourceService: 'svc-manufacturing',
+      tenantId: TENANT_ID,
+      occurredAt: new Date().toISOString(),
+      payload: {
+        tenantId: TENANT_ID,
+        actorUserId: USER_ID,
+        correlationId: '99999999-9999-4999-8999-999999999992',
+        workOrderId: '66666666-6666-4666-8666-666666666671',
+        workOrderNumber: 'WO-7001',
+        bomId: '66666666-6666-4666-8666-666666666672',
+        finishedProductId: '66666666-6666-4666-8666-666666666673',
+        actualProducedQty: '100.0000',
+        outputBatchNumber: 'FG-LOT-01',
+        rawMaterialCostTotal: '10500.00',
+        laborCostTotal: '2000.00',
+        overheadCostTotal: '1500.00',
+        totalProductionCost: '14000.00',
+        unitFinishedGoodCost: '140.00',
+      },
+    });
+
+    // 3. PAYROLL_DISBURSED (Gross 265,000.00 + Employer EPF/ETF 34,500.00 = 299,500.00)
+    await controller.handlePayrollDisbursed({
+      eventId: '99999999-9999-4999-8999-999999999993',
+      eventName: ERP_EVENT_PATTERNS.PAYROLL_DISBURSED,
+      sourceService: 'svc-hr-payroll',
+      tenantId: TENANT_ID,
+      occurredAt: new Date().toISOString(),
+      payload: {
+        tenantId: TENANT_ID,
+        actorUserId: USER_ID,
+        correlationId: '99999999-9999-4999-8999-999999999993',
+        payrollRunId: '66666666-6666-4666-8666-666666666681',
+        periodMonth: 10,
+        periodYear: 2026,
+        totalGrossSalary: '265000.00',
+        totalEmployeeEpf8: '18400.00',
+        totalEmployerEpf12: '27600.00',
+        totalEmployerEtf3: '6900.00',
+        totalApitTax: '6500.00',
+        totalNetPayable: '240100.00',
+      },
+    });
+
+    const tb = await controller.getTrialBalance({
+      tenantId: TENANT_ID,
+      actorUserId: USER_ID,
+      correlationId: '99999999-9999-4999-8999-999999999994',
+    });
+
+    assert.equal(tb.isBalanced, true);
+    // 12,000 + 14,000 + 299,500 = 325,500.00
+    assert.equal(tb.totalDebit, '325500.00');
+    assert.equal(tb.totalCredit, '325500.00');
+  });
 });

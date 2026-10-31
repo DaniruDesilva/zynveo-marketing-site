@@ -1,34 +1,53 @@
 import { column, Schema, TableV2 as Table } from '@powersync/web';
 
-// Local representation of the multi-tenant architecture and accounting schema.
-// PowerSync will replicate the cloud data (Supabase) into these local SQLite tables.
-
+/**
+ * Local SQLite WASM schema replicated via PowerSync across all 8 isolated PostgreSQL schemas
+ * (`iam`, `finance`, `hr`, `scm`, `inventory`, `manufacturing`, `sales_crm`, `bi`).
+ * Per GEMINI.md Rule 5: PowerSync is strictly used for instant Offline-First Reads;
+ * all state-changing ERP mutations route through `apps/api-gateway`.
+ */
 export const AppSchema = new Schema({
+  // 1. IAM Schema (`iam.*`)
   tenants: new Table({
     name: column.text,
     slug: column.text,
-    is_active: column.integer, // booleans map to integers in SQLite
+    base_currency: column.text,
+    is_active: column.integer,
     created_at: column.text,
-    updated_at: column.text
+    updated_at: column.text,
   }),
-  
+
+  branches: new Table({
+    tenant_id: column.text,
+    code: column.text,
+    name: column.text,
+    address: column.text,
+    phone: column.text,
+    is_active: column.integer,
+    created_at: column.text,
+    updated_at: column.text,
+  }),
+
   users: new Table({
     email: column.text,
     first_name: column.text,
     last_name: column.text,
     is_active: column.integer,
     created_at: column.text,
-    updated_at: column.text
+    updated_at: column.text,
   }),
 
   tenant_users: new Table({
     tenant_id: column.text,
+    branch_id: column.text,
     user_id: column.text,
     role: column.text,
+    is_active: column.integer,
     created_at: column.text,
-    updated_at: column.text
+    updated_at: column.text,
   }),
 
+  // 2. Sales & CRM Schema (`sales_crm.*`)
   customers: new Table({
     tenant_id: column.text,
     name: column.text,
@@ -37,16 +56,20 @@ export const AppSchema = new Schema({
     address: column.text,
     company: column.text,
     tier: column.text,
+    credit_limit: column.text,
+    is_active: column.integer,
     created_at: column.text,
-    updated_at: column.text
+    updated_at: column.text,
   }),
+
   communication_logs: new Table({
     tenant_id: column.text,
     customer_id: column.text,
     type: column.text,
     notes: column.text,
-    date: column.text
+    date: column.text,
   }),
+
   complaint_tickets: new Table({
     tenant_id: column.text,
     customer_id: column.text,
@@ -57,8 +80,88 @@ export const AppSchema = new Schema({
     sla_deadline: column.text,
     resolution_notes: column.text,
     created_at: column.text,
-    updated_at: column.text
+    updated_at: column.text,
   }),
+
+  invoices: new Table({
+    tenant_id: column.text,
+    invoice_number: column.text,
+    sales_order_id: column.text,
+    customer_id: column.text,
+    warehouse_id: column.text,
+    currency: column.text,
+    invoice_date: column.text,
+    due_date: column.text,
+    subtotal_amount: column.text,
+    discount_amount: column.text,
+    tax_amount: column.text,
+    total_amount: column.text,
+    total_cogs_amount: column.text,
+    status: column.text,
+    journal_entry_id: column.text,
+    notes: column.text,
+    terms: column.text,
+    created_at: column.text,
+    updated_at: column.text,
+  }),
+
+  invoice_lines: new Table({
+    tenant_id: column.text,
+    invoice_id: column.text,
+    product_id: column.text,
+    variant_id: column.text,
+    sku: column.text,
+    description: column.text,
+    quantity: column.text,
+    unit_price: column.text,
+    discount_amount: column.text,
+    tax_rate_percent: column.text,
+    tax_amount: column.text,
+    line_total: column.text,
+    created_at: column.text,
+    updated_at: column.text,
+  }),
+
+  // Backwards-compatible documents & document_lines tables
+  documents: new Table({
+    tenant_id: column.text,
+    type: column.text,
+    document_number: column.text,
+    status: column.text,
+    customer_id: column.text,
+    warehouse_id: column.text,
+    date: column.text,
+    due_date: column.text,
+    subtotal: column.real,
+    tax_total: column.real,
+    discount_total: column.real,
+    total: column.real,
+    total_cogs: column.real,
+    notes: column.text,
+    terms: column.text,
+    linked_document_id: column.text,
+    journal_entry_id: column.text,
+    created_at: column.text,
+    updated_at: column.text,
+  }),
+
+  document_lines: new Table({
+    tenant_id: column.text,
+    document_id: column.text,
+    product_id: column.text,
+    variant_id: column.text,
+    sku: column.text,
+    description: column.text,
+    quantity: column.real,
+    unit_price: column.real,
+    discount: column.real,
+    tax_rate: column.real,
+    line_total: column.real,
+    created_at: column.text,
+    updated_at: column.text,
+  }),
+
+  // Parked Projects & Rentals inside `sales_crm.*`
   projects: new Table({
     tenant_id: column.text,
     customer_id: column.text,
@@ -69,8 +172,9 @@ export const AppSchema = new Schema({
     start_date: column.text,
     end_date: column.text,
     created_at: column.text,
-    updated_at: column.text
+    updated_at: column.text,
   }),
+
   tasks: new Table({
     tenant_id: column.text,
     project_id: column.text,
@@ -81,8 +185,9 @@ export const AppSchema = new Schema({
     logged_hours: column.real,
     due_date: column.text,
     created_at: column.text,
-    updated_at: column.text
+    updated_at: column.text,
   }),
+
   rental_assets: new Table({
     tenant_id: column.text,
     name: column.text,
@@ -90,8 +195,9 @@ export const AppSchema = new Schema({
     daily_rate: column.real,
     status: column.text,
     created_at: column.text,
-    updated_at: column.text
+    updated_at: column.text,
   }),
+
   rentals: new Table({
     tenant_id: column.text,
     customer_id: column.text,
@@ -102,9 +208,10 @@ export const AppSchema = new Schema({
     end_date: column.text,
     total_cost: column.real,
     created_at: column.text,
-    updated_at: column.text
+    updated_at: column.text,
   }),
 
+  // 3. Finance Schema (`finance.*`)
   accounts: new Table({
     tenant_id: column.text,
     code: column.text,
@@ -115,7 +222,7 @@ export const AppSchema = new Schema({
     is_active: column.integer,
     parent_id: column.text,
     created_at: column.text,
-    updated_at: column.text
+    updated_at: column.text,
   }),
 
   journal_entries: new Table({
@@ -124,32 +231,65 @@ export const AppSchema = new Schema({
     date: column.text,
     description: column.text,
     reference: column.text,
+    source_module: column.text,
+    source_document_id: column.text,
     status: column.text,
     created_at: column.text,
-    updated_at: column.text
+    updated_at: column.text,
   }),
 
   journal_lines: new Table({
     tenant_id: column.text,
     journal_entry_id: column.text,
     account_id: column.text,
-    debit: column.real, // NUMERIC maps to REAL in PowerSync/SQLite
+    debit: column.real,
     credit: column.real,
     description: column.text,
     created_at: column.text,
-    updated_at: column.text
+    updated_at: column.text,
   }),
 
-  // Inventory Schema
+  accounts_receivable: new Table({
+    tenant_id: column.text,
+    customer_id: column.text,
+    invoice_id: column.text,
+    invoice_number: column.text,
+    journal_entry_id: column.text,
+    due_date: column.text,
+    original_amount: column.text,
+    paid_amount: column.text,
+    balance_amount: column.text,
+    status: column.text,
+    created_at: column.text,
+    updated_at: column.text,
+  }),
+
+  accounts_payable: new Table({
+    tenant_id: column.text,
+    supplier_id: column.text,
+    grn_id: column.text,
+    supplier_bill_id: column.text,
+    reference_number: column.text,
+    journal_entry_id: column.text,
+    due_date: column.text,
+    original_amount: column.text,
+    paid_amount: column.text,
+    balance_amount: column.text,
+    status: column.text,
+    created_at: column.text,
+  }),
+
+  // 4. Inventory & WMS Schema (`inventory.*`)
   products: new Table({
     tenant_id: column.text,
     name: column.text,
     description: column.text,
     category: column.text,
     brand: column.text,
+    reorder_threshold: column.text,
     is_active: column.integer,
     created_at: column.text,
-    updated_at: column.text
+    updated_at: column.text,
   }),
 
   product_variants: new Table({
@@ -160,65 +300,226 @@ export const AppSchema = new Schema({
     name: column.text,
     price: column.real,
     cost: column.real,
+    wac_cost: column.text,
     is_active: column.integer,
     created_at: column.text,
-    updated_at: column.text
+    updated_at: column.text,
   }),
 
   warehouses: new Table({
     tenant_id: column.text,
+    code: column.text,
     name: column.text,
     location: column.text,
     is_active: column.integer,
     created_at: column.text,
-    updated_at: column.text
+    updated_at: column.text,
   }),
 
   stock_levels: new Table({
     tenant_id: column.text,
+    product_id: column.text,
     variant_id: column.text,
     warehouse_id: column.text,
     quantity: column.real,
+    reserved_quantity: column.text,
+    unit_wac_cost: column.text,
     batch_number: column.text,
     expiration_date: column.text,
     created_at: column.text,
-    updated_at: column.text
+    updated_at: column.text,
   }),
 
-  // Invoicing Schema
-  documents: new Table({
+  stock_movements: new Table({
     tenant_id: column.text,
-    type: column.text,
-    document_number: column.text,
+    warehouse_id: column.text,
+    product_id: column.text,
+    variant_id: column.text,
+    reason: column.text,
+    reference_document_id: column.text,
+    batch_number: column.text,
+    quantity_delta: column.text,
+    balance_after: column.text,
+    unit_cost_at_movement: column.text,
+    total_valuation_delta: column.text,
+    created_at: column.text,
+  }),
+
+  // 5. Supply Chain & Procurement Schema (`scm.*`)
+  suppliers: new Table({
+    tenant_id: column.text,
+    name: column.text,
+    email: column.text,
+    phone: column.text,
+    address: column.text,
+    is_active: column.integer,
+    created_at: column.text,
+    updated_at: column.text,
+  }),
+
+  purchase_orders: new Table({
+    tenant_id: column.text,
+    po_number: column.text,
+    supplier_id: column.text,
+    warehouse_id: column.text,
     status: column.text,
-    customer_id: column.text,
+    order_date: column.text,
+    expected_delivery_date: column.text,
+    subtotal_amount: column.text,
+    tax_amount: column.text,
+    total_amount: column.text,
+    notes: column.text,
+    created_at: column.text,
+    updated_at: column.text,
+  }),
+
+  po_lines: new Table({
+    tenant_id: column.text,
+    purchase_order_id: column.text,
+    product_id: column.text,
+    sku: column.text,
+    ordered_qty: column.text,
+    received_qty: column.text,
+    unit_cost: column.text,
+    line_total: column.text,
+    created_at: column.text,
+    updated_at: column.text,
+  }),
+
+  goods_received_notes: new Table({
+    tenant_id: column.text,
+    grn_number: column.text,
+    purchase_order_id: column.text,
+    supplier_id: column.text,
+    warehouse_id: column.text,
+    status: column.text,
     date: column.text,
-    due_date: column.text,
-    subtotal: column.real,
-    tax_total: column.real,
-    discount_total: column.real,
     total: column.real,
     notes: column.text,
-    terms: column.text,
-    linked_document_id: column.text,
-    journal_entry_id: column.text,
     created_at: column.text,
-    updated_at: column.text
+    updated_at: column.text,
   }),
 
-  document_lines: new Table({
+  grn_lines: new Table({
     tenant_id: column.text,
-    document_id: column.text,
+    grn_id: column.text,
+    po_line_id: column.text,
+    product_id: column.text,
     variant_id: column.text,
+    sku: column.text,
     description: column.text,
+    ordered_qty: column.text,
     quantity: column.real,
-    unit_price: column.real,
-    discount: column.real,
-    tax_rate: column.real,
+    rejected_qty: column.text,
+    unit_cost: column.real,
     line_total: column.real,
+    batch_number: column.text,
+    expiry_date: column.text,
     created_at: column.text,
-    updated_at: column.text
-  })
+    updated_at: column.text,
+  }),
+
+  // 6. Manufacturing Schema (`manufacturing.*`)
+  bills_of_materials: new Table({
+    tenant_id: column.text,
+    finished_product_id: column.text,
+    bom_code: column.text,
+    version: column.text,
+    labor_cost_per_unit: column.text,
+    overhead_cost_per_unit: column.text,
+    is_active: column.integer,
+    created_at: column.text,
+    updated_at: column.text,
+  }),
+
+  work_orders: new Table({
+    tenant_id: column.text,
+    work_order_number: column.text,
+    bom_id: column.text,
+    finished_product_id: column.text,
+    source_raw_warehouse_id: column.text,
+    target_finished_warehouse_id: column.text,
+    planned_qty: column.text,
+    actual_produced_qty: column.text,
+    output_batch_number: column.text,
+    total_production_cost: column.text,
+    status: column.text,
+    created_at: column.text,
+    updated_at: column.text,
+  }),
+
+  // 7. HR & Payroll Schema (`hr.*`)
+  employees: new Table({
+    tenant_id: column.text,
+    employee_number: column.text,
+    first_name: column.text,
+    last_name: column.text,
+    email: column.text,
+    phone: column.text,
+    epf_number: column.text,
+    is_active: column.integer,
+    created_at: column.text,
+    updated_at: column.text,
+  }),
+
+  payroll_runs: new Table({
+    tenant_id: column.text,
+    run_number: column.text,
+    period_month: column.integer,
+    period_year: column.integer,
+    status: column.text,
+    total_gross_salary: column.text,
+    total_employee_epf_8: column.text,
+    total_employer_epf_12: column.text,
+    total_employer_etf_3: column.text,
+    total_apit_tax: column.text,
+    total_net_payable: column.text,
+    created_at: column.text,
+  }),
+
+  // 8. BI Materialized Views (`bi.mv_*`)
+  mv_daily_sales_summary: new Table({
+    tenant_id: column.text,
+    sale_date: column.text,
+    invoices_count: column.integer,
+    net_revenue: column.text,
+    total_tax: column.text,
+    gross_revenue: column.text,
+    total_cogs: column.text,
+  }),
+
+  mv_inventory_valuation_wac: new Table({
+    tenant_id: column.text,
+    warehouse_id: column.text,
+    variant_id: column.text,
+    sku: column.text,
+    quantity_on_hand: column.text,
+    unit_wac_cost: column.text,
+    total_valuation: column.text,
+  }),
+
+  mv_ar_aging_buckets: new Table({
+    tenant_id: column.text,
+    customer_id: column.text,
+    bucket_current: column.text,
+    bucket_1_30: column.text,
+    bucket_31_60: column.text,
+    bucket_61_90: column.text,
+    bucket_over_90: column.text,
+    total_receivable: column.text,
+  }),
+
+  mv_trial_balance: new Table({
+    tenant_id: column.text,
+    account_id: column.text,
+    account_code: column.text,
+    account_name: column.text,
+    account_type: column.text,
+    normal_balance: column.text,
+    total_debit: column.text,
+    total_credit: column.text,
+    net_balance: column.text,
+  }),
 });
 
 export type Database = (typeof AppSchema)['types'];

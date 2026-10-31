@@ -6,6 +6,9 @@ import {
   AtomicStockMutationSchema,
   ERP_EVENT_PATTERNS,
   ERP_RPC_PATTERNS,
+  EventEnvelope,
+  GrnApprovedEvent,
+  GrnApprovedEventSchema,
   LowStockThresholdBreachedEventSchema,
   StockReservationDto,
   StockReservationSchema,
@@ -21,6 +24,7 @@ import {
   DRIZZLE_DB,
   DrizzleModule,
   ErpRpcException,
+  EventPattern,
   InboxService,
   Inject,
   MessagePattern,
@@ -422,6 +426,42 @@ export class InventoryWmsController {
       quantityOnHand: row ? String(row.quantity) : '0.0000',
       unitWacCost: row ? String(row.unitWacCost) : '0.00',
     };
+  }
+
+  /**
+   * BullMQ Durable Consumer (`event.scm.grn_approved`):
+   * Idempotently increments stock, recalculates Weighted Average Cost (WAC),
+   * records batch/lot expiry, and writes immutable `inventory.stock_movements` rows.
+   */
+  @EventPattern(ERP_EVENT_PATTERNS.GRN_APPROVED)
+  async handleGrnApproved(@Payload() envelope: EventEnvelope<GrnApprovedEvent>) {
+    const event = GrnApprovedEventSchema.parse(envelope.payload);
+
+    return this.inboxService.consumeIdempotently(
+      this.db,
+      inventorySchema.inventoryProcessedEvents,
+      'svc-inventory-wms',
+      envelope,
+      async () => {
+        return this.atomicStockIncrement({
+          tenantId: event.tenantId,
+          branchId: event.branchId,
+          actorUserId: event.actorUserId,
+          correlationId: event.correlationId,
+          warehouseId: event.warehouseId,
+          referenceDocumentId: event.grnId,
+          reason: 'GRN_RECEIPT',
+          items: event.lines.map((l) => ({
+            productId: l.productId,
+            sku: l.sku,
+            quantity: l.receivedQty,
+            unitCost: l.unitCost,
+            batchNumber: l.batchNumber,
+            expiryDate: l.expiryDate,
+          })),
+        });
+      },
+    );
   }
 
   /**
