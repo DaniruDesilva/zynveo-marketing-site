@@ -1,6 +1,15 @@
 /**
  * Synchronous RPC command patterns (`@MessagePattern`) dispatched over NestJS Redis transport.
  */
+const INVENTORY_PATTERNS = {
+  ATOMIC_STOCK_DECREMENT: { cmd: 'inventory.atomic_stock_decrement' },
+  ATOMIC_STOCK_INCREMENT: { cmd: 'inventory.atomic_stock_increment' },
+  RESERVE_STOCK: { cmd: 'inventory.reserve_stock' },
+  RELEASE_STOCK_RESERVATION: { cmd: 'inventory.release_stock_reservation' },
+  TRANSFER_WAREHOUSE_STOCK: { cmd: 'inventory.transfer_warehouse_stock' },
+  GET_PRODUCT_WAC: { cmd: 'inventory.get_product_wac' },
+} as const;
+
 export const ERP_RPC_PATTERNS = {
   IAM: {
     VALIDATE_TENANT_ACCESS: { cmd: 'iam.validate_tenant_access' },
@@ -20,14 +29,8 @@ export const ERP_RPC_PATTERNS = {
     APPROVE_GRN: { cmd: 'scm.approve_grn' },
     VERIFY_THREE_WAY_MATCH: { cmd: 'scm.verify_three_way_match' },
   },
-  INVENTORY: {
-    ATOMIC_STOCK_DECREMENT: { cmd: 'inventory.atomic_stock_decrement' },
-    ATOMIC_STOCK_INCREMENT: { cmd: 'inventory.atomic_stock_increment' },
-    RESERVE_STOCK: { cmd: 'inventory.reserve_stock' },
-    RELEASE_STOCK_RESERVATION: { cmd: 'inventory.release_stock_reservation' },
-    TRANSFER_WAREHOUSE_STOCK: { cmd: 'inventory.transfer_warehouse_stock' },
-    GET_PRODUCT_WAC: { cmd: 'inventory.get_product_wac' },
-  },
+  INVENTORY: INVENTORY_PATTERNS,
+  INVENTORY_WMS: INVENTORY_PATTERNS,
   MANUFACTURING: {
     CREATE_BOM: { cmd: 'mfg.create_bom' },
     RELEASE_WORK_ORDER: { cmd: 'mfg.release_work_order' },
@@ -56,6 +59,8 @@ export const ERP_EVENT_PATTERNS = {
   WORK_ORDER_COMPLETED: 'event.mfg.work_order_completed',
   PAYROLL_DISBURSED: 'event.hr.payroll_disbursed',
   LOW_STOCK_THRESHOLD_BREACHED: 'event.inventory.low_stock_breached',
+  STOCK_LEVEL_MUTATED: 'event.inventory.stock_level_mutated',
+  JOURNAL_POSTED: 'event.finance.journal_posted',
 } as const;
 
 export type ErpEventName = (typeof ERP_EVENT_PATTERNS)[keyof typeof ERP_EVENT_PATTERNS];
@@ -105,5 +110,10 @@ export const ERP_EVENT_SUBSCRIPTIONS: Record<ErpEventName, readonly ErpBullMqQue
     ERP_BULLMQ_QUEUES.PROCUREMENT,
     ERP_BULLMQ_QUEUES.BI_REPORTING,
   ],
+  [ERP_EVENT_PATTERNS.STOCK_LEVEL_MUTATED]: [
+    ERP_BULLMQ_QUEUES.BI_REPORTING,
+  ],
+  [ERP_EVENT_PATTERNS.JOURNAL_POSTED]: [
+    ERP_BULLMQ_QUEUES.BI_REPORTING,
+  ],
 } as const;
-

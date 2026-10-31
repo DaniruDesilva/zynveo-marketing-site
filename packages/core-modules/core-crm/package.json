@@ -1,13 +1,14 @@
 {
-  "name": "@zynveo/core-crm",
-  "version": "0.1.0",
-  "private": true,
-  "main": "src/index.ts",
-  "dependencies": {
-    "@zynveo/database": "workspace:*",
-    "drizzle-orm": "^0.30.10"
-  },
-  "devDependencies": {
-    "typescript": "^5.4.5"
-  }
+    "name":  "@zynveo/core-crm",
+    "version":  "0.1.0",
+    "private":  true,
+    "dependencies":  {
+                         "@zynveo/database":  "workspace:*",
+                         "drizzle-orm":  "^0.30.10"
+                     },
+    "devDependencies":  {
+                            "typescript":  "^5.4.5"
+                        },
+    "main":  "./dist/index.js",
+    "types":  "./dist/index.d.ts"
 }
