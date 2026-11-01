@@ -101,7 +101,7 @@ export default function SalesPage() {
       prev.map((inv) => (inv.id === id ? { ...inv, status: "FINALIZED" } : inv))
     );
     setNotification(
-      `⚡ Saga Executed: ${invoiceNumber} finalized! Stock automatically deducted (FIFO/WAC) and Double-Entry GL Journal posted.`
+      `Invoice ${invoiceNumber} finalized and dispatched. Inventory stock updated and accounts receivable recorded.`
     );
     setTimeout(() => setNotification(null), 8000);
   };
@@ -113,11 +113,11 @@ export default function SalesPage() {
         <div>
           <div className="flex items-center space-x-2 text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">
             <ShoppingCart size={16} />
-            <span>Order-to-Cash & Revenue Management</span>
+            <span>Sales & Customer Billing</span>
           </div>
           <h1 className="text-2xl font-bold text-slate-800">Sales & Invoices</h1>
           <p className="text-sm text-slate-400 mt-1">
-            Track customer invoicing, automated inventory dispatch, and Accounts Receivable.
+            Manage customer invoices, sales quotations, and receivables collections.
           </p>
         </div>
         <div className="flex space-x-3">
@@ -137,8 +137,8 @@ export default function SalesPage() {
             <Zap size={18} className="text-emerald-600 shrink-0" />
             <span>{notification}</span>
           </div>
-          <span className="font-mono text-xs bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-md">
-            Outbox Event Emitted
+          <span className="text-xs font-medium bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-md">
+            Completed
           </span>
         </div>
       )}

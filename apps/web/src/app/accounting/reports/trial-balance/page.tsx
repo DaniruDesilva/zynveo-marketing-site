@@ -91,7 +91,7 @@ export default function TrialBalanceReport() {
         <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-sm flex items-center justify-between shadow-xs">
           <div className="flex items-center space-x-2 font-semibold">
             <CheckCircle2 size={18} className="text-emerald-600" />
-            <span>Double-Entry Equilibrium Verified: Sum(Debits) == Sum(Credits)</span>
+            <span>Trial Balance Reconciled: Total Debits equal Total Credits</span>
           </div>
           <span className="font-mono font-bold text-xs bg-emerald-100 text-emerald-800 px-3 py-1 rounded-md">
             LKR {totals.debit.toLocaleString(undefined, { minimumFractionDigits: 2 })}

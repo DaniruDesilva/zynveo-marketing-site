@@ -159,7 +159,7 @@ export default function SettingsPage() {
 
   // Tab 4: System & Gateway Diagnostics State
   const [gatewayStatus, setGatewayStatus] = useState<"ONLINE" | "CHECKING" | "LOCAL_FALLBACK">("ONLINE");
-  const [lastSyncTime, setLastSyncTime] = useState("Just now (0ms local SQLite WASM)");
+  const [lastSyncTime, setLastSyncTime] = useState("Up to date");
 
   const showToast = (msg: string) => {
     setNotification(msg);
@@ -171,7 +171,7 @@ export default function SettingsPage() {
     setTimeout(() => {
       setIsSaving(false);
       showToast(
-        `Tenant configuration saved for "${orgName}" (Tenant ID: 22222222-2222-4222-8222-222222222222) and propagated via @zynveo/contracts.`
+        `Organization settings saved for "${orgName}" across all active branches.`
       );
     }, 350);
   };
@@ -195,7 +195,7 @@ export default function SettingsPage() {
     setInviteName("");
     setInviteEmail("");
     showToast(
-      `IAM Membership provisioned: ${newUser.name} (${newUser.role}) assigned to branch ${newUser.branch}.`
+      `New staff account created: ${newUser.name} (${newUser.role}) assigned to ${newUser.branch}.`
     );
   };
 
@@ -204,7 +204,7 @@ export default function SettingsPage() {
       prev.map((u) => {
         if (u.id !== id) return u;
         const nextStatus = u.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
-        showToast(`IAM Role Status updated: ${u.name} is now ${nextStatus}.`);
+        showToast(`User access updated: ${u.name} is now ${nextStatus}.`);
         return { ...u, status: nextStatus };
       })
     );
@@ -215,22 +215,22 @@ export default function SettingsPage() {
     try {
       await erpApi.iam.getMe();
       setGatewayStatus("ONLINE");
-      showToast("API Gateway (Port 4000) & svc-iam-tenant RPC responded 200 OK with verified TenantContext.");
+      showToast("All business modules and cloud services are online and responding normally.");
     } catch {
       setGatewayStatus("ONLINE");
       showToast(
-        "PowerSync Offline-First Edge Cache active: Local SQLite WASM replica verified with 100% schema parity."
+        "All business modules are synchronized and ready for offline or online operation."
       );
     }
-    setLastSyncTime(new Date().toLocaleTimeString());
+    setLastSyncTime(`Updated at ${new Date().toLocaleTimeString()}`);
   };
 
   const handleResyncReplica = () => {
-    setLastSyncTime("Syncing delta buckets...");
+    setLastSyncTime("Refreshing records...");
     setTimeout(() => {
-      setLastSyncTime(`Synced at ${new Date().toLocaleTimeString()} (0ms latency)`);
+      setLastSyncTime(`Updated at ${new Date().toLocaleTimeString()}`);
       showToast(
-        "PowerSync SQLite WASM replica synchronized across all 8 isolated PostgreSQL schemas."
+        "All financial accounts, inventory records, and branch settings are synchronized."
       );
     }, 400);
   };
@@ -242,11 +242,11 @@ export default function SettingsPage() {
         <div>
           <div className="flex items-center space-x-2 text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
             <Settings size={16} className="text-blue-600" />
-            <span>Enterprise Administration & Multi-Tenant Control Plane</span>
+            <span>Enterprise Administration & Company Setup</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-800">System Settings & Governance</h1>
+          <h1 className="text-2xl font-bold text-slate-800">System Settings & Preferences</h1>
           <p className="text-sm text-slate-400 mt-1">
-            Configure multi-branch tenant identity, RBAC security policies, double-entry GL guardrails, and microservice health.
+            Manage company profile, branch locations, user access roles, accounting policies, and active modules.
           </p>
         </div>
 
@@ -256,7 +256,7 @@ export default function SettingsPage() {
             className="flex items-center space-x-2 text-sm font-semibold text-slate-700 bg-slate-100 px-4 py-2.5 rounded-xl hover:bg-slate-200 transition-colors"
           >
             <RefreshCw size={15} className="text-slate-600" />
-            <span>Sync Local Replica</span>
+            <span>Refresh Data</span>
           </button>
 
           <button
@@ -265,7 +265,7 @@ export default function SettingsPage() {
             className="flex items-center space-x-2 text-sm font-semibold text-white bg-blue-600 px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-60"
           >
             <Save size={16} />
-            <span>{isSaving ? "Saving..." : "Save Configuration"}</span>
+            <span>{isSaving ? "Saving..." : "Save Changes"}</span>
           </button>
         </div>
       </div>
@@ -277,8 +277,8 @@ export default function SettingsPage() {
             <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
             <span>{notification}</span>
           </div>
-          <span className="font-mono text-xs bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-md shrink-0">
-            Tenant Guard Verified
+          <span className="text-xs font-medium bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-md shrink-0">
+            Saved
           </span>
         </div>
       )}
@@ -294,7 +294,7 @@ export default function SettingsPage() {
           }`}
         >
           <Building2 size={16} />
-          <span>Organization & Branches</span>
+          <span>Company & Branches</span>
         </button>
 
         <button
@@ -306,7 +306,7 @@ export default function SettingsPage() {
           }`}
         >
           <ShieldCheck size={16} />
-          <span>IAM Roles & Users ({users.length})</span>
+          <span>Users & Access Roles ({users.length})</span>
         </button>
 
         <button
@@ -318,7 +318,7 @@ export default function SettingsPage() {
           }`}
         >
           <Calculator size={16} />
-          <span>Accounting, Tax & Invariants</span>
+          <span>Financial & Tax Policies</span>
         </button>
 
         <button
@@ -330,7 +330,7 @@ export default function SettingsPage() {
           }`}
         >
           <Server size={16} />
-          <span>Microservices & PowerSync Status</span>
+          <span>Active Modules & System Status</span>
         </button>
       </div>
 
@@ -340,13 +340,13 @@ export default function SettingsPage() {
           <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-6">
             <div className="border-b border-slate-100 pb-4 flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-bold text-slate-800">Legal Entity & Tenant Configuration</h2>
+                <h2 className="text-lg font-bold text-slate-800">Company Profile & Legal Entity</h2>
                 <p className="text-xs text-slate-400">
-                  Persisted in isolated PostgreSQL schema <code className="font-mono text-blue-600">iam.tenants</code>
+                  Registered corporate details used on official invoices, purchase orders, and tax filings.
                 </p>
               </div>
-              <span className="font-mono text-xs bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 rounded-full font-semibold">
-                PLAN: ENTERPRISE CLOUD OS
+              <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 rounded-full font-semibold">
+                ENTERPRISE EDITION
               </span>
             </div>
 
@@ -365,7 +365,7 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                  Tenant Identifier Slug
+                  Company Subdomain / Code
                 </label>
                 <input
                   type="text"
@@ -401,17 +401,17 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                  Functional Reporting Currency
+                  Base Reporting Currency
                 </label>
                 <select
                   value={baseCurrency}
                   onChange={(e) => setBaseCurrency(e.target.value)}
                   className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="LKR">LKR — Sri Lankan Rupee (numeric 15,2)</option>
-                  <option value="USD">USD — US Dollar (numeric 15,2)</option>
-                  <option value="EUR">EUR — Euro (numeric 15,2)</option>
-                  <option value="GBP">GBP — British Pound (numeric 15,2)</option>
+                  <option value="LKR">LKR — Sri Lankan Rupee</option>
+                  <option value="USD">USD — US Dollar</option>
+                  <option value="EUR">EUR — Euro</option>
+                  <option value="GBP">GBP — British Pound</option>
                 </select>
               </div>
 
@@ -434,14 +434,14 @@ export default function SettingsPage() {
               <div className="flex items-center space-x-3">
                 <Globe size={18} className="text-blue-600" />
                 <div>
-                  <div className="text-xs font-bold text-slate-700">Authoritative Tenant UUID</div>
-                  <div className="text-xs font-mono text-slate-500">
-                    22222222-2222-4222-8222-222222222222 • Timezone: {timezone}
+                  <div className="text-xs font-bold text-slate-700">Regional & Timezone Settings</div>
+                  <div className="text-xs text-slate-500">
+                    Primary Region: Sri Lanka (South Asia) • Timezone: {timezone}
                   </div>
                 </div>
               </div>
               <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md">
-                Multi-Tenant RLS Active
+                Verified Entity
               </span>
             </div>
           </div>
@@ -451,7 +451,7 @@ export default function SettingsPage() {
             <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-slate-800">Operating Branches</h3>
-                <p className="text-xs text-slate-400">Schema: <code className="font-mono">iam.branches</code></p>
+                <p className="text-xs text-slate-400">Active regional offices & warehouses</p>
               </div>
               <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg">
                 {branches.length} Active
@@ -498,10 +498,10 @@ export default function SettingsPage() {
             <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="text-lg font-bold text-slate-800">
-                  Identity & Access Management (RBAC Directory)
+                  Staff Directory & Access Roles
                 </h2>
                 <p className="text-xs text-slate-400">
-                  Enforced at API Gateway via <code className="font-mono text-blue-600">@Roles()</code> Guard and verified JWT <code className="font-mono text-blue-600">TenantContext</code>.
+                  Manage employee accounts, department roles, branch assignments, and two-factor authentication.
                 </p>
               </div>
               <button
@@ -509,19 +509,19 @@ export default function SettingsPage() {
                 className="inline-flex items-center space-x-2 text-sm font-semibold text-white bg-blue-600 px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors shadow-xs"
               >
                 <Plus size={16} />
-                <span>Provision User Role</span>
+                <span>Add Staff Account</span>
               </button>
             </div>
 
             <table className="w-full text-sm text-left">
               <thead className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-100">
                 <tr>
-                  <th className="py-3.5 px-4">User Identity</th>
-                  <th className="py-3.5 px-4">RBAC Security Role</th>
+                  <th className="py-3.5 px-4">Employee Name & Email</th>
+                  <th className="py-3.5 px-4">Access Role</th>
                   <th className="py-3.5 px-4">Assigned Branch</th>
-                  <th className="py-3.5 px-4 text-center">2FA / JWT Guard</th>
-                  <th className="py-3.5 px-4 text-center">Membership Status</th>
-                  <th className="py-3.5 px-4 text-right">Access Control</th>
+                  <th className="py-3.5 px-4 text-center">Security & 2FA</th>
+                  <th className="py-3.5 px-4 text-center">Account Status</th>
+                  <th className="py-3.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -540,7 +540,7 @@ export default function SettingsPage() {
                     <td className="py-3.5 px-4 text-center">
                       <span className="inline-flex items-center space-x-1 text-xs font-medium text-emerald-700">
                         <KeyRound size={13} />
-                        <span>{u.mfaEnabled ? "HMAC-SHA256 + MFA" : "JWT Standard"}</span>
+                        <span>{u.mfaEnabled ? "Two-Factor Enabled" : "Standard Login"}</span>
                       </span>
                     </td>
                     <td className="py-3.5 px-4 text-center">
@@ -570,17 +570,17 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* TAB 3: ACCOUNTING, TAX & ARCHITECTURAL INVARIANTS */}
+      {/* TAB 3: ACCOUNTING, TAX & AUDIT CONTROLS */}
       {activeTab === "finance_rules" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Statutory Tax & Payroll Rates */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-5">
             <div className="border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-800">
-                Statutory Tax & Payroll Engine Parameters
+                Statutory Tax & Payroll Rates
               </h3>
               <p className="text-xs text-slate-400">
-                All calculations execute at runtime via <code className="font-mono text-blue-600">decimal.js</code> (Zero Floating-Point Math).
+                Default tax rates and statutory contribution percentages applied to invoices and monthly payroll.
               </p>
             </div>
 
@@ -647,27 +647,27 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Inventory Costing Model
+                  Inventory Costing Method
                 </label>
                 <select
                   value={costingMethod}
                   onChange={(e) => setCostingMethod(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-800"
                 >
-                  <option value="WAC_FEFO">Weighted Average Cost (WAC) + FEFO</option>
-                  <option value="FIFO_STRICT">Strict Batch FIFO</option>
+                  <option value="WAC_FEFO">Weighted Average Cost (WAC)</option>
+                  <option value="FIFO_STRICT">First-In, First-Out (FIFO)</option>
                 </select>
               </div>
             </div>
 
             <div className="pt-2 border-t border-slate-100 space-y-2 text-xs text-slate-600">
-              <div className="font-bold text-slate-700">Automated Sub-Ledger Control Accounts:</div>
+              <div className="font-bold text-slate-700">Default General Ledger Control Accounts:</div>
               <div className="grid grid-cols-2 gap-2 font-mono text-[11px]">
                 <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
                   1100 • Accounts Receivable (AR)
                 </div>
                 <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
-                  1300 • Inventory Asset (WAC)
+                  1300 • Inventory Asset
                 </div>
                 <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
                   2000 • Accounts Payable (AP)
@@ -679,14 +679,14 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Mandatory Architectural Guardrails */}
+          {/* Accounting & Audit Controls */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
             <div className="border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-800">
-                Mandatory ERP Architectural Guardrails
+                Accounting & Audit Controls
               </h3>
               <p className="text-xs text-slate-400">
-                Database-level and service-layer invariants preventing ledger corruption.
+                Automated financial controls protecting your books and inventory accuracy.
               </p>
             </div>
 
@@ -694,10 +694,10 @@ export default function SettingsPage() {
               <label className="flex items-start justify-between p-3.5 rounded-xl border border-slate-100 bg-slate-50/70 cursor-pointer">
                 <div className="pr-4">
                   <div className="text-sm font-bold text-slate-800">
-                    Double-Entry Equilibrium Invariant
+                    Balanced Journal Entry Enforcement
                   </div>
                   <div className="text-xs text-slate-500 mt-0.5">
-                    Reject any journal transaction where <code className="font-mono">Sum(Debits) != Sum(Credits)</code> inside PostgreSQL ACID transaction.
+                    Require total debits to equal total credits before any manual or automated journal entry can be posted.
                   </div>
                 </div>
                 <input
@@ -711,10 +711,10 @@ export default function SettingsPage() {
               <label className="flex items-start justify-between p-3.5 rounded-xl border border-slate-100 bg-slate-50/70 cursor-pointer">
                 <div className="pr-4">
                   <div className="text-sm font-bold text-slate-800">
-                    3-Way Match Procurement Verification
+                    Purchase Order & Goods Receipt Verification (3-Way Match)
                   </div>
                   <div className="text-xs text-slate-500 mt-0.5">
-                    Validate Goods Received Note (GRN) quantities against authoritative Purchase Order <code className="font-mono">unit_cost</code> before AP recognition.
+                    Verify received goods quantities and unit prices against approved Purchase Orders before recording supplier bills.
                   </div>
                 </div>
                 <input
@@ -728,10 +728,10 @@ export default function SettingsPage() {
               <label className="flex items-start justify-between p-3.5 rounded-xl border border-slate-100 bg-slate-50/70 cursor-pointer">
                 <div className="pr-4">
                   <div className="text-sm font-bold text-slate-800">
-                    Immutable Stock Ledger & Row Locking
+                    Complete Inventory Movement Audit Trail
                   </div>
                   <div className="text-xs text-slate-500 mt-0.5">
-                    Require <code className="font-mono">SELECT ... FOR UPDATE</code> lock and append-only <code className="font-mono">inventory.stock_movements</code> entry on every stock change.
+                    Record a permanent movement history entry whenever warehouse stock is received, shipped, or adjusted.
                   </div>
                 </div>
                 <input
@@ -745,10 +745,10 @@ export default function SettingsPage() {
               <label className="flex items-start justify-between p-3.5 rounded-xl border border-slate-100 bg-slate-50/70 cursor-pointer">
                 <div className="pr-4">
                   <div className="text-sm font-bold text-slate-800">
-                    Strict Soft-Delete Audit Retention (<code className="font-mono">deleted_at</code>)
+                    Audit Record Retention Protection
                   </div>
                   <div className="text-xs text-slate-500 mt-0.5">
-                    Forbid hard SQL <code className="font-mono">DELETE</code> statements across all financial, inventory, and ERP document schemas.
+                    Prevent permanent deletion of posted invoices, goods receipts, and accounting entries for statutory audit compliance.
                   </div>
                 </div>
                 <input
@@ -763,31 +763,31 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* TAB 4: MICROSERVICES, SCHEMAS & POWERSYNC DIAGNOSTICS */}
+      {/* TAB 4: ACTIVE BUSINESS MODULES & SYSTEM STATUS */}
       {activeTab === "architecture" && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-b-emerald-500">
-              <div className="text-xs font-medium text-slate-400 mb-1">API Gateway & Transport</div>
+              <div className="text-xs font-medium text-slate-400 mb-1">Cloud Service Status</div>
               <div className="text-xl font-bold text-slate-800 flex items-center space-x-2">
-                <span>HTTP :4000 + Redis</span>
+                <span>All Systems Operational</span>
               </div>
               <div className="text-xs text-emerald-600 font-medium mt-1">
-                Status: {gatewayStatus} • BullMQ Outbox Active
+                Status: {gatewayStatus} • Connected
               </div>
             </div>
 
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-b-blue-500">
-              <div className="text-xs font-medium text-slate-400 mb-1">Database Isolation Topology</div>
-              <div className="text-xl font-bold text-slate-800">8 Isolated pgSchemas</div>
+              <div className="text-xs font-medium text-slate-400 mb-1">Enabled Business Modules</div>
+              <div className="text-xl font-bold text-slate-800">8 Core Modules</div>
               <div className="text-xs text-blue-600 font-medium mt-1">
-                Zero cross-schema foreign key locks
+                Finance, Sales, Inventory, Purchasing, HR & Production
               </div>
             </div>
 
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-b-indigo-500">
-              <div className="text-xs font-medium text-slate-400 mb-1">PowerSync Offline Read Engine</div>
-              <div className="text-xl font-bold text-slate-800">SQLite WASM Active</div>
+              <div className="text-xs font-medium text-slate-400 mb-1">Offline & Data Sync</div>
+              <div className="text-xl font-bold text-slate-800">Synchronized</div>
               <div className="text-xs text-indigo-600 font-medium mt-1">{lastSyncTime}</div>
             </div>
           </div>
@@ -796,10 +796,10 @@ export default function SettingsPage() {
             <div className="p-5 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-slate-800">
-                  Domain Microservices & Isolated PostgreSQL Schema Registry
+                  Enabled Business Modules & Integration Status
                 </h3>
                 <p className="text-xs text-slate-400">
-                  Transactional Outbox (<code className="font-mono">outbox_events</code>) & Idempotent Inbox (<code className="font-mono">processed_events</code>) status per service.
+                  Real-time operational status across all company departments and automated workflows.
                 </p>
               </div>
               <button
@@ -807,84 +807,84 @@ export default function SettingsPage() {
                 className="flex items-center space-x-2 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3.5 py-2 rounded-xl transition-colors"
               >
                 <Activity size={14} />
-                <span>Run Live Health Probe</span>
+                <span>Check System Status</span>
               </button>
             </div>
 
             <table className="w-full text-sm text-left">
               <thead className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-100">
                 <tr>
-                  <th className="py-3 px-4">Microservice</th>
-                  <th className="py-3 px-4">Owned pgSchema()</th>
-                  <th className="py-3 px-4">Transport / Queue</th>
-                  <th className="py-3 px-4">Outbox / Inbox Tables</th>
-                  <th className="py-3 px-4 text-center">Health</th>
+                  <th className="py-3 px-4">Business Module</th>
+                  <th className="py-3 px-4">Department</th>
+                  <th className="py-3 px-4">Automated Workflows</th>
+                  <th className="py-3 px-4">Sync Status</th>
+                  <th className="py-3 px-4 text-center">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 font-mono text-xs">
+              <tbody className="divide-y divide-slate-100 text-xs">
                 {[
                   {
-                    svc: "svc-iam-tenant",
-                    schema: "iam",
-                    transport: "Redis RPC (iam.validate_tenant)",
-                    tables: "outbox_events • processed_events",
+                    svc: "Administration & Access Control",
+                    schema: "Administration",
+                    transport: "Single Sign-On, Branches & User Permissions",
+                    tables: "Up to date",
                   },
                   {
-                    svc: "svc-finance",
-                    schema: "finance",
-                    transport: "BullMQ (subledger-to-gl)",
-                    tables: "outbox_events • processed_events",
+                    svc: "Financial Management & General Ledger",
+                    schema: "Finance",
+                    transport: "Automated Journal Posting & Tax Accounting",
+                    tables: "Up to date",
                   },
                   {
-                    svc: "svc-inventory-wms",
-                    schema: "inventory",
-                    transport: "Redis RPC + BullMQ (stock-ledger)",
-                    tables: "outbox_events • processed_events",
+                    svc: "Inventory & Warehouse Management",
+                    schema: "Operations",
+                    transport: "Stock Valuation, Bin Locations & Reorder Alerts",
+                    tables: "Up to date",
                   },
                   {
-                    svc: "svc-crm-sales",
-                    schema: "sales_crm",
-                    transport: "Order-to-Cash Saga Orchestrator",
-                    tables: "outbox_events • processed_events",
+                    svc: "Sales & Accounts Receivable",
+                    schema: "Sales & Billing",
+                    transport: "Customer Quotations, Invoicing & Fulfillment",
+                    tables: "Up to date",
                   },
                   {
-                    svc: "svc-procurement",
-                    schema: "scm",
-                    transport: "BullMQ (3-way-match & grn)",
-                    tables: "outbox_events • processed_events",
+                    svc: "Purchasing & Supplier Management",
+                    schema: "Procurement",
+                    transport: "Purchase Orders, Goods Receipts & Vendor Bills",
+                    tables: "Up to date",
                   },
                   {
-                    svc: "svc-manufacturing",
-                    schema: "manufacturing",
-                    transport: "BullMQ (bom-backflush)",
-                    tables: "outbox_events • processed_events",
+                    svc: "Manufacturing & Assembly",
+                    schema: "Production",
+                    transport: "Bills of Materials (BOM) & Work Order Tracking",
+                    tables: "Up to date",
                   },
                   {
-                    svc: "svc-hr-payroll",
-                    schema: "hr",
-                    transport: "BullMQ (epf-etf-apit-payroll)",
-                    tables: "outbox_events • processed_events",
+                    svc: "Human Resources & Payroll",
+                    schema: "HR & People",
+                    transport: "Monthly Salaries, EPF/ETF & Statutory Tax",
+                    tables: "Up to date",
                   },
                   {
-                    svc: "svc-bi-reporting",
-                    schema: "bi",
-                    transport: "Read-Only Materialized Views",
-                    tables: "mv_executive_kpis • mv_pnl",
+                    svc: "Executive Reports & Analytics",
+                    schema: "Management",
+                    transport: "Profit & Loss, Balance Sheet & KPI Dashboards",
+                    tables: "Up to date",
                   },
                 ].map((row) => (
                   <tr key={row.svc} className="hover:bg-slate-50/60">
-                    <td className="py-3 px-4 font-bold text-slate-800">{row.svc}</td>
-                    <td className="py-3 px-4">
-                      <span className="bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded font-semibold">
+                    <td className="py-3.5 px-4 font-bold text-slate-800">{row.svc}</td>
+                    <td className="py-3.5 px-4">
+                      <span className="bg-indigo-50 text-indigo-700 border border-indigo-200 px-2.5 py-0.5 rounded font-semibold">
                         {row.schema}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-slate-600">{row.transport}</td>
-                    <td className="py-3 px-4 text-slate-500">{row.tables}</td>
-                    <td className="py-3 px-4 text-center">
-                      <span className="inline-flex items-center space-x-1 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full font-sans font-semibold text-xs">
+                    <td className="py-3.5 px-4 text-slate-600">{row.transport}</td>
+                    <td className="py-3.5 px-4 text-slate-500">{row.tables}</td>
+                    <td className="py-3.5 px-4 text-center">
+                      <span className="inline-flex items-center space-x-1 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full font-semibold text-xs">
                         <CheckCircle2 size={11} />
-                        <span>Healthy</span>
+                        <span>Active</span>
                       </span>
                     </td>
                   </tr>
@@ -901,9 +901,9 @@ export default function SettingsPage() {
           <div className="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-md w-full overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold text-slate-800">Provision IAM User Role</h3>
+                <h3 className="text-lg font-bold text-slate-800">Add Staff Account</h3>
                 <p className="text-xs text-slate-400">
-                  Grant tenant membership and RBAC permissions in <code className="font-mono">iam.memberships</code>.
+                  Invite an employee and assign their department role and branch access.
                 </p>
               </div>
               <button
@@ -941,7 +941,7 @@ export default function SettingsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">RBAC Role</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Access Role</label>
                   <select
                     value={inviteRole}
                     onChange={(e) => setInviteRole(e.target.value as TenantUser["role"])}

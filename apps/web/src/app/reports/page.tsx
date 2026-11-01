@@ -64,14 +64,14 @@ export default function ReportsPage() {
     },
     {
       title: "General Ledger Trial Balance",
-      description: "Sum of all account debit and credit balances with double-entry equilibrium verification.",
+      description: "Summary of all account debit and credit balances across the chart of accounts.",
       href: "/accounting/reports/trial-balance",
       icon: <FileSpreadsheet className="text-indigo-500" size={24} />,
       bg: "bg-indigo-50",
     },
     {
-      title: "Inventory Valuation & Ledger",
-      description: "Stock on hand, Weighted Average Cost (WAC), and immutable movement audit logs.",
+      title: "Inventory Valuation & Stock Report",
+      description: "Current stock on hand, average item cost, and warehouse movement history.",
       href: "/inventory",
       icon: <Boxes className="text-amber-500" size={24} />,
       bg: "bg-amber-50",
@@ -85,11 +85,11 @@ export default function ReportsPage() {
         <div>
           <div className="flex items-center space-x-2 text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">
             <BarChart2 size={16} />
-            <span>Business Intelligence & Executive Analytics</span>
+            <span>Business Intelligence & Financial Analytics</span>
           </div>
           <h1 className="text-2xl font-bold text-slate-800">Reports & Financial Statements</h1>
           <p className="text-sm text-slate-400 mt-1">
-            Read-replica materialized views (bi.mv_*) and audited general ledger reports.
+            Consolidated executive statements, tax summaries, and general ledger reports.
           </p>
         </div>
       </div>

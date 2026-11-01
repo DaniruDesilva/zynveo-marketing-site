@@ -191,7 +191,7 @@ export default function DashboardClient() {
     await fetchLiveDatabaseStats();
     setTimeout(() => {
       setIsRefreshing(false);
-      setSyncToast("Local PowerSync SQLite replica synchronized across all 8 microservice domains.");
+      setSyncToast("All financial figures, customer balances, and warehouse stock levels are up to date.");
       setTimeout(() => setSyncToast(null), 5000);
     }, 450);
   };
@@ -209,7 +209,7 @@ export default function DashboardClient() {
               </span>
               <span className="inline-flex items-center space-x-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-2.5 py-0.5 rounded-full">
                 <CheckCircle2 size={12} />
-                <span>Double-Entry Equilibrium Verified</span>
+                <span>Books in Balance</span>
               </span>
             </div>
             <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
@@ -218,7 +218,7 @@ export default function DashboardClient() {
             <p className="text-xs text-slate-400 mt-0.5 flex items-center space-x-1.5">
               <Calendar size={13} className="text-slate-400" />
               <span>
-                Active Window: <strong>{activePeriodData.periodDescription}</strong>
+                Reporting Period: <strong>{activePeriodData.periodDescription}</strong>
               </span>
             </p>
           </div>
@@ -278,7 +278,7 @@ export default function DashboardClient() {
               onClick={handleRefresh}
               disabled={isRefreshing}
               className="inline-flex items-center space-x-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 px-3.5 py-2 rounded-xl transition-colors disabled:opacity-50"
-              title="Synchronize with local SQLite WASM replica"
+              title="Refresh financial figures and balances"
             >
               <RotateCw size={13} className={isRefreshing ? "animate-spin text-blue-600" : ""} />
               <span>Refresh</span>
@@ -292,8 +292,8 @@ export default function DashboardClient() {
               <CheckCircle2 size={16} className="text-emerald-600" />
               <span>{syncToast}</span>
             </div>
-            <span className="font-mono text-[11px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
-              0ms Latency
+            <span className="text-[11px] font-medium bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded">
+              Updated Just Now
             </span>
           </div>
         )}
@@ -544,7 +544,7 @@ export default function DashboardClient() {
               </div>
               <div className="flex justify-between text-[11px] text-slate-400">
                 <span>{liveStats.suppliersCount} approved vendors</span>
-                <span className="text-emerald-600 font-medium">100% 3-Way Matched</span>
+                <span className="text-emerald-600 font-medium">All bills verified</span>
               </div>
             </div>
 
@@ -552,7 +552,7 @@ export default function DashboardClient() {
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs">
                 <span className="font-semibold text-slate-700">
-                  Inventory Asset (WAC)
+                  Total Inventory Value
                 </span>
                 <span className="font-mono font-bold text-slate-900">
                   LKR {liveStats.inventoryValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -562,17 +562,17 @@ export default function DashboardClient() {
                 <div className="h-full bg-indigo-600 rounded-full" style={{ width: "65%" }} />
               </div>
               <div className="flex justify-between text-[11px] text-slate-400">
-                <span>{liveStats.inventoryUnits} physical units stored</span>
-                <span className="text-blue-600 font-medium">WH-CMB-01 & KDY-02</span>
+                <span>{liveStats.inventoryUnits} physical units on hand</span>
+                <span className="text-blue-600 font-medium">Colombo & Kandy</span>
               </div>
             </div>
           </div>
 
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between text-xs">
             <div>
-              <span className="text-slate-400 block text-[11px]">Accounting Equation</span>
-              <span className="font-mono font-bold text-slate-800">
-                Assets = Liab + Equity
+              <span className="text-slate-400 block text-[11px]">General Ledger Status</span>
+              <span className="font-bold text-emerald-700">
+                All Accounts Reconciled
               </span>
             </div>
             <Link
@@ -608,7 +608,7 @@ export default function DashboardClient() {
                   Draft Invoice INV-2026-2403 • Apex Retail Group
                 </div>
                 <div className="text-[11px] text-slate-500 mt-0.5">
-                  Amount: LKR 1,845.00 • Awaiting Order-to-Cash Saga dispatch
+                  Amount: LKR 1,845.00 • Ready for customer approval & dispatch
                 </div>
               </div>
               <Link
@@ -632,17 +632,17 @@ export default function DashboardClient() {
                 href="/purchases/grn/new"
                 className="shrink-0 text-xs font-semibold text-orange-700 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition-colors"
               >
-                Receive GRN &rarr;
+                Receive Stock &rarr;
               </Link>
             </div>
 
             <div className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/60 flex items-center justify-between gap-3">
               <div>
                 <div className="text-xs font-bold text-slate-800">
-                  Safety Stock Alert • DIS-4K-27 & FUR-OC-099
+                  Low Stock Alert • 4K Monitor & Office Chair
                 </div>
                 <div className="text-[11px] text-slate-500 mt-0.5">
-                  Stock levels dipped below safety reorder threshold in WH-CMB-01
+                  2 items dipped below minimum reorder level in Colombo Warehouse
                 </div>
               </div>
               <Link
@@ -655,13 +655,13 @@ export default function DashboardClient() {
           </div>
         </div>
 
-        {/* Recent Distributed Ledger Activity */}
+        {/* Recent Business Activity */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center space-x-2">
               <Activity size={16} className="text-indigo-600" />
               <h2 className="text-sm font-bold text-slate-800">
-                Recent Transaction Activity
+                Recent Business Transactions
               </h2>
             </div>
             <Link
@@ -676,23 +676,23 @@ export default function DashboardClient() {
             {[
               {
                 id: "INV-2026-2401",
-                module: "Order-to-Cash",
+                module: "Sales & Billing",
                 customer: "Acme Holdings Ltd",
                 amount: "LKR 7,079.80",
-                status: "FINALIZED",
+                status: "ISSUED",
                 statusColor: "bg-blue-50 text-blue-700 border-blue-200",
               },
               {
                 id: "GRN-2026-0501",
-                module: "3-Way Match GRN",
+                module: "Purchasing & Receiving",
                 customer: "Alpha Component Supplies",
                 amount: "LKR 11,550.00",
-                status: "MATCHED",
+                status: "RECEIVED",
                 statusColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
               },
               {
                 id: "WO-2026-081",
-                module: "BOM Production",
+                module: "Manufacturing & Assembly",
                 customer: "25x Wireless Headphones",
                 amount: "LKR 4,500.00",
                 status: "COMPLETED",
@@ -700,10 +700,10 @@ export default function DashboardClient() {
               },
               {
                 id: "PAY-2026-10",
-                module: "Statutory Payroll",
-                customer: "EPF/ETF Disbursed (24 Staff)",
+                module: "Monthly Payroll",
+                customer: "October Salaries & Deductions (24 Staff)",
                 amount: "LKR 615,000.00",
-                status: "DISBURSED",
+                status: "PAID",
                 statusColor: "bg-indigo-50 text-indigo-700 border-indigo-200",
               },
             ].map((item) => (

@@ -196,7 +196,7 @@ export default function InventoryClient() {
     };
     setMovements((prev) => [newMov, ...prev]);
     setNotification(
-      `Immutable Stock Ledger Updated: +${addedQty} ${item.uom} added to ${item.sku} (${item.warehouseCode}) with row-level lock verification.`
+      `Stock replenished: +${addedQty} ${item.uom} added to ${item.name} (${item.sku}) in ${item.warehouseCode}.`
     );
     setTimeout(() => setNotification(null), 6000);
   };
@@ -232,7 +232,7 @@ export default function InventoryClient() {
     setNewSku("");
     setNewName("");
     setNotification(
-      `New Product SKU ${created.sku} (${created.name}) registered in ${created.warehouseCode} with initial WAC LKR ${created.wac.toFixed(2)}.`
+      `New Product ${created.name} (${created.sku}) added to ${created.warehouseCode} with unit cost LKR ${created.wac.toFixed(2)}.`
     );
     setTimeout(() => setNotification(null), 6000);
   };
@@ -263,11 +263,11 @@ export default function InventoryClient() {
         <div>
           <div className="flex items-center space-x-2 text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">
             <Boxes size={16} />
-            <span>Warehouse Management System (WMS) & WAC Valuation</span>
+            <span>Inventory & Warehouse Operations</span>
           </div>
           <h1 className="text-2xl font-bold text-slate-800">Inventory & Stock Control</h1>
           <p className="text-sm text-slate-400 mt-1">
-            Multi-warehouse bin allocation, FEFO/FIFO batch traceability, and immutable stock ledger.
+            Manage product stock levels, warehouse bin locations, and inventory receipts across all locations.
           </p>
         </div>
 
@@ -277,14 +277,14 @@ export default function InventoryClient() {
             className="flex items-center space-x-2 text-sm font-semibold text-slate-700 bg-slate-100 px-4 py-2.5 rounded-xl hover:bg-slate-200 transition-colors"
           >
             <Truck size={16} className="text-slate-600" />
-            <span>Receive GRN</span>
+            <span>Receive Goods (GRN)</span>
           </Link>
           <button
             onClick={() => setIsAddModalOpen(true)}
             className="flex items-center space-x-2 text-sm font-semibold text-white bg-indigo-600 px-4 py-2.5 rounded-xl hover:bg-indigo-700 transition-colors shadow-sm"
           >
             <Plus size={16} />
-            <span>Add Product SKU</span>
+            <span>Add New Product</span>
           </button>
         </div>
       </div>
@@ -296,8 +296,8 @@ export default function InventoryClient() {
             <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
             <span>{notification}</span>
           </div>
-          <span className="font-mono text-xs bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-md shrink-0">
-            ACID Verified
+          <span className="text-xs font-medium bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-md shrink-0">
+            Saved Successfully
           </span>
         </div>
       )}
@@ -305,12 +305,12 @@ export default function InventoryClient() {
       {/* 4 Enterprise KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-b-indigo-500">
-          <div className="text-xs font-medium text-slate-400 mb-1">Total Inventory Valuation (WAC)</div>
+          <div className="text-xs font-medium text-slate-400 mb-1">Total Stock Value (At Cost)</div>
           <div className="text-2xl font-bold text-slate-800">
             LKR {totalAssetValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <div className="text-xs text-indigo-600 font-medium mt-1">
-            Retail Est: LKR {totalRetailValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            Retail Value: LKR {totalRetailValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
 
@@ -320,25 +320,25 @@ export default function InventoryClient() {
             {totalUnitsOnHand.toLocaleString()} <span className="text-sm font-normal text-slate-400">Units</span>
           </div>
           <div className="text-xs text-emerald-600 font-medium mt-1">
-            {inventory.length} Active SKUs • {totalReservedUnits} Reserved
+            {inventory.length} Products • {totalReservedUnits} Reserved for Orders
           </div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-b-amber-500">
           <div className="text-xs font-medium text-slate-400 mb-1">Low-Stock Reorder Alerts</div>
           <div className="text-2xl font-bold text-slate-800">
-            {lowStockCount} {lowStockCount === 1 ? "SKU" : "SKUs"}
+            {lowStockCount} {lowStockCount === 1 ? "Item" : "Items"}
           </div>
           <div className="text-xs text-amber-600 font-medium mt-1">
-            Auto-PR trigger threshold active
+            Below minimum safety stock level
           </div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-b-blue-500">
-          <div className="text-xs font-medium text-slate-400 mb-1">Active Distribution Hubs</div>
-          <div className="text-2xl font-bold text-slate-800">2 Warehouses</div>
+          <div className="text-xs font-medium text-slate-400 mb-1">Active Warehouse Locations</div>
+          <div className="text-2xl font-bold text-slate-800">2 Facilities</div>
           <div className="text-xs text-blue-600 font-medium mt-1">
-            WH-CMB-01 (Colombo) & WH-KDY-02
+            Colombo Central & Kandy Regional
           </div>
         </div>
       </div>
@@ -355,7 +355,7 @@ export default function InventoryClient() {
             }`}
           >
             <Layers size={15} />
-            <span>Stock Catalog & WAC ({inventory.length})</span>
+            <span>Product Catalog ({inventory.length})</span>
           </button>
 
           <button
@@ -367,7 +367,7 @@ export default function InventoryClient() {
             }`}
           >
             <History size={15} />
-            <span>Immutable Stock Ledger ({movements.length})</span>
+            <span>Stock Movement History ({movements.length})</span>
           </button>
 
           <button
@@ -379,7 +379,7 @@ export default function InventoryClient() {
             }`}
           >
             <Warehouse size={15} />
-            <span>Warehouse Bins (2)</span>
+            <span>Warehouse Locations (2)</span>
           </button>
         </div>
 
@@ -422,13 +422,13 @@ export default function InventoryClient() {
             <table className="w-full text-sm text-left">
               <thead className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-100">
                 <tr>
-                  <th className="py-3.5 px-4">Product & Warehouse Bin</th>
+                  <th className="py-3.5 px-4">Product & Warehouse Location</th>
                   <th className="py-3.5 px-4">SKU / Batch Lot</th>
                   <th className="py-3.5 px-4">Category</th>
-                  <th className="py-3.5 px-4 text-right">Unit WAC Cost</th>
+                  <th className="py-3.5 px-4 text-right">Avg. Unit Cost</th>
                   <th className="py-3.5 px-4 text-right">Selling Price</th>
                   <th className="py-3.5 px-4 text-right">On-Hand Qty</th>
-                  <th className="py-3.5 px-4 text-right">Total Asset Value</th>
+                  <th className="py-3.5 px-4 text-right">Total Stock Value</th>
                   <th className="py-3.5 px-4 text-center">Stock Status</th>
                   <th className="py-3.5 px-4 text-right">Quick Action</th>
                 </tr>
@@ -496,7 +496,7 @@ export default function InventoryClient() {
                         <button
                           onClick={() => handleQuickReplenish(product)}
                           className="inline-flex items-center space-x-1 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg transition-colors"
-                          title="Record +25 Stock Cycle Adjustment"
+                          title="Add 25 units to stock"
                         >
                           <PackagePlus size={13} />
                           <span>+25 Stock</span>
@@ -511,41 +511,41 @@ export default function InventoryClient() {
 
           <div className="px-6 py-3.5 border-t border-slate-100 bg-slate-50/60 flex items-center justify-between text-xs text-slate-500">
             <span>
-              Showing <strong>{filteredInventory.length}</strong> of <strong>{inventory.length}</strong> active inventory SKUs
+              Showing <strong>{filteredInventory.length}</strong> of <strong>{inventory.length}</strong> active products
             </span>
-            <span className="font-mono text-slate-600">
-              Valuation Method: <strong>Weighted Average Cost (WAC) • numeric(15,4)</strong>
+            <span className="text-slate-600">
+              Costing Method: <strong>Weighted Average Cost</strong>
             </span>
           </div>
         </div>
       )}
 
-      {/* TAB 2: IMMUTABLE STOCK MOVEMENTS LEDGER */}
+      {/* TAB 2: STOCK MOVEMENTS HISTORY */}
       {activeTab === "movements" && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
           <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-bold text-slate-800">Immutable Stock Movements Audit Log</h3>
+              <h3 className="text-sm font-bold text-slate-800">Stock Movement History</h3>
               <p className="text-xs text-slate-400">
-                Append-only ledger of every warehouse receipt, sales dispatch, and BOM production backflush.
+                Chronological audit log of all warehouse goods receipts, sales shipments, and stock adjustments.
               </p>
             </div>
-            <span className="text-xs font-mono bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-1 rounded-lg font-semibold">
-              SELECT ... FOR UPDATE Row-Lock Protected
+            <span className="text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-1 rounded-lg font-semibold">
+              Verified Audit Trail
             </span>
           </div>
 
           <table className="w-full text-sm text-left">
             <thead className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-100">
               <tr>
-                <th className="py-3 px-4">Movement ID</th>
-                <th className="py-3 px-4">Timestamp</th>
-                <th className="py-3 px-4">Operation Type</th>
+                <th className="py-3 px-4">Reference ID</th>
+                <th className="py-3 px-4">Date & Time</th>
+                <th className="py-3 px-4">Transaction Type</th>
                 <th className="py-3 px-4">Source Document</th>
                 <th className="py-3 px-4">SKU & Product</th>
                 <th className="py-3 px-4">Warehouse / Batch</th>
-                <th className="py-3 px-4 text-right">Quantity Delta</th>
-                <th className="py-3 px-4 text-right">Unit WAC</th>
+                <th className="py-3 px-4 text-right">Quantity Change</th>
+                <th className="py-3 px-4 text-right">Unit Cost</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
