@@ -47,9 +47,11 @@ export default function AccountingDashboard() {
       balancesQuery.forEach((row: any) => {
         const debit = Number(row.total_debits || 0);
         const credit = Number(row.total_credits || 0);
-        const balance = row.normal_balance === 'debit' ? (debit - credit) : (credit - debit);
+        const normalBal = (row.normal_balance || '').toLowerCase();
+        const balance = normalBal === 'debit' ? (debit - credit) : (credit - debit);
+        const t = (row.type || '').toLowerCase();
         
-        switch (row.type) {
+        switch (t) {
           case 'asset': assets += balance; break;
           case 'liability': liabilities += balance; break;
           case 'revenue': revenue += balance; break;

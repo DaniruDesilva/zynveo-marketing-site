@@ -30,6 +30,8 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
           name: "Cash & Bank",
           type: "ASSET",
           normal_balance: "DEBIT",
+          total_debits: 125400,
+          total_credits: 0,
           is_active: 1,
         },
         {
@@ -38,6 +40,8 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
           name: "Accounts Receivable",
           type: "ASSET",
           normal_balance: "DEBIT",
+          total_debits: 18450,
+          total_credits: 0,
           is_active: 1,
         },
         {
@@ -46,6 +50,8 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
           name: "Inventory Asset",
           type: "ASSET",
           normal_balance: "DEBIT",
+          total_debits: 64800,
+          total_credits: 0,
           is_active: 1,
         },
         {
@@ -54,6 +60,8 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
           name: "Accounts Payable",
           type: "LIABILITY",
           normal_balance: "CREDIT",
+          total_debits: 0,
+          total_credits: 9300,
           is_active: 1,
         },
         {
@@ -62,6 +70,18 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
           name: "Output Tax Payable",
           type: "LIABILITY",
           normal_balance: "CREDIT",
+          total_debits: 0,
+          total_credits: 19134,
+          is_active: 1,
+        },
+        {
+          id: "11111111-1111-4111-8111-000000003000",
+          code: "3000",
+          name: "Retained Earnings",
+          type: "EQUITY",
+          normal_balance: "CREDIT",
+          total_debits: 0,
+          total_credits: 129016,
           is_active: 1,
         },
         {
@@ -70,6 +90,8 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
           name: "Sales Revenue",
           type: "REVENUE",
           normal_balance: "CREDIT",
+          total_debits: 0,
+          total_credits: 125400,
           is_active: 1,
         },
         {
@@ -78,6 +100,18 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
           name: "Cost of Goods Sold (COGS)",
           type: "EXPENSE",
           normal_balance: "DEBIT",
+          total_debits: 48200,
+          total_credits: 0,
+          is_active: 1,
+        },
+        {
+          id: "11111111-1111-4111-8111-000000006000",
+          code: "6000",
+          name: "Operating Expenses",
+          type: "EXPENSE",
+          normal_balance: "DEBIT",
+          total_debits: 26000,
+          total_credits: 0,
           is_active: 1,
         },
       ] as any[],
@@ -217,11 +251,21 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
             const maxCode = typeAccounts.reduce((max, a) => Math.max(max, parseInt(a.code || "0")), 0);
             return [{ max_code: maxCode > 0 ? maxCode.toString() : null }];
           }
-          return store.accounts.map((a) => ({
+          let accs = store.accounts.map((a) => ({
             ...a,
-            total_debits: 0,
-            total_credits: 0,
+            total_debits: a.total_debits ?? 0,
+            total_credits: a.total_credits ?? 0,
           }));
+          if (query.includes("HAVING") || query.includes("SUM(")) {
+            accs = accs.filter((a) => a.total_debits > 0 || a.total_credits > 0);
+          }
+          const lowerQ = query.toLowerCase();
+          if (lowerQ.includes("'revenue'") && lowerQ.includes("'expense'")) {
+            accs = accs.filter((a) => a.type?.toLowerCase() === 'revenue' || a.type?.toLowerCase() === 'expense');
+          } else if (lowerQ.includes("'asset'") && lowerQ.includes("'liability'")) {
+            accs = accs.filter((a) => ['asset', 'liability', 'equity'].includes(a.type?.toLowerCase()));
+          }
+          return accs;
         }
         if (query.includes("FROM customers")) {
           if (query.includes("count(id)")) {

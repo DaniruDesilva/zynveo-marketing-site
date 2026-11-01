@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { usePowerSync } from "../../../../components/PowerSyncProvider";
-import { ArrowLeft, Download, Printer } from "lucide-react";
+import { ArrowLeft, Download, Printer, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 
 export default function TrialBalanceReport() {
@@ -35,7 +35,8 @@ export default function TrialBalanceReport() {
         let finalDebit = 0;
         let finalCredit = 0;
 
-        if (row.normal_balance === 'debit') {
+        const nb = (row.normal_balance || '').toLowerCase();
+        if (nb === 'debit') {
            const bal = d - c;
            if (bal >= 0) finalDebit = bal;
            else finalCredit = Math.abs(bal);
@@ -85,6 +86,18 @@ export default function TrialBalanceReport() {
           </button>
         </div>
       </div>
+
+      {totals.debit > 0 && Math.abs(totals.debit - totals.credit) < 0.01 && (
+        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-sm flex items-center justify-between shadow-xs">
+          <div className="flex items-center space-x-2 font-semibold">
+            <CheckCircle2 size={18} className="text-emerald-600" />
+            <span>Double-Entry Equilibrium Verified: Sum(Debits) == Sum(Credits)</span>
+          </div>
+          <span className="font-mono font-bold text-xs bg-emerald-100 text-emerald-800 px-3 py-1 rounded-md">
+            LKR {totals.debit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          </span>
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <table className="w-full text-left border-collapse">
