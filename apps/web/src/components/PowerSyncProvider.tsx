@@ -285,6 +285,7 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
           id: "66666666-6666-4666-8666-000000000001",
           purchase_order_id: "55555555-5555-4555-8555-000000000001",
           product_id: "44444444-4444-4444-8444-000000000001",
+          sku: "AUD-WH-001",
           ordered_qty: "50.0000",
           received_qty: "0.0000",
           unit_cost: "180.00",
@@ -293,6 +294,7 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
           id: "66666666-6666-4666-8666-000000000002",
           purchase_order_id: "55555555-5555-4555-8555-000000000001",
           product_id: "44444444-4444-4444-8444-000000000002",
+          sku: "PER-MK-104",
           ordered_qty: "30.0000",
           received_qty: "0.0000",
           unit_cost: "85.00",
@@ -301,6 +303,7 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
           id: "66666666-6666-4666-8666-000000000003",
           purchase_order_id: "55555555-5555-4555-8555-000000000002",
           product_id: "44444444-4444-4444-8444-000000000005",
+          sku: "DIS-4K-27",
           ordered_qty: "20.0000",
           received_qty: "5.0000",
           unit_cost: "240.00",
@@ -389,8 +392,24 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
         if (query.includes("FROM journal_entries")) {
           return store.journal_entries;
         }
-        if (query.includes("FROM products")) {
-          return store.products;
+        if (query.includes("FROM products") || query.includes("FROM product_variants")) {
+          return store.products.map((p) => ({
+            id: p.id,
+            product_id: p.id,
+            sku: p.sku,
+            name: p.name,
+            price: p.price,
+            selling_price: p.selling_price,
+            weighted_avg_cost: p.weighted_avg_cost,
+            category: p.category,
+            stock: p.stock,
+            reserved: p.reserved,
+            reorder_level: p.reorder_level,
+            warehouse_code: p.warehouse_code,
+            bin_location: p.bin_location,
+            batch_number: p.batch_number,
+            uom: p.uom,
+          }));
         }
         if (query.includes("FROM documents")) {
           if (query.includes("count(id)")) {
@@ -452,6 +471,24 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
             acc.description = params[4];
             acc.is_active = params[5] === 1 ? 1 : 0;
           }
+        } else if (query.includes("INSERT INTO journal_entries") && params) {
+          store.journal_entries.unshift({
+            id: params[0] || crypto.randomUUID(),
+            entry_number: params[1] || `JE-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+            date: params[2] || new Date().toISOString().slice(0, 10),
+            description: params[3] || "Manual Entry",
+            reference: params[4] || "",
+            status: params[5] || "posted",
+            total_amount: Number(params[6]) || 18450.00,
+          });
+        } else if (query.includes("INSERT INTO documents") && params) {
+          store.documents.unshift({
+            id: params[0] || crypto.randomUUID(),
+            document_number: params[1] || `INV-2026-${Math.floor(2405 + Math.random() * 50)}`,
+            total: Number(params[2]) || 0,
+            status: params[3] || "Pending",
+            date: params[4] || new Date().toISOString().slice(0, 10),
+          });
         }
       },
     };
