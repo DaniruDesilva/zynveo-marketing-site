@@ -4,6 +4,7 @@ import {
   TenantContext,
   UserRole,
   ValidateTenantAccessResponse,
+  getPermissionsForRoles,
 } from '@zynveo/contracts';
 import {
   CanActivate,
@@ -18,6 +19,10 @@ import {
 export const ROLES_METADATA_KEY = 'zynveo:required_roles';
 export const Roles = (...roles: UserRole[]) => SetMetadata(ROLES_METADATA_KEY, roles);
 
+export const PERMISSIONS_METADATA_KEY = 'zynveo:required_permissions';
+export const RequirePermission = (...permissions: string[]) =>
+  SetMetadata(PERMISSIONS_METADATA_KEY, permissions);
+
 export const IAM_RPC_CLIENT = 'ZYNVEO_IAM_RPC_CLIENT';
 
 export interface AuthenticatedRequest {
@@ -29,6 +34,7 @@ export interface AuthenticatedRequest {
     tenantId: string;
     branchId?: string;
     roles: UserRole[];
+    permissions: string[];
   };
 }
 
@@ -55,15 +61,29 @@ export function verifySupabaseJwt(
 
   const [headerB64, payloadB64, signatureB64] = parts;
 
-  if (jwtSecret) {
-    const expectedSig = createHmac('sha256', jwtSecret)
-      .update(`${headerB64}.${payloadB64}`)
-      .digest('base64url');
-    const a = Buffer.from(signatureB64);
-    const b = Buffer.from(expectedSig);
-    if (a.length !== b.length || !timingSafeEqual(a, b)) {
-      throw new ErpRpcException('UNAUTHORIZED', 'Invalid JWT signature', 401);
-    }
+  // Fail-closed security rule: verify signature with secret
+  const effectiveSecret =
+    jwtSecret ||
+    process.env.SUPABASE_JWT_SECRET ||
+    (process.env.NODE_ENV === 'production'
+      ? undefined
+      : 'zynveo-dev-jwt-secret-local-fallback');
+
+  if (!effectiveSecret) {
+    throw new ErpRpcException(
+      'UNAUTHORIZED',
+      'Authentication gateway misconfigured: JWT secret missing (fail-closed)',
+      401,
+    );
+  }
+
+  const expectedSig = createHmac('sha256', effectiveSecret)
+    .update(`${headerB64}.${payloadB64}`)
+    .digest('base64url');
+  const a = Buffer.from(signatureB64);
+  const b = Buffer.from(expectedSig);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) {
+    throw new ErpRpcException('UNAUTHORIZED', 'Invalid JWT cryptographic signature', 401);
   }
 
   let payload: Record<string, any>;
@@ -82,11 +102,13 @@ export function verifySupabaseJwt(
   }
 
   const appMeta = payload.app_metadata || {};
+  const userMeta = payload.user_metadata || {};
+  const rawRoles = appMeta.roles || payload.roles || userMeta.roles;
   return {
     sub: payload.sub,
-    tenantId: appMeta.tenant_id || payload.tenant_id,
-    branchId: appMeta.branch_id || payload.branch_id,
-    roles: Array.isArray(appMeta.roles) ? appMeta.roles : undefined,
+    tenantId: appMeta.tenant_id || payload.tenant_id || userMeta.tenant_id,
+    branchId: appMeta.branch_id || payload.branch_id || userMeta.branch_id,
+    roles: Array.isArray(rawRoles) ? rawRoles : rawRoles ? [rawRoles] : undefined,
     exp: payload.exp,
   };
 }
@@ -123,6 +145,7 @@ export class JwtAuthGuard implements CanActivate {
     let resolvedTenantId = requestedTenantId;
     let resolvedBranchId = claims.branchId;
     let resolvedRoles: UserRole[] = claims.roles ?? ['VIEWER'];
+    let resolvedPermissions: string[] = getPermissionsForRoles(resolvedRoles);
 
     if (this.iamClient) {
       const cacheKey = `${claims.sub}:${requestedTenantId || 'default'}`;
@@ -151,6 +174,10 @@ export class JwtAuthGuard implements CanActivate {
       resolvedTenantId = access.tenantId;
       resolvedBranchId = access.branchId ?? resolvedBranchId;
       resolvedRoles = access.roles;
+      resolvedPermissions =
+        (access as any).permissions && (access as any).permissions.length > 0
+          ? (access as any).permissions
+          : getPermissionsForRoles(resolvedRoles);
     }
 
     if (!resolvedTenantId) {
@@ -175,6 +202,7 @@ export class JwtAuthGuard implements CanActivate {
       tenantId: resolvedTenantId,
       branchId: resolvedBranchId,
       roles: resolvedRoles,
+      permissions: resolvedPermissions,
     };
 
     return true;
@@ -213,3 +241,34 @@ export class RolesGuard implements CanActivate {
   }
 }
 
+@Injectable()
+export class PermissionsGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const handler = context.getHandler() as any;
+    const cls = context.getClass() as any;
+    const requiredPermissions: string[] | undefined =
+      handler?.[PERMISSIONS_METADATA_KEY] ?? cls?.[PERMISSIONS_METADATA_KEY];
+
+    if (!requiredPermissions || requiredPermissions.length === 0) {
+      return true;
+    }
+
+    const req = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const userRoles = req.user?.roles || [];
+    if (userRoles.includes('OWNER') || userRoles.includes('ADMIN')) {
+      return true;
+    }
+
+    const userPerms = req.user?.permissions || [];
+    const hasPermission = requiredPermissions.some((p) => userPerms.includes(p));
+    if (!hasPermission) {
+      throw new ErpRpcException(
+        'FORBIDDEN',
+        `Access denied. Requires permission: ${requiredPermissions.join(' or ')}`,
+        403,
+      );
+    }
+
+    return true;
+  }
+}

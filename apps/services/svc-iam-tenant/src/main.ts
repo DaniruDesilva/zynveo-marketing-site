@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import {
   ERP_RPC_PATTERNS,
   LogAuditTrailDto,
@@ -8,6 +8,7 @@ import {
   ValidateTenantAccessDto,
   ValidateTenantAccessResponse,
   ValidateTenantAccessSchema,
+  getPermissionsForRoles,
 } from '@zynveo/contracts';
 import * as iamSchema from '@zynveo/database/iam';
 import {
@@ -54,6 +55,7 @@ export class IamTenantController {
         authorized: false,
         tenantId: dto.tenantId || '00000000-0000-4000-8000-000000000000',
         roles: [],
+        permissions: [],
       };
     }
 
@@ -62,12 +64,94 @@ export class IamTenantController {
       .map((m: any) => String(m.role || 'VIEWER').toUpperCase())
       .filter((r: string): r is UserRole => UserRoleEnum.safeParse(r).success);
 
+    const effectiveRoles = roles.length > 0 ? roles : (['VIEWER'] as UserRole[]);
+    const permissions = getPermissionsForRoles(effectiveRoles);
+
     return {
       authorized: true,
       tenantId: primary.tenantId,
       branchId: primary.branchId ?? undefined,
-      roles: roles.length > 0 ? roles : ['VIEWER'],
+      roles: effectiveRoles,
+      permissions,
     };
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.IAM.GET_USER_PROFILE)
+  async getUserProfile(@Payload() rawPayload: { userId: string; tenantId: string }) {
+    const [user] = await this.db
+      .select()
+      .from(iamSchema.users)
+      .where(eq(iamSchema.users.id, rawPayload.userId));
+
+    const [tenant] = await this.db
+      .select()
+      .from(iamSchema.tenants)
+      .where(eq(iamSchema.tenants.id, rawPayload.tenantId));
+
+    const memberships = await this.db
+      .select()
+      .from(iamSchema.tenantUsers)
+      .where(
+        and(
+          eq(iamSchema.tenantUsers.userId, rawPayload.userId),
+          eq(iamSchema.tenantUsers.tenantId, rawPayload.tenantId),
+          eq(iamSchema.tenantUsers.isActive, true),
+        ),
+      );
+
+    const roles: UserRole[] = memberships
+      .map((m: any) => String(m.role || 'VIEWER').toUpperCase())
+      .filter((r: string): r is UserRole => UserRoleEnum.safeParse(r).success);
+    const effectiveRoles = roles.length > 0 ? roles : (['VIEWER'] as UserRole[]);
+
+    let branchName: string | undefined;
+    if (memberships[0]?.branchId) {
+      const [branch] = await this.db
+        .select()
+        .from(iamSchema.branches)
+        .where(eq(iamSchema.branches.id, memberships[0].branchId));
+      branchName = branch?.name;
+    }
+
+    return {
+      id: rawPayload.userId,
+      email: user?.email || 'admin@zynveo.com',
+      firstName: user?.firstName || 'System',
+      lastName: user?.lastName || 'Administrator',
+      roles: effectiveRoles,
+      permissions: getPermissionsForRoles(effectiveRoles),
+      tenantId: rawPayload.tenantId,
+      tenantName: tenant?.name || 'Zynveo Enterprise Holdings',
+      branchId: memberships[0]?.branchId ?? undefined,
+      branchName,
+      isActive: user?.isActive ?? true,
+    };
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.IAM.LIST_USERS)
+  async listUsers(@Payload() rawPayload: { tenantId: string }) {
+    const list = await this.db
+      .select({
+        id: iamSchema.users.id,
+        email: iamSchema.users.email,
+        firstName: iamSchema.users.firstName,
+        lastName: iamSchema.users.lastName,
+        isActive: iamSchema.tenantUsers.isActive,
+        role: iamSchema.tenantUsers.role,
+        branchId: iamSchema.tenantUsers.branchId,
+      })
+      .from(iamSchema.tenantUsers)
+      .innerJoin(iamSchema.users, eq(iamSchema.tenantUsers.userId, iamSchema.users.id))
+      .where(eq(iamSchema.tenantUsers.tenantId, rawPayload.tenantId));
+
+    return list.map((item: any) => ({
+      id: item.id,
+      name: `${item.firstName} ${item.lastName}`,
+      email: item.email,
+      role: item.role,
+      branchId: item.branchId,
+      isActive: item.isActive,
+    }));
   }
 
   @MessagePattern(ERP_RPC_PATTERNS.IAM.LOG_AUDIT_TRAIL)

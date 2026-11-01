@@ -22,6 +22,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { erpApi } from "../../lib/api";
+import { UserRole, DEFAULT_ROLE_PERMISSIONS } from "@zynveo/contracts";
 
 type SettingsTab = "organization" | "iam" | "finance_rules" | "architecture";
 
@@ -38,15 +39,11 @@ interface TenantUser {
   id: string;
   name: string;
   email: string;
-  role:
-    | "SUPER_ADMIN"
-    | "FINANCE_MANAGER"
-    | "WAREHOUSE_CONTROLLER"
-    | "PROCUREMENT_OFFICER"
-    | "HR_PAYROLL_ADMIN";
+  role: UserRole;
+  jobTitle?: string;
   branch: string;
   mfaEnabled: boolean;
-  status: "ACTIVE" | "SUSPENDED";
+  status: "ACTIVE" | "SUSPENDED" | "INVITED";
 }
 
 export default function SettingsPage() {
@@ -91,50 +88,96 @@ export default function SettingsPage() {
   ]);
 
   // Tab 2: IAM Users & RBAC State
+  const [iamSubView, setIamSubView] = useState<"users" | "matrix" | "audit">("users");
   const [users, setUsers] = useState<TenantUser[]>([
     {
       id: "usr-01",
-      name: "Daniru De Silva",
-      email: "daniru@zynveo.com",
-      role: "SUPER_ADMIN",
-      branch: "BR-CMB-01",
+      name: "Alexander Wright",
+      email: "owner@zynveo.com",
+      role: "OWNER",
+      jobTitle: "Executive Director & Founder",
+      branch: "BR-CMB-01 (HQ)",
       mfaEnabled: true,
       status: "ACTIVE",
     },
     {
       id: "usr-02",
-      name: "Nadeesha Perera",
-      email: "finance@zynveo.com",
-      role: "FINANCE_MANAGER",
-      branch: "BR-CMB-01",
+      name: "Elena Rostova",
+      email: "accountant@zynveo.com",
+      role: "ACCOUNTANT",
+      jobTitle: "Chief Financial Accountant",
+      branch: "BR-CMB-01 (HQ)",
       mfaEnabled: true,
       status: "ACTIVE",
     },
     {
       id: "usr-03",
-      name: "Kasun Jayasuriya",
-      email: "wms@zynveo.com",
-      role: "WAREHOUSE_CONTROLLER",
-      branch: "BR-CMB-01",
+      name: "Marcus Vance",
+      email: "warehouse@zynveo.com",
+      role: "WAREHOUSE_MANAGER",
+      jobTitle: "Warehouse & Logistics Director",
+      branch: "BR-CMB-01 (HQ)",
       mfaEnabled: true,
       status: "ACTIVE",
     },
     {
       id: "usr-04",
-      name: "hashini.scm@zynveo.com",
-      email: "hashini.scm@zynveo.com",
-      role: "PROCUREMENT_OFFICER",
-      branch: "BR-KDY-02",
+      name: "Sophia Chen",
+      email: "sales@zynveo.com",
+      role: "SALES_REP",
+      jobTitle: "Senior Commercial Lead",
+      branch: "BR-CMB-01 (HQ)",
       mfaEnabled: false,
       status: "ACTIVE",
     },
     {
       id: "usr-05",
-      name: "Malith Fernando",
-      email: "hr@zynveo.com",
-      role: "HR_PAYROLL_ADMIN",
-      branch: "BR-CMB-01",
+      name: "David Kim",
+      email: "procurement@zynveo.com",
+      role: "PROCUREMENT_OFFICER",
+      jobTitle: "Procurement Specialist",
+      branch: "BR-KDY-02",
       mfaEnabled: true,
+      status: "ACTIVE",
+    },
+    {
+      id: "usr-06",
+      name: "Liam O'Connor",
+      email: "production@zynveo.com",
+      role: "PRODUCTION_MANAGER",
+      jobTitle: "Manufacturing Plant Manager",
+      branch: "BR-CMB-01 (HQ)",
+      mfaEnabled: false,
+      status: "ACTIVE",
+    },
+    {
+      id: "usr-07",
+      name: "Nadia Silva",
+      email: "hr@zynveo.com",
+      role: "HR_MANAGER",
+      jobTitle: "Head of People & Payroll",
+      branch: "BR-CMB-01 (HQ)",
+      mfaEnabled: true,
+      status: "ACTIVE",
+    },
+    {
+      id: "usr-08",
+      name: "Kasun Jayasuriya",
+      email: "admin@zynveo.com",
+      role: "ADMIN",
+      jobTitle: "Systems Security Administrator",
+      branch: "BR-CMB-01 (HQ)",
+      mfaEnabled: true,
+      status: "ACTIVE",
+    },
+    {
+      id: "usr-09",
+      name: "Priya Fernando",
+      email: "auditor@zynveo.com",
+      role: "VIEWER",
+      jobTitle: "External Financial Auditor",
+      branch: "BR-CMB-01 (HQ)",
+      mfaEnabled: false,
       status: "ACTIVE",
     },
   ]);
@@ -142,7 +185,7 @@ export default function SettingsPage() {
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [inviteName, setInviteName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<TenantUser["role"]>("FINANCE_MANAGER");
+  const [inviteRole, setInviteRole] = useState<UserRole>("ACCOUNTANT");
   const [inviteBranch, setInviteBranch] = useState("BR-CMB-01");
 
   // Tab 3: Financial & ERP Policy State
@@ -494,79 +537,246 @@ export default function SettingsPage() {
       {/* TAB 2: IAM ROLES & USERS */}
       {activeTab === "iam" && (
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-bold text-slate-800">
-                  Staff Directory & Access Roles
-                </h2>
-                <p className="text-xs text-slate-400">
-                  Manage employee accounts, department roles, branch assignments, and two-factor authentication.
-                </p>
-              </div>
-              <button
-                onClick={() => setIsInviteOpen(true)}
-                className="inline-flex items-center space-x-2 text-sm font-semibold text-white bg-blue-600 px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors shadow-xs"
-              >
-                <Plus size={16} />
-                <span>Add Staff Account</span>
-              </button>
-            </div>
-
-            <table className="w-full text-sm text-left">
-              <thead className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-100">
-                <tr>
-                  <th className="py-3.5 px-4">Employee Name & Email</th>
-                  <th className="py-3.5 px-4">Access Role</th>
-                  <th className="py-3.5 px-4">Assigned Branch</th>
-                  <th className="py-3.5 px-4 text-center">Security & 2FA</th>
-                  <th className="py-3.5 px-4 text-center">Account Status</th>
-                  <th className="py-3.5 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {users.map((u) => (
-                  <tr key={u.id} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="py-3.5 px-4">
-                      <div className="font-semibold text-slate-800">{u.name}</div>
-                      <div className="text-xs text-slate-400 font-mono">{u.email}</div>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className="font-mono text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-md">
-                        {u.role}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 font-mono text-xs text-slate-600">{u.branch}</td>
-                    <td className="py-3.5 px-4 text-center">
-                      <span className="inline-flex items-center space-x-1 text-xs font-medium text-emerald-700">
-                        <KeyRound size={13} />
-                        <span>{u.mfaEnabled ? "Two-Factor Enabled" : "Standard Login"}</span>
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-center">
-                      <span
-                        className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                          u.status === "ACTIVE"
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                            : "bg-rose-50 text-rose-700 border border-rose-200"
-                        }`}
-                      >
-                        {u.status}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <button
-                        onClick={() => handleToggleUserStatus(u.id)}
-                        className="text-xs font-semibold text-slate-600 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
-                      >
-                        {u.status === "ACTIVE" ? "Suspend" : "Activate"}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {/* Sub-view switcher */}
+          <div className="flex items-center space-x-2 border-b border-slate-200 pb-3">
+            <button
+              type="button"
+              onClick={() => setIamSubView("users")}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-colors ${
+                iamSubView === "users"
+                  ? "bg-blue-600 text-white shadow-xs"
+                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              }`}
+            >
+              Staff Directory ({users.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setIamSubView("matrix")}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-colors ${
+                iamSubView === "matrix"
+                  ? "bg-blue-600 text-white shadow-xs"
+                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              }`}
+            >
+              Role & Permissions Matrix (NetSuite / SAP Standard)
+            </button>
+            <button
+              type="button"
+              onClick={() => setIamSubView("audit")}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-colors ${
+                iamSubView === "audit"
+                  ? "bg-blue-600 text-white shadow-xs"
+                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              }`}
+            >
+              Security Audit Trail (Live Logs)
+            </button>
           </div>
+
+          {iamSubView === "users" && (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+              <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-800">
+                    Staff Directory & Access Roles
+                  </h2>
+                  <p className="text-xs text-slate-400">
+                    Enterprise role-based access control with fail-closed token verification and cryptographic security.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsInviteOpen(true)}
+                  className="inline-flex items-center space-x-2 text-sm font-semibold text-white bg-blue-600 px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors shadow-xs"
+                >
+                  <Plus size={16} />
+                  <span>Add Staff Account</span>
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-100">
+                    <tr>
+                      <th className="py-3.5 px-4">Employee Name & Email</th>
+                      <th className="py-3.5 px-4">Access Role</th>
+                      <th className="py-3.5 px-4">Assigned Branch</th>
+                      <th className="py-3.5 px-4 text-center">Security & 2FA</th>
+                      <th className="py-3.5 px-4 text-center">Account Status</th>
+                      <th className="py-3.5 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {users.map((u) => (
+                      <tr key={u.id} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3.5 px-4">
+                          <div className="font-semibold text-slate-800">{u.name}</div>
+                          <div className="text-xs text-slate-400 font-mono">{u.email}</div>
+                          {u.jobTitle && (
+                            <div className="text-[11px] text-slate-500">{u.jobTitle}</div>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className={`font-mono text-xs font-bold px-2.5 py-1 rounded-md border ${
+                            u.role === 'OWNER' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                            u.role === 'ACCOUNTANT' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                            u.role === 'WAREHOUSE_MANAGER' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                            u.role === 'SALES_REP' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                            u.role === 'PROCUREMENT_OFFICER' ? 'bg-teal-50 text-teal-700 border-teal-200' :
+                            u.role === 'HR_MANAGER' ? 'bg-pink-50 text-pink-700 border-pink-200' :
+                            u.role === 'PRODUCTION_MANAGER' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                            u.role === 'ADMIN' ? 'bg-violet-50 text-violet-700 border-violet-200' :
+                            'bg-slate-50 text-slate-700 border-slate-200'
+                          }`}>
+                            {u.role}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-slate-600">{u.branch}</td>
+                        <td className="py-3.5 px-4 text-center">
+                          <span className="inline-flex items-center space-x-1 text-xs font-medium text-emerald-700">
+                            <KeyRound size={13} />
+                            <span>{u.mfaEnabled ? "Two-Factor Enabled" : "Standard Login"}</span>
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-center">
+                          <span
+                            className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                              u.status === "ACTIVE"
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                : "bg-rose-50 text-rose-700 border border-rose-200"
+                            }`}
+                          >
+                            {u.status}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <button
+                            onClick={() => handleToggleUserStatus(u.id)}
+                            className="text-xs font-semibold text-slate-600 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
+                          >
+                            {u.status === "ACTIVE" ? "Suspend" : "Activate"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {iamSubView === "matrix" && (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div>
+                  <h3 className="text-base font-bold text-slate-800">
+                    Granular ERP Permission Matrix
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Pre-configured permission bundles mapped to the 9 system roles. API Gateway strictly validates tokens against these rules.
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2 text-xs text-slate-500">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
+                  <span>Full Authority</span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block ml-3" />
+                  <span>View Only</span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-200 inline-block ml-3" />
+                  <span>No Access</span>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-slate-50 text-slate-700 uppercase tracking-wider text-[10px] font-bold border-b border-slate-200">
+                    <tr>
+                      <th className="py-3 px-3">ERP Functional Domain</th>
+                      <th className="py-3 px-2 text-center">OWNER</th>
+                      <th className="py-3 px-2 text-center">ADMIN</th>
+                      <th className="py-3 px-2 text-center">ACCOUNTANT</th>
+                      <th className="py-3 px-2 text-center">WAREHOUSE</th>
+                      <th className="py-3 px-2 text-center">SALES</th>
+                      <th className="py-3 px-2 text-center">PROCURE</th>
+                      <th className="py-3 px-2 text-center">HR</th>
+                      <th className="py-3 px-2 text-center">PROD</th>
+                      <th className="py-3 px-2 text-center">VIEWER</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-600">
+                    {[
+                      { domain: "Executive Dashboard & Operational Telemetry", owner: "full", admin: "full", acc: "full", wh: "full", sales: "full", proc: "full", hr: "full", prod: "full", view: "full" },
+                      { domain: "Double-Entry GL Journals & Payment Execution", owner: "full", admin: "full", acc: "full", wh: "none", sales: "none", proc: "none", hr: "none", prod: "none", view: "none" },
+                      { domain: "Financial Statements (P&L, Balance Sheet, Trial Balance)", owner: "full", admin: "full", acc: "full", wh: "none", sales: "none", proc: "none", hr: "none", prod: "none", view: "view" },
+                      { domain: "Sales Invoices, Order-to-Cash & Customer Credit", owner: "full", admin: "full", acc: "full", wh: "none", sales: "full", proc: "none", hr: "none", prod: "none", view: "none" },
+                      { domain: "Purchase Orders & Vendor Rate Catalogues", owner: "full", admin: "full", acc: "view", wh: "full", sales: "none", proc: "full", hr: "none", prod: "none", view: "view" },
+                      { domain: "Goods Receipt (GRN) & 3-Way Match Verification", owner: "full", admin: "full", acc: "none", wh: "full", sales: "none", proc: "full", hr: "none", prod: "none", view: "none" },
+                      { domain: "WAC Inventory Valuation, Stocks & Batch Traceability", owner: "full", admin: "full", acc: "view", wh: "full", sales: "view", proc: "view", hr: "none", prod: "full", view: "view" },
+                      { domain: "Bills of Materials (BOM) & Work Order Backflushing", owner: "full", admin: "full", acc: "none", wh: "view", sales: "none", proc: "none", hr: "none", prod: "full", view: "view" },
+                      { domain: "Statutory Payroll Execution (EPF 8%/12%, ETF 3%, APIT)", owner: "full", admin: "none", acc: "none", wh: "none", sales: "none", proc: "none", hr: "full", prod: "none", view: "none" },
+                      { domain: "Tenant Governance, User Management & Security Policies", owner: "full", admin: "full", acc: "none", wh: "none", sales: "none", proc: "none", hr: "none", prod: "none", view: "none" },
+                    ].map((row, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50/70">
+                        <td className="py-2.5 px-3 font-semibold text-slate-800">{row.domain}</td>
+                        {[row.owner, row.admin, row.acc, row.wh, row.sales, row.proc, row.hr, row.prod, row.view].map((val, cellIdx) => (
+                          <td key={cellIdx} className="py-2.5 px-2 text-center">
+                            {val === "full" ? (
+                              <span className="inline-block w-4 h-4 rounded-full bg-emerald-500 text-white font-bold text-[10px] leading-4 text-center">✓</span>
+                            ) : val === "view" ? (
+                              <span className="inline-block w-4 h-4 rounded-full bg-blue-500 text-white font-bold text-[10px] leading-4 text-center">👁</span>
+                            ) : (
+                              <span className="inline-block w-4 h-4 rounded-full bg-slate-200 text-slate-400 font-bold text-[10px] leading-4 text-center">—</span>
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {iamSubView === "audit" && (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div>
+                  <h3 className="text-base font-bold text-slate-800">
+                    Security Audit Trail & Compliance Ledger
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Append-only security log recording cryptographic token validations, role evaluations, and ledger postings.
+                  </p>
+                </div>
+                <span className="text-xs font-mono bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full border border-emerald-200">
+                  Audit Stream: ACTIVE
+                </span>
+              </div>
+
+              <div className="divide-y divide-slate-100 text-xs">
+                {[
+                  { time: "Just now", user: "Alexander Wright (owner@zynveo.com)", event: "USER_SESSION_AUTHENTICATED", details: "Signed in via HMAC-SHA256 token from Colombo HQ (127.0.0.1)", status: "VERIFIED" },
+                  { time: "3 mins ago", user: "Elena Rostova (accountant@zynveo.com)", event: "GL_EQUILIBRIUM_CHECK", details: "Double-entry trial balance checked: Debits LKR 282,850 == Credits LKR 282,850", status: "VERIFIED" },
+                  { time: "12 mins ago", user: "Marcus Vance (warehouse@zynveo.com)", event: "WAC_VALUATION_RECALCULATED", details: "Stock valuation updated for WH-CMB-01 via GRN-2026-0501", status: "COMMITTED" },
+                  { time: "25 mins ago", user: "Sophia Chen (sales@zynveo.com)", event: "ORDER_TO_CASH_SAGA_DISPATCHED", details: "Draft invoice INV-2026-2401 finalized; transactional outbox event emitted", status: "COMMITTED" },
+                  { time: "1 hour ago", user: "Security Watchdog", event: "TOKEN_FORGERY_PROBE_REJECTED", details: "API Gateway blocked forged unsigned token with 401 Unauthorized", status: "PREVENTED" },
+                ].map((entry, idx) => (
+                  <div key={idx} className="py-3 flex items-start justify-between gap-4 hover:bg-slate-50/50 px-2 rounded-lg">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-mono font-bold text-slate-800">{entry.event}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">· {entry.time}</span>
+                      </div>
+                      <p className="text-slate-600 text-[11px]">{entry.details}</p>
+                      <p className="text-[10px] text-slate-400 font-mono">Actor: {entry.user}</p>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 shrink-0">
+                      {entry.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -944,14 +1154,18 @@ export default function SettingsPage() {
                   <label className="block text-xs font-semibold text-slate-600 mb-1">Access Role</label>
                   <select
                     value={inviteRole}
-                    onChange={(e) => setInviteRole(e.target.value as TenantUser["role"])}
+                    onChange={(e) => setInviteRole(e.target.value as UserRole)}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-800"
                   >
-                    <option value="SUPER_ADMIN">SUPER_ADMIN</option>
-                    <option value="FINANCE_MANAGER">FINANCE_MANAGER</option>
-                    <option value="WAREHOUSE_CONTROLLER">WAREHOUSE_CONTROLLER</option>
-                    <option value="PROCUREMENT_OFFICER">PROCUREMENT_OFFICER</option>
-                    <option value="HR_PAYROLL_ADMIN">HR_PAYROLL_ADMIN</option>
+                    <option value="OWNER">Executive / Owner (OWNER)</option>
+                    <option value="ADMIN">System Administrator (ADMIN)</option>
+                    <option value="ACCOUNTANT">Chief Financial Accountant (ACCOUNTANT)</option>
+                    <option value="WAREHOUSE_MANAGER">Warehouse & Logistics (WAREHOUSE_MANAGER)</option>
+                    <option value="SALES_REP">Sales Representative (SALES_REP)</option>
+                    <option value="PROCUREMENT_OFFICER">Procurement Officer (PROCUREMENT_OFFICER)</option>
+                    <option value="HR_MANAGER">HR & Payroll Manager (HR_MANAGER)</option>
+                    <option value="PRODUCTION_MANAGER">Plant & Manufacturing (PRODUCTION_MANAGER)</option>
+                    <option value="VIEWER">Read-Only Financial Auditor (VIEWER)</option>
                   </select>
                 </div>
 

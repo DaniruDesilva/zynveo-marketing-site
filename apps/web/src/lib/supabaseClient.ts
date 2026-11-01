@@ -18,6 +18,8 @@ const DEV_FALLBACK_JWT = [
   'dev-signature',
 ].join('.');
 
+import { getStoredSession } from './authStore';
+
 export const supabase = {
   from: (table: string) => {
     const url = SUPABASE_URL ? `${SUPABASE_URL}/rest/v1/${table}` : `/api/mock/${table}`;
@@ -101,16 +103,26 @@ export const supabase = {
   auth: {
     getSession: async (): Promise<{ data: { session: { access_token: string } | null }; error: null }> => {
       if (typeof window !== 'undefined') {
-        const token = window.localStorage.getItem('zynveo_access_token') || DEV_FALLBACK_JWT;
-        return {
-          data: { session: { access_token: token } },
-          error: null,
-        };
+        const stored = getStoredSession();
+        const token = stored?.token || window.localStorage.getItem('zynveo_access_token');
+        if (token) {
+          return {
+            data: { session: { access_token: token } },
+            error: null,
+          };
+        }
       }
       return {
-        data: { session: { access_token: DEV_FALLBACK_JWT } },
+        data: { session: null },
         error: null,
       };
+    },
+    signOut: async (): Promise<void> => {
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('zynveo_access_token');
+        window.localStorage.removeItem('zynveo_user_session');
+        document.cookie = 'zynveo_access_token=; Path=/; Max-Age=0; SameSite=Lax';
+      }
     },
   },
   channel: (name: string) => ({ on: (event: string, opts: any, callback: any) => ({ subscribe: () => {} }) }),

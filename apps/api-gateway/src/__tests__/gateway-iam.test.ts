@@ -162,4 +162,46 @@ describe('API Gateway + IAM Contract Verification', () => {
       /Requires one of roles: HR_MANAGER, ACCOUNTANT/,
     );
   });
+
+  it('rejects forged JWT signatures and expired tokens with 401 Unauthorized', async () => {
+    process.env.SUPABASE_JWT_SECRET = JWT_SECRET;
+    const jwtGuard = new JwtAuthGuard(inMemoryRpcBus);
+    const gateway = new ErpGatewayController(inMemoryRpcBus);
+
+    // 1. Forged signature
+    const forgedToken = signHs256Jwt(
+      { sub: USER_ID, exp: Math.floor(Date.now() / 1000) + 3600 },
+      'wrong-secret-signature',
+    );
+    const forgedReq: AuthenticatedRequest = {
+      headers: { authorization: `Bearer ${forgedToken}` },
+    };
+    const forgedCtx = makeHttpExecutionContext(forgedReq, gateway.getMe, ErpGatewayController);
+    await assert.rejects(
+      async () => jwtGuard.canActivate(forgedCtx),
+      /Invalid JWT cryptographic signature/,
+    );
+
+    // 2. Expired token
+    const expiredToken = signHs256Jwt(
+      { sub: USER_ID, exp: Math.floor(Date.now() / 1000) - 3600 },
+      JWT_SECRET,
+    );
+    const expiredReq: AuthenticatedRequest = {
+      headers: { authorization: `Bearer ${expiredToken}` },
+    };
+    const expiredCtx = makeHttpExecutionContext(expiredReq, gateway.getMe, ErpGatewayController);
+    await assert.rejects(
+      async () => jwtGuard.canActivate(expiredCtx),
+      /JWT token has expired/,
+    );
+
+    // 3. Missing Bearer token
+    const missingReq: AuthenticatedRequest = { headers: {} };
+    const missingCtx = makeHttpExecutionContext(missingReq, gateway.getMe, ErpGatewayController);
+    await assert.rejects(
+      async () => jwtGuard.canActivate(missingCtx),
+      /Missing Bearer token/,
+    );
+  });
 });

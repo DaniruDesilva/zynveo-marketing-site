@@ -14,6 +14,8 @@ export const ERP_RPC_PATTERNS = {
   IAM: {
     VALIDATE_TENANT_ACCESS: { cmd: 'iam.validate_tenant_access' },
     LOG_AUDIT_TRAIL: { cmd: 'iam.log_audit_trail' },
+    GET_USER_PROFILE: { cmd: 'iam.get_user_profile' },
+    LIST_USERS: { cmd: 'iam.list_users' },
   },
   FINANCE: {
     POST_JOURNAL_ENTRY: { cmd: 'finance.post_journal_entry' },
@@ -61,6 +63,7 @@ export const ERP_EVENT_PATTERNS = {
   LOW_STOCK_THRESHOLD_BREACHED: 'event.inventory.low_stock_breached',
   STOCK_LEVEL_MUTATED: 'event.inventory.stock_level_mutated',
   JOURNAL_POSTED: 'event.finance.journal_posted',
+  MEMBERSHIP_CHANGED: 'event.iam.membership_changed',
 } as const;
 
 export type ErpEventName = (typeof ERP_EVENT_PATTERNS)[keyof typeof ERP_EVENT_PATTERNS];
@@ -115,5 +118,8 @@ export const ERP_EVENT_SUBSCRIPTIONS: Record<ErpEventName, readonly ErpBullMqQue
   ],
   [ERP_EVENT_PATTERNS.JOURNAL_POSTED]: [
     ERP_BULLMQ_QUEUES.BI_REPORTING,
+  ],
+  [ERP_EVENT_PATTERNS.MEMBERSHIP_CHANGED]: [
+    ERP_BULLMQ_QUEUES.IAM,
   ],
 } as const;
