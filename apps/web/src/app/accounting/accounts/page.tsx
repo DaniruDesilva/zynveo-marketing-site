@@ -29,10 +29,13 @@ export default function ChartOfAccountsPage() {
       const formattedAccounts = result.map((row: any) => {
         const debit = Number(row.total_debits || 0);
         const credit = Number(row.total_credits || 0);
-        const balance = row.normal_balance === 'debit' ? (debit - credit) : (credit - debit);
+        const normalBal = (row.normal_balance || '').toLowerCase();
+        const balance = normalBal === 'debit' ? (debit - credit) : (credit - debit);
         
         return {
           ...row,
+          type: (row.type || '').toLowerCase(),
+          normal_balance: normalBal,
           balance
         };
       });

@@ -115,7 +115,53 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
           is_active: 1,
         },
       ] as any[],
-      journal_entries: [] as any[],
+      journal_entries: [
+        {
+          id: "je-001",
+          entry_number: "JE-2026-0105",
+          date: "2026-11-01",
+          description: "Order-to-Cash Saga: Sales Revenue, Output VAT (18%) & WAC COGS Recognition",
+          reference: "INV-2026-2401",
+          status: "posted",
+          total_amount: 144534.00,
+        },
+        {
+          id: "je-002",
+          entry_number: "JE-2026-0104",
+          date: "2026-10-31",
+          description: "Procure-to-Pay 3-Way Match: Warehouse GRN Inventory Asset & AP Accrual",
+          reference: "GRN-2026-0501",
+          status: "posted",
+          total_amount: 64800.00,
+        },
+        {
+          id: "je-003",
+          entry_number: "JE-2026-0103",
+          date: "2026-10-30",
+          description: "Manufacturing Work Order Completion: Finished Goods Yield & Scrap Backflush",
+          reference: "WO-2026-081",
+          status: "posted",
+          total_amount: 48200.00,
+        },
+        {
+          id: "je-004",
+          entry_number: "JE-2026-0102",
+          date: "2026-10-28",
+          description: "Statutory Payroll Run: Gross Salaries, EPF (8%/12%), ETF (3%) & APIT Withholding",
+          reference: "PAY-2026-10",
+          status: "posted",
+          total_amount: 26000.00,
+        },
+        {
+          id: "je-005",
+          entry_number: "JE-2026-0101",
+          date: "2026-10-25",
+          description: "Customer Invoice Settlement Receipt into Corporate Bank Account (GL 1000)",
+          reference: "RCPT-2026-884",
+          status: "posted",
+          total_amount: 9525.20,
+        },
+      ] as any[],
       journal_lines: [] as any[],
       customers: [
         { id: "22222222-2222-4222-8222-000000000001", name: "Acme Holdings Ltd", is_active: 1 },
@@ -277,7 +323,9 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
         if (query.includes("FROM accounts")) {
           if (query.includes("MAX(CAST(code AS INTEGER))")) {
             const type = params ? params[0] : null;
-            const typeAccounts = type ? store.accounts.filter((a) => a.type === type) : store.accounts;
+            const typeAccounts = type
+              ? store.accounts.filter((a) => (a.type || "").toLowerCase() === String(type).toLowerCase())
+              : store.accounts;
             const maxCode = typeAccounts.reduce((max, a) => Math.max(max, parseInt(a.code || "0")), 0);
             return [{ max_code: maxCode > 0 ? maxCode.toString() : null }];
           }

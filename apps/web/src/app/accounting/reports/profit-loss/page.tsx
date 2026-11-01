@@ -38,12 +38,14 @@ export default function ProfitAndLossReport() {
       result.forEach((row: any) => {
         const d = Number(row.total_debits || 0);
         const c = Number(row.total_credits || 0);
-        const balance = row.normal_balance === 'debit' ? (d - c) : (c - d);
+        const nb = (row.normal_balance || '').toLowerCase();
+        const t = (row.type || '').toLowerCase();
+        const balance = nb === 'debit' ? (d - c) : (c - d);
         
-        if (row.type === 'revenue') {
+        if (t === 'revenue') {
           revenue.push({ ...row, balance });
           totalRev += balance;
-        } else if (row.type === 'expense') {
+        } else if (t === 'expense') {
           expenses.push({ ...row, balance });
           totalExp += balance;
         }

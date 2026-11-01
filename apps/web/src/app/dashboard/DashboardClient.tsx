@@ -280,7 +280,7 @@ export default function DashboardClient() {
 
         {/* Card 2: Net Operating Profit */}
         <Link
-          href="/accounting/reports/income-statement"
+          href="/accounting/reports/profit-loss"
           className="group bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-b-emerald-500 hover:shadow-md transition-all"
         >
           <div className="flex items-center justify-between mb-2">

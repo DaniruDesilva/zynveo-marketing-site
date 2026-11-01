@@ -44,9 +44,11 @@ export default function BalanceSheetReport() {
       result.forEach((row: any) => {
         const d = Number(row.total_debits || 0);
         const c = Number(row.total_credits || 0);
-        const balance = row.normal_balance === 'debit' ? (d - c) : (c - d);
+        const nb = (row.normal_balance || '').toLowerCase();
+        const t = (row.type || '').toLowerCase();
+        const balance = nb === 'debit' ? (d - c) : (c - d);
         
-        switch (row.type) {
+        switch (t) {
           case 'asset':
             assets.push({ ...row, balance });
             totalAss += balance;
