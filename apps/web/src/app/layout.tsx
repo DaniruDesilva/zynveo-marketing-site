@@ -91,8 +91,6 @@ export default function RootLayout({
                   href="/accounting" 
                   icon={<Calculator size={18} />} 
                   label="Accounting & GL" 
-                  badge="Double-Entry" 
-                  badgeColor="bg-blue-100 text-blue-700" 
                 />
                 <SidebarNavItem href="/hr" icon={<UserCheck size={18} />} label="HR & Payroll" />
                 <SidebarNavItem href="/reports" icon={<BarChart2 size={18} />} label="Reports & BI" />

@@ -32,14 +32,14 @@ export function SidebarNavItem({
             : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
         }`}
       >
-        <div className="flex items-center space-x-3 min-w-0">
-          <span className={`transition-colors ${isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"}`}>
+        <div className="flex items-center space-x-3 min-w-0 flex-1">
+          <span className={`shrink-0 transition-colors ${isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"}`}>
             {icon}
           </span>
           <span className="truncate">{label}</span>
         </div>
         {badge && (
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${badgeColor}`}>
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 ${badgeColor}`}>
             {badge}
           </span>
         )}
