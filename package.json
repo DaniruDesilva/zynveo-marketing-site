@@ -6,11 +6,15 @@
     "node": ">=20.11.0"
   },
   "scripts": {
+    "test:all": "node --test packages/contracts/dist/__tests__/contracts.test.js packages/database/dist/__tests__/schemas.test.js packages/microservice-chassis/dist/__tests__/chassis.test.js apps/api-gateway/dist/__tests__/gateway-iam.test.js apps/services/svc-iam-tenant/dist/__tests__/iam.test.js apps/services/svc-finance/dist/__tests__/finance.test.js apps/services/svc-inventory-wms/dist/__tests__/inventory.test.js apps/services/svc-crm-sales/dist/__tests__/order-to-cash-saga.test.js apps/services/svc-procurement/dist/__tests__/procurement.test.js apps/services/svc-manufacturing/dist/__tests__/manufacturing.test.js apps/services/svc-hr-payroll/dist/__tests__/hr-payroll.test.js apps/services/svc-bi-reporting/dist/__tests__/bi-reporting.test.js",
+    "start:gateway": "node apps/api-gateway/dist/main.js",
+    "start:web": "cd apps/web && node node_modules/next/dist/bin/next dev",
+    "db:migrate": "node --env-file=.env packages/database/apply-migration.js",
     "dev": "pnpm -r --parallel --if-present run dev",
     "build": "pnpm -r --if-present run build",
     "typecheck": "pnpm -r --if-present run typecheck",
     "lint": "pnpm -r --if-present run lint",
-    "test": "pnpm -r --if-present run test",
+    "test": "node --test packages/contracts/dist/__tests__/contracts.test.js packages/database/dist/__tests__/schemas.test.js packages/microservice-chassis/dist/__tests__/chassis.test.js apps/api-gateway/dist/__tests__/gateway-iam.test.js apps/services/svc-iam-tenant/dist/__tests__/iam.test.js apps/services/svc-finance/dist/__tests__/finance.test.js apps/services/svc-inventory-wms/dist/__tests__/inventory.test.js apps/services/svc-crm-sales/dist/__tests__/order-to-cash-saga.test.js apps/services/svc-procurement/dist/__tests__/procurement.test.js apps/services/svc-manufacturing/dist/__tests__/manufacturing.test.js apps/services/svc-hr-payroll/dist/__tests__/hr-payroll.test.js apps/services/svc-bi-reporting/dist/__tests__/bi-reporting.test.js",
     "clean": "pnpm -r --if-present run clean",
     "db:generate": "pnpm --filter @zynveo/database run generate",
     "db:push": "pnpm --filter @zynveo/database run push",

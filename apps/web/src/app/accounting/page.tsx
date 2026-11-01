@@ -113,6 +113,28 @@ export default function AccountingDashboard() {
         </div>
       </div>
 
+      {/* Sub-Navigation Tabs */}
+      <div className="flex border-b border-slate-200 space-x-6 text-sm font-medium">
+        <Link href="/accounting" className="pb-3 border-b-2 border-blue-600 text-blue-600 font-semibold">
+          Overview
+        </Link>
+        <Link href="/accounting/accounts" className="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">
+          Chart of Accounts
+        </Link>
+        <Link href="/accounting/journals" className="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">
+          Journal Entries
+        </Link>
+        <Link href="/accounting/reports/trial-balance" className="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">
+          Trial Balance
+        </Link>
+        <Link href="/accounting/reports/profit-loss" className="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">
+          Profit & Loss
+        </Link>
+        <Link href="/accounting/reports/balance-sheet" className="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">
+          Balance Sheet
+        </Link>
+      </div>
+
       {/* KPI Cards */}
       <div className="grid grid-cols-4 gap-4">
         <MetricCard 

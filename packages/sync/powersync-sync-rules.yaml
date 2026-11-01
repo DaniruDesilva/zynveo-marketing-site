@@ -55,3 +55,4 @@ bucket_definitions:
       - SELECT tenant_id || ':' || warehouse_id || ':' || variant_id AS id, tenant_id, warehouse_id, variant_id, sku, quantity_on_hand, unit_wac_cost, total_valuation FROM bi.mv_inventory_valuation_wac WHERE tenant_id = bucket.tenant_id
       - SELECT tenant_id || ':' || customer_id AS id, tenant_id, customer_id, bucket_current, bucket_1_30, bucket_31_60, bucket_61_90, bucket_over_90, total_receivable FROM bi.mv_ar_aging_buckets WHERE tenant_id = bucket.tenant_id
       - SELECT tenant_id || ':' || account_id AS id, tenant_id, account_id, account_code, account_name, account_type, normal_balance, total_debit, total_credit, net_balance FROM bi.mv_trial_balance WHERE tenant_id = bucket.tenant_id
+

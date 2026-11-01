@@ -1,5 +1,15 @@
+import { createHmac } from 'node:crypto';
 import * as http from 'node:http';
 import { getCurrentTenantContext } from './tenant-context';
+
+export function signJwtHmac(payload: Record<string, unknown>, secret: string): string {
+  const headerB64 = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const signatureB64 = createHmac('sha256', secret)
+    .update(`${headerB64}.${payloadB64}`)
+    .digest('base64url');
+  return `${headerB64}.${payloadB64}.${signatureB64}`;
+}
 
 export interface MicroserviceBootstrapOptions {
   serviceName: string;
@@ -7,6 +17,7 @@ export interface MicroserviceBootstrapOptions {
   healthPort: number;
   appModule: Function;
   redisUrl?: string;
+  httpHandler?: (req: http.IncomingMessage, res: http.ServerResponse) => Promise<boolean> | boolean;
 }
 
 export interface HealthCheckPayload {
@@ -59,7 +70,8 @@ export function evaluateHealthRequest(
   url: string | undefined,
   options: Pick<MicroserviceBootstrapOptions, 'serviceName' | 'schemaName'>,
 ): { statusCode: number; body: HealthCheckPayload } {
-  if (url === '/health' || url === '/healthz') {
+  const pathname = (url || '').split('?')[0];
+  if (pathname === '/health' || pathname === '/healthz' || pathname === '/api/v1/health') {
     return {
       statusCode: 200,
       body: {
@@ -77,15 +89,51 @@ export function evaluateHealthRequest(
 }
 
 /**
- * Starts the microservice health check HTTP endpoint (`/health`) and binds the NestJS Redis transport.
+ * Starts the microservice health check HTTP endpoint (`/health`, `/api/v1/health`) and binds the NestJS Redis transport.
  */
 export async function bootstrapMicroservice(
   options: MicroserviceBootstrapOptions,
 ): Promise<RunningMicroserviceHandle> {
   const logger = new StructuredLogger(options.serviceName);
 
-  const healthServer = http.createServer((req, res) => {
+  const healthServer = http.createServer(async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-correlation-id, x-tenant-id');
+
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
     const { statusCode, body } = evaluateHealthRequest(req.url, options);
+    if (statusCode === 200) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(body));
+      return;
+    }
+
+    if (options.httpHandler) {
+      try {
+        const handled = await options.httpHandler(req, res);
+        if (handled) {
+          return;
+        }
+      } catch (err: any) {
+        const errCode = typeof err?.statusCode === 'number' ? err.statusCode : 500;
+        res.writeHead(errCode, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({
+            errorCode: err?.errorCode || 'INTERNAL_ERROR',
+            message: err?.message || 'Internal Server Error',
+            details: err?.details,
+          }),
+        );
+        return;
+      }
+    }
+
     res.writeHead(statusCode, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(body));
   });

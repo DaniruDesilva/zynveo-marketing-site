@@ -183,3 +183,4 @@ describe('svc-bi-reporting Materialized Views, Executive KPIs & P&L Verification
     assert.ok(executedSql[0].includes('REFRESH MATERIALIZED VIEW CONCURRENTLY bi.mv_daily_sales_summary'));
   });
 });
+
