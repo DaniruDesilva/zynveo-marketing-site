@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { AreaChart, Area, ComposedChart, BarChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { usePowerSync } from "../../components/PowerSyncProvider";
-import { DollarSign, TrendingUp, TrendingDown, RefreshCw, PlusCircle, BookOpen } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, RefreshCw, PlusCircle, BookOpen, BarChart2 } from "lucide-react";
 import Link from "next/link";
 
 export default function AccountingDashboard() {
@@ -115,28 +115,6 @@ export default function AccountingDashboard() {
         </div>
       </div>
 
-      {/* Sub-Navigation Tabs */}
-      <div className="flex border-b border-slate-200 space-x-6 text-sm font-medium">
-        <Link href="/accounting" className="pb-3 border-b-2 border-blue-600 text-blue-600 font-semibold">
-          Overview
-        </Link>
-        <Link href="/accounting/accounts" className="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">
-          Chart of Accounts
-        </Link>
-        <Link href="/accounting/journals" className="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">
-          Journal Entries
-        </Link>
-        <Link href="/accounting/reports/trial-balance" className="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">
-          Trial Balance
-        </Link>
-        <Link href="/accounting/reports/profit-loss" className="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">
-          Profit & Loss
-        </Link>
-        <Link href="/accounting/reports/balance-sheet" className="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">
-          Balance Sheet
-        </Link>
-      </div>
-
       {/* KPI Cards */}
       <div className="grid grid-cols-4 gap-4">
         <MetricCard 
@@ -169,7 +147,15 @@ export default function AccountingDashboard() {
       <div className="grid grid-cols-2 gap-6">
         {/* Cash Flow */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-          <h3 className="text-sm font-semibold text-slate-800 mb-6">Cash Flow (6 Months)</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-800">Cash Flow (6 Months)</h3>
+              <p className="text-xs text-slate-400 mt-0.5">Operating inflows vs. disbursements</p>
+            </div>
+            <span className="font-mono text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md">
+              Net: +LKR 51.2k
+            </span>
+          </div>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={cashFlowData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
@@ -185,15 +171,45 @@ export default function AccountingDashboard() {
           </div>
         </div>
         
-        {/* We can add another chart here later, e.g. Expenses Breakdown */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex items-center justify-center">
-           <div className="text-center">
-             <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
-               <BarChart2 size={24} className="text-slate-300" />
-             </div>
-             <h3 className="text-sm font-semibold text-slate-800">Expenses Breakdown</h3>
-             <p className="text-xs text-slate-400 mt-1">More data needed to generate chart.</p>
-           </div>
+        {/* Operating Expenses by Category */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-800">Operating Expenses by Category</h3>
+              <p className="text-xs text-slate-400 mt-0.5">Cost center allocation & COGS</p>
+            </div>
+            <span className="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-md">
+              Total: LKR 74,200.00
+            </span>
+          </div>
+
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={[
+                  { category: "COGS", amount: 48200, fill: "#3b82f6" },
+                  { category: "Payroll", amount: 14000, fill: "#8b5cf6" },
+                  { category: "Rent", amount: 8000, fill: "#f59e0b" },
+                  { category: "Utilities", amount: 4000, fill: "#10b981" },
+                ]}
+                margin={{ top: 20, right: 10, left: -10, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="category" axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 11 }} />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#64748b", fontSize: 10 }}
+                  tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v)}
+                />
+                <Tooltip
+                  cursor={{ fill: "#f8fafc" }}
+                  formatter={(val: any) => [`LKR ${Number(val).toLocaleString(undefined, { minimumFractionDigits: 2 })}`, "Expense"]}
+                />
+                <Bar dataKey="amount" name="Amount (LKR)" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
     </div>
@@ -214,5 +230,3 @@ function MetricCard({ title, value, icon, borderColor }: { title: string; value:
     </div>
   );
 }
-// Add import that was missing
-import { BarChart2 } from "lucide-react";

@@ -8,10 +8,12 @@ export default function AccountingTabs() {
   const pathname = usePathname();
 
   const tabs = [
-    { href: "/accounting", label: "Dashboard", exact: true },
+    { href: "/accounting", label: "Overview", exact: true },
     { href: "/accounting/accounts", label: "Chart of Accounts" },
     { href: "/accounting/journals", label: "Journal Entries" },
-    { href: "/accounting/reports", label: "Reports" },
+    { href: "/accounting/reports/trial-balance", label: "Trial Balance" },
+    { href: "/accounting/reports/profit-loss", label: "Profit & Loss" },
+    { href: "/accounting/reports/balance-sheet", label: "Balance Sheet" },
   ];
 
   return (
