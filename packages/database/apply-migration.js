@@ -21,6 +21,21 @@ async function main() {
     console.log('Connecting to PostgreSQL database...');
     const client = await pool.connect();
     try {
+      const checkSchemas = await client.query(`
+        SELECT count(*)::int as count
+        FROM information_schema.schemata
+        WHERE schema_name IN ('iam', 'finance', 'hr', 'scm', 'inventory', 'manufacturing', 'sales_crm', 'bi')
+      `);
+      if (checkSchemas.rows[0].count === 8) {
+        console.log('ERP schemas already exist. Dropping dependent materialized views for idempotent rerun...');
+        await client.query(`
+          DROP MATERIALIZED VIEW IF EXISTS bi.mv_trial_balance CASCADE;
+          DROP MATERIALIZED VIEW IF EXISTS bi.mv_ar_aging_buckets CASCADE;
+          DROP MATERIALIZED VIEW IF EXISTS bi.mv_inventory_valuation_wac CASCADE;
+          DROP MATERIALIZED VIEW IF EXISTS bi.mv_daily_sales_summary CASCADE;
+        `);
+      }
+
       console.log('Applying 0001_schemas.sql (8 isolated schemas + extensions)...');
       await client.query(sql);
       const res = await client.query(`
