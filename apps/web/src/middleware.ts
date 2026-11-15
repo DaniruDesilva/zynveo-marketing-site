@@ -1,13 +1,20 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { verifyJwtHs256 } from './lib/jwtHelper';
+import { canAccessRoute } from './lib/routeAccess';
 
 const PUBLIC_FILE = /\.(.*)$/;
-const PUBLIC_PATHS = ['/login', '/favicon.ico'];
+const COOKIE_NAME = 'zynveo_access_token';
 
-export function middleware(request: NextRequest) {
+function clearAuthCookieAndRedirect(request: NextRequest, url: URL): NextResponse {
+  const response = NextResponse.redirect(url);
+  response.cookies.set(COOKIE_NAME, '', { path: '/', maxAge: 0, sameSite: 'lax' });
+  return response;
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Skip Next.js internal files, static assets, and API routes
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
@@ -16,33 +23,50 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. Check for session token in cookies
-  const token = request.cookies.get('zynveo_access_token')?.value;
-  const isAuthenticated = Boolean(token && token.split('.').length === 3);
+  const token = request.cookies.get(COOKIE_NAME)?.value;
+  const isDemoDev =
+    process.env.NODE_ENV !== 'production' &&
+    (process.env.DEMO_MOCK_MODE === 'true' || process.env.NEXT_PUBLIC_DEMO_MODE === 'true');
+  const jwtSecret =
+    process.env.SUPABASE_JWT_SECRET ||
+    (isDemoDev ? 'zynveo-dev-jwt-secret-local-fallback' : undefined);
 
-  // 3. Root path '/' -> route to /dashboard or /login
+  const verifiedPayload = token ? await verifyJwtHs256(token, jwtSecret) : null;
+  const isAuthenticated = Boolean(verifiedPayload);
+
   if (pathname === '/') {
     if (isAuthenticated) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
-    return NextResponse.redirect(new URL('/login', request.url));
+    return clearAuthCookieAndRedirect(request, new URL('/login', request.url));
   }
 
-  // 4. If visiting /login while already authenticated -> redirect to /dashboard
-  if (pathname === '/login') {
+  if (pathname === '/login' || pathname.startsWith('/login/')) {
     if (isAuthenticated) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     return NextResponse.next();
   }
 
-  // 5. Protected application routes -> require authentication
-  if (!isAuthenticated) {
+  if (!verifiedPayload) {
     const loginUrl = new URL('/login', request.url);
     if (pathname !== '/dashboard') {
       loginUrl.searchParams.set('next', pathname);
     }
-    return NextResponse.redirect(loginUrl);
+    return clearAuthCookieAndRedirect(request, loginUrl);
+  }
+
+  const rawRoles =
+    verifiedPayload.app_metadata?.roles ||
+    verifiedPayload.roles ||
+    verifiedPayload.user_metadata?.roles ||
+    ['VIEWER'];
+  const roles = Array.isArray(rawRoles) ? rawRoles : [String(rawRoles)];
+
+  if (!canAccessRoute(pathname, roles)) {
+    const deniedUrl = new URL('/dashboard', request.url);
+    deniedUrl.searchParams.set('denied', '1');
+    return NextResponse.redirect(deniedUrl);
   }
 
   return NextResponse.next();
@@ -50,12 +74,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 };

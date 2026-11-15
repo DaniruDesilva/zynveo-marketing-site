@@ -99,3 +99,57 @@ export const TrialBalanceResponseSchema = z.object({
 
 export type TrialBalanceResponse = z.infer<typeof TrialBalanceResponseSchema>;
 
+export const CreateAccountRequestSchema = z.object({
+  code: z.string().min(2).max(20),
+  name: z.string().min(2).max(255),
+  type: AccountTypeEnum,
+  normalBalance: NormalBalanceEnum.optional(),
+  description: z.string().max(500).optional(),
+  parentId: z.string().uuid().optional(),
+});
+
+export type CreateAccountRequestInput = z.input<typeof CreateAccountRequestSchema>;
+export type CreateAccountRequest = z.infer<typeof CreateAccountRequestSchema>;
+
+export const CreateAccountSchema = TenantContextSchema.merge(CreateAccountRequestSchema);
+export type CreateAccountDto = z.infer<typeof CreateAccountSchema>;
+
+export const RecordPaymentRequestSchema = z.object({
+  paymentType: z.enum(['CUSTOMER_RECEIPT', 'SUPPLIER_PAYMENT']),
+  referenceNumber: z.string().min(2).max(50),
+  paymentDate: z.string().datetime(),
+  amount: NonNegativeMoneySchema.refine((v) => Number(v) > 0, 'Amount must be greater than zero'),
+  bankAccountCode: z.string().min(3).default('1000'),
+  counterpartyId: z.string().uuid().optional(),
+  invoiceId: z.string().uuid().optional(),
+  supplierBillId: z.string().uuid().optional(),
+  notes: z.string().max(500).optional(),
+});
+
+export type RecordPaymentRequestInput = z.input<typeof RecordPaymentRequestSchema>;
+export type RecordPaymentRequest = z.infer<typeof RecordPaymentRequestSchema>;
+
+export const RecordPaymentSchema = TenantContextSchema.merge(RecordPaymentRequestSchema);
+export type RecordPaymentDto = z.infer<typeof RecordPaymentSchema>;
+
+export const BalanceSheetSectionRowSchema = z.object({
+  accountId: z.string().uuid(),
+  code: z.string(),
+  name: z.string(),
+  amount: MoneySchema,
+});
+
+export const BalanceSheetResponseSchema = z.object({
+  asOfDate: z.string().datetime(),
+  assets: z.array(BalanceSheetSectionRowSchema),
+  liabilities: z.array(BalanceSheetSectionRowSchema),
+  equity: z.array(BalanceSheetSectionRowSchema),
+  totalAssets: MoneySchema,
+  totalLiabilities: MoneySchema,
+  totalEquity: MoneySchema,
+  retainedEarningsCurrentPeriod: MoneySchema,
+  isBalanced: z.boolean(),
+});
+
+export type BalanceSheetResponse = z.infer<typeof BalanceSheetResponseSchema>;
+

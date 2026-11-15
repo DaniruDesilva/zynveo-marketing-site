@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Decimal from "decimal.js";
 import {
   AreaChart,
   Area,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -13,203 +12,260 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { usePowerSync } from "../../components/PowerSyncProvider";
+import { erpApi } from "../../lib/api";
+import { useAuth } from "../../components/AuthProvider";
 import {
   TrendingUp,
   ArrowUpRight,
-  ShieldCheck,
   CheckCircle2,
   Clock,
   Activity,
   Plus,
-  ArrowRight,
   RotateCw,
-  Wallet,
-  ShoppingBag,
-  Truck,
   Building,
   Calendar,
-  Layers,
+  AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
 
 type PeriodType = "MTD" | "QTD" | "YTD";
 
-interface PeriodMetric {
-  periodLabel: string;
-  periodDescription: string;
-  revenue: string;
-  revenueGrowth: string;
-  expenses: string;
-  expensesGrowth: string;
-  netProfit: string;
-  netMargin: string;
-  grossMargin: string;
-  invoicesCount: number;
-  invoicesVolume: string;
-  grnCount: number;
-  grnVolume: string;
-  chartData: Array<{
-    name: string;
-    revenue: number;
-    expenses: number;
-    netProfit: number;
-  }>;
-  chartTitle: string;
-  chartSubtitle: string;
+function formatMoney(val: string | Decimal): string {
+  const num = new Decimal(val || "0").toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toFixed(2);
+  const [intPart, decPart] = num.split(".");
+  return `${intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${decPart}`;
 }
 
-const PERIOD_CONFIG: Record<PeriodType, PeriodMetric> = {
-  MTD: {
-    periodLabel: "This Month (MTD)",
-    periodDescription: "November 01 – November 30, 2026",
-    revenue: "LKR 125,400.00",
-    revenueGrowth: "+18.4%",
-    expenses: "LKR 74,200.00",
-    expensesGrowth: "+9.2%",
-    netProfit: "LKR 51,200.00",
-    netMargin: "40.8%",
-    grossMargin: "61.5%",
-    invoicesCount: 4,
-    invoicesVolume: "LKR 18,450.00 open",
-    grnCount: 2,
-    grnVolume: "LKR 11,550.00 received",
-    chartTitle: "Daily Operating Velocity (November 2026)",
-    chartSubtitle: "Daily recognized sales vs. procurement & operating outflows",
-    chartData: [
-      { name: "Oct 26", revenue: 16200, expenses: 9500, netProfit: 6700 },
-      { name: "Oct 27", revenue: 14800, expenses: 8400, netProfit: 6400 },
-      { name: "Oct 28", revenue: 21500, expenses: 11200, netProfit: 10300 },
-      { name: "Oct 29", revenue: 19800, expenses: 10100, netProfit: 9700 },
-      { name: "Oct 30", revenue: 22250, expenses: 14200, netProfit: 8050 },
-      { name: "Oct 31", revenue: 12400, expenses: 7800, netProfit: 4600 },
-      { name: "Nov 01", revenue: 18450, expenses: 13000, netProfit: 5450 },
-    ],
-  },
-  QTD: {
-    periodLabel: "This Quarter (QTD)",
-    periodDescription: "Q4 Fiscal Period • October – December 2026",
-    revenue: "LKR 378,500.00",
-    revenueGrowth: "+22.1%",
-    expenses: "LKR 224,100.00",
-    expensesGrowth: "+12.4%",
-    netProfit: "LKR 154,400.00",
-    netMargin: "40.8%",
-    grossMargin: "59.2%",
-    invoicesCount: 14,
-    invoicesVolume: "LKR 52,900.00 open",
-    grnCount: 8,
-    grnVolume: "LKR 46,200.00 received",
-    chartTitle: "Q4 Operating Trajectory (Monthly Comparison)",
-    chartSubtitle: "Consolidated monthly performance across Q4 fiscal quarter",
-    chartData: [
-      { name: "September (Prior Q)", revenue: 118000, expenses: 71000, netProfit: 47000 },
-      { name: "October (Closed)", revenue: 135100, expenses: 78900, netProfit: 56200 },
-      { name: "November (In-Progress)", revenue: 125400, expenses: 74200, netProfit: 51200 },
-    ],
-  },
-  YTD: {
-    periodLabel: "This Fiscal Year (YTD)",
-    periodDescription: "FY 2026-27 • April 01, 2026 to Present",
-    revenue: "LKR 1,248,000.00",
-    revenueGrowth: "+31.5%",
-    expenses: "LKR 760,000.00",
-    expensesGrowth: "+16.8%",
-    netProfit: "LKR 488,000.00",
-    netMargin: "39.1%",
-    grossMargin: "60.9%",
-    invoicesCount: 48,
-    invoicesVolume: "LKR 182,400.00 open",
-    grnCount: 26,
-    grnVolume: "LKR 164,800.00 received",
-    chartTitle: "Fiscal Year-to-Date Performance (FY 2026)",
-    chartSubtitle: "Cumulative monthly financial trajectory from May to November 2026",
-    chartData: [
-      { name: "May", revenue: 132000, expenses: 82000, netProfit: 50000 },
-      { name: "Jun", revenue: 145000, expenses: 89000, netProfit: 56000 },
-      { name: "Jul", revenue: 138000, expenses: 84500, netProfit: 53500 },
-      { name: "Aug", revenue: 152000, expenses: 94000, netProfit: 58000 },
-      { name: "Sep", revenue: 148000, expenses: 91200, netProfit: 56800 },
-      { name: "Oct", revenue: 161000, expenses: 98000, netProfit: 63000 },
-      { name: "Nov", revenue: 172000, expenses: 104300, netProfit: 67700 },
-    ],
-  },
-};
+function getPeriodRange(period: PeriodType): { start: Date; end: Date; label: string } {
+  const end = new Date();
+  const y = end.getFullYear();
+  const m = end.getMonth();
+  if (period === "MTD") {
+    return {
+      start: new Date(y, m, 1),
+      end,
+      label: `Month-to-Date (${end.toLocaleString("en-US", { month: "long", year: "numeric" })})`,
+    };
+  }
+  if (period === "QTD") {
+    const qStartMonth = Math.floor(m / 3) * 3;
+    return {
+      start: new Date(y, qStartMonth, 1),
+      end,
+      label: `Q${Math.floor(m / 3) + 1} ${y} Quarter-to-Date`,
+    };
+  }
+  return {
+    start: new Date(y, 0, 1),
+    end,
+    label: `FY ${y} Year-to-Date`,
+  };
+}
 
 export default function DashboardClient() {
-  const db = usePowerSync();
+  const { user, activeBranchName } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>("MTD");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [syncToast, setSyncToast] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Dynamic live metric state from local SQLite
-  const [liveStats, setLiveStats] = useState({
-    customersCount: 3,
-    suppliersCount: 2,
-    inventoryValue: 64800,
-    inventoryUnits: 657,
-    cashBank: 125400,
-    arOpen: 18450,
-    apOpen: 9300,
+  const [metrics, setMetrics] = useState({
+    revenue: "0.00",
+    expenses: "0.00",
+    netProfit: "0.00",
+    grossMargin: "0.0%",
+    netMargin: "0.0%",
+    cashBank: "0.00",
+    arOpen: "0.00",
+    apOpen: "0.00",
+    inventoryValue: "0.00",
+    inventoryUnits: "0",
+    lowStockCount: 0,
+    todayInvoicesCount: 0,
+    customersCount: 0,
+    suppliersCount: 0,
   });
 
-  const activePeriodData = PERIOD_CONFIG[selectedPeriod];
+  const [chartData, setChartData] = useState<
+    Array<{ name: string; revenue: number; expenses: number }>
+  >([]);
+  const [pendingTasks, setPendingTasks] = useState<
+    Array<{ id: string; title: string; subtitle: string; href: string; actionLabel: string; tone: string }>
+  >([]);
+  const [recentActivity, setRecentActivity] = useState<
+    Array<{ id: string; ref: string; module: string; detail: string; amount: string; status: string }>
+  >([]);
 
-  const fetchLiveDatabaseStats = useCallback(async () => {
-    if (!db) return;
+  const fetchLiveDashboardData = useCallback(async () => {
+    setIsRefreshing(true);
+    setErrorMsg(null);
+    const { start, end } = getPeriodRange(selectedPeriod);
+
     try {
-      const [custRows, supRows, prodRows, accRows] = await Promise.all([
-        db.getAll("SELECT count(id) as count FROM customers"),
-        db.getAll("SELECT count(id) as count FROM suppliers"),
-        db.getAll("SELECT sum(stock * weighted_avg_cost) as total_val, sum(stock) as total_units FROM products"),
-        db.getAll("SELECT code, total_debits, total_credits, normal_balance FROM accounts"),
-      ]);
+      const [execKpis, pnl, invoices, pos, products, customers, suppliers, accounts, journals] =
+        await Promise.all([
+          erpApi.bi.getExecutiveKpis(),
+          erpApi.bi.getProfitAndLoss(start.toISOString(), end.toISOString()).catch(() => null),
+          erpApi.sales.listInvoices().catch(() => []),
+          erpApi.procurement.listPurchaseOrders().catch(() => []),
+          erpApi.inventory.listProducts().catch(() => []),
+          erpApi.sales.listCustomers().catch(() => []),
+          erpApi.procurement.listSuppliers().catch(() => []),
+          erpApi.finance.listAccounts().catch(() => []),
+          erpApi.finance.listJournals().catch(() => []),
+        ]);
 
-      const custCount = Number(custRows?.[0]?.count) || 3;
-      const supCount = Number(supRows?.[0]?.count) || 2;
-      const invVal = Number(prodRows?.[0]?.total_val) || 64800;
-      const invUnits = Number(prodRows?.[0]?.total_units) || 657;
+      const rev = new Decimal(pnl?.totalRevenue || execKpis.todayRevenue || "0");
+      const cogs = new Decimal(pnl?.totalCogs || "0");
+      const opex = new Decimal(pnl?.totalOperatingExpenses || "0");
+      const totalExp = cogs.plus(opex);
+      const net = new Decimal(pnl?.netProfit || rev.minus(totalExp));
+      const grossProfit = rev.minus(cogs);
 
-      setLiveStats((prev) => ({
-        ...prev,
-        customersCount: custCount,
-        suppliersCount: supCount,
-        inventoryValue: invVal,
-        inventoryUnits: invUnits,
-      }));
-    } catch (e) {
-      console.warn("PowerSync live stats query note:", e);
+      const grossMarginPct = rev.gt(0) ? `${grossProfit.div(rev).mul(100).toFixed(1)}%` : "0.0%";
+      const netMarginPct = rev.gt(0) ? `${net.div(rev).mul(100).toFixed(1)}%` : "0.0%";
+
+      const cashAcc = (accounts || []).find((a: any) => a.code === "1000");
+      const cashBalance = cashAcc
+        ? new Decimal(cashAcc.totalDebits || "0").minus(new Decimal(cashAcc.totalCredits || "0"))
+        : new Decimal("0");
+
+      let totalUnits = new Decimal(0);
+      for (const p of products || []) {
+        totalUnits = totalUnits.plus(new Decimal(p.stock || "0"));
+      }
+
+      setMetrics({
+        revenue: formatMoney(rev),
+        expenses: formatMoney(totalExp),
+        netProfit: formatMoney(net),
+        grossMargin: grossMarginPct,
+        netMargin: netMarginPct,
+        cashBank: formatMoney(cashBalance),
+        arOpen: formatMoney(execKpis.totalAccountsReceivable || "0"),
+        apOpen: formatMoney(execKpis.totalAccountsPayable || "0"),
+        inventoryValue: formatMoney(execKpis.totalInventoryValuationWac || "0"),
+        inventoryUnits: totalUnits.toDecimalPlaces(0).toString(),
+        lowStockCount: execKpis.lowStockProductsCount || 0,
+        todayInvoicesCount: execKpis.todayInvoicesCount || 0,
+        customersCount: (customers || []).length,
+        suppliersCount: (suppliers || []).length,
+      });
+
+      // Build chart series from real posted invoices grouped by day
+      const dailyMap = new Map<string, { revenue: Decimal; expenses: Decimal }>();
+      for (const inv of invoices || []) {
+        const day = String(inv.invoiceDate || "").slice(0, 10) || "Current";
+        const cur = dailyMap.get(day) || { revenue: new Decimal(0), expenses: new Decimal(0) };
+        cur.revenue = cur.revenue.plus(new Decimal(inv.totalAmount || "0"));
+        cur.expenses = cur.expenses.plus(new Decimal(inv.totalCogsAmount || "0"));
+        dailyMap.set(day, cur);
+      }
+      const series = Array.from(dailyMap.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .slice(-14)
+        .map(([day, vals]) => ({
+          name: day,
+          revenue: Number(vals.revenue.toFixed(2)),
+          expenses: Number(vals.expenses.toFixed(2)),
+        }));
+      setChartData(
+        series.length > 0
+          ? series
+          : [{ name: selectedPeriod, revenue: Number(rev.toFixed(2)), expenses: Number(totalExp.toFixed(2)) }]
+      );
+
+      // Build pending action workqueue from live DRAFT invoices, ISSUED POs, and low stock items
+      const tasks: typeof pendingTasks = [];
+      for (const inv of (invoices || []).filter((i: any) => i.status === "DRAFT").slice(0, 2)) {
+        tasks.push({
+          id: `inv-${inv.id}`,
+          title: `Draft Invoice ${inv.invoiceNumber} • ${inv.customerName || "Customer"}`,
+          subtitle: `Amount: LKR ${formatMoney(inv.totalAmount || "0")} • Ready to finalize`,
+          href: "/sales",
+          actionLabel: "Finalize",
+          tone: "text-blue-700 bg-blue-50 hover:bg-blue-100",
+        });
+      }
+      for (const po of (pos || []).filter((p: any) => p.status === "ISSUED" || p.status === "PARTIALLY_RECEIVED").slice(0, 2)) {
+        tasks.push({
+          id: `po-${po.id}`,
+          title: `Purchase Order ${po.poNumber} • ${po.supplierName || "Supplier"}`,
+          subtitle: `Total: LKR ${formatMoney(po.totalAmount || "0")} • Pending GRN receipt`,
+          href: "/purchases/grn/new",
+          actionLabel: "Receive",
+          tone: "text-orange-700 bg-orange-50 hover:bg-orange-100",
+        });
+      }
+      if ((execKpis.lowStockProductsCount || 0) > 0) {
+        tasks.push({
+          id: "low-stock",
+          title: `Low Stock Alert • ${execKpis.lowStockProductsCount} SKUs`,
+          subtitle: "Items at or below reorder threshold",
+          href: "/inventory",
+          actionLabel: "Restock",
+          tone: "text-rose-700 bg-rose-50 hover:bg-rose-100",
+        });
+      }
+      setPendingTasks(tasks);
+
+      // Build recent activity feed from journals / invoices
+      const feed: typeof recentActivity = [];
+      for (const je of (journals || []).slice(0, 4)) {
+        feed.push({
+          id: je.id,
+          ref: je.entryNumber,
+          module: je.sourceModule || "GENERAL_LEDGER",
+          detail: je.description || "Posted Journal Entry",
+          amount: `LKR ${formatMoney(je.totalAmount || "0")}`,
+          status: je.status || "POSTED",
+        });
+      }
+      if (feed.length === 0) {
+        for (const inv of (invoices || []).slice(0, 4)) {
+          feed.push({
+            id: inv.id,
+            ref: inv.invoiceNumber,
+            module: "SALES",
+            detail: inv.customerName || "Customer Invoice",
+            amount: `LKR ${formatMoney(inv.totalAmount || "0")}`,
+            status: inv.status || "DRAFT",
+          });
+        }
+      }
+      setRecentActivity(feed);
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Unable to reach API Gateway for live KPIs.");
+    } finally {
+      setIsRefreshing(false);
     }
-  }, [db]);
+  }, [selectedPeriod]);
 
   useEffect(() => {
-    fetchLiveDatabaseStats();
-  }, [fetchLiveDatabaseStats]);
+    fetchLiveDashboardData();
+  }, [fetchLiveDashboardData]);
 
   const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchLiveDatabaseStats();
-    setTimeout(() => {
-      setIsRefreshing(false);
-      setSyncToast("All financial figures, customer balances, and warehouse stock levels are up to date.");
-      setTimeout(() => setSyncToast(null), 5000);
-    }, 450);
+    await fetchLiveDashboardData();
+    setSyncToast("Live ERP metrics refreshed from API Gateway.");
+    setTimeout(() => setSyncToast(null), 4000);
   };
+
+  const periodInfo = getPeriodRange(selectedPeriod);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto p-4">
-      {/* 1. TOP HEADER & INTERACTIVE PERIOD CONTROLS */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <span className="inline-flex items-center space-x-1.5 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200/70 px-2.5 py-0.5 rounded-full">
                 <Building size={12} />
-                <span>Zynveo Enterprise Holdings • Colombo HQ</span>
+                <span>{user?.tenantName || "Zynveo Enterprise"} • {activeBranchName || "HQ"}</span>
               </span>
               <span className="inline-flex items-center space-x-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-2.5 py-0.5 rounded-full">
                 <CheckCircle2 size={12} />
-                <span>Books in Balance</span>
+                <span>Live Gateway Feed</span>
               </span>
             </div>
             <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
@@ -218,53 +274,29 @@ export default function DashboardClient() {
             <p className="text-xs text-slate-400 mt-0.5 flex items-center space-x-1.5">
               <Calendar size={13} className="text-slate-400" />
               <span>
-                Reporting Period: <strong>{activePeriodData.periodDescription}</strong>
+                Reporting Period: <strong>{periodInfo.label}</strong>
               </span>
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {/* Functional MTD / QTD / YTD Segmented Control */}
             <div className="flex items-center p-1 bg-slate-100/90 rounded-xl border border-slate-200">
-              <button
-                type="button"
-                onClick={() => setSelectedPeriod("MTD")}
-                className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                  selectedPeriod === "MTD"
-                    ? "bg-white text-blue-700 shadow-xs"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-                title="Month-to-Date: Current month active totals"
-              >
-                Month (MTD)
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedPeriod("QTD")}
-                className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                  selectedPeriod === "QTD"
-                    ? "bg-white text-blue-700 shadow-xs"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-                title="Quarter-to-Date: Current fiscal quarter performance"
-              >
-                Quarter (QTD)
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedPeriod("YTD")}
-                className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                  selectedPeriod === "YTD"
-                    ? "bg-white text-blue-700 shadow-xs"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-                title="Year-to-Date: Full fiscal year cumulative run"
-              >
-                Year (YTD)
-              </button>
+              {(["MTD", "QTD", "YTD"] as PeriodType[]).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setSelectedPeriod(p)}
+                  className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                    selectedPeriod === p
+                      ? "bg-white text-blue-700 shadow-xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
             </div>
 
-            {/* Quick Action Button */}
             <Link
               href="/sales/invoices/new"
               className="inline-flex items-center space-x-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-xl transition-colors shadow-xs"
@@ -273,12 +305,10 @@ export default function DashboardClient() {
               <span>New Invoice</span>
             </Link>
 
-            {/* Refresh Button */}
             <button
               onClick={handleRefresh}
               disabled={isRefreshing}
               className="inline-flex items-center space-x-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 px-3.5 py-2 rounded-xl transition-colors disabled:opacity-50"
-              title="Refresh financial figures and balances"
             >
               <RotateCw size={13} className={isRefreshing ? "animate-spin text-blue-600" : ""} />
               <span>Refresh</span>
@@ -287,450 +317,211 @@ export default function DashboardClient() {
         </div>
 
         {syncToast && (
-          <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center justify-between animate-in fade-in duration-200">
-            <div className="flex items-center space-x-2 font-medium">
-              <CheckCircle2 size={16} className="text-emerald-600" />
-              <span>{syncToast}</span>
-            </div>
-            <span className="text-[11px] font-medium bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded">
-              Updated Just Now
-            </span>
+          <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center space-x-2 font-medium">
+            <CheckCircle2 size={16} className="text-emerald-600" />
+            <span>{syncToast}</span>
+          </div>
+        )}
+
+        {errorMsg && (
+          <div className="mt-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center space-x-2 font-medium">
+            <AlertCircle size={16} className="shrink-0" />
+            <span>{errorMsg}</span>
           </div>
         )}
       </div>
 
-      {/* 2. FOUR CLEAN EXECUTIVE KPI SCORECARDS (DYNMIC TO MTD/QTD/YTD) */}
+      {/* 4 KPI Scorecards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* KPI 1: Total Recognized Revenue */}
-        <Link
-          href="/sales"
-          className="group bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md hover:border-blue-100 transition-all"
-        >
+        <Link href="/sales" className="group bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-all">
           <div className="flex items-center justify-between text-xs font-medium text-slate-400 mb-2">
             <span>Recognized Revenue ({selectedPeriod})</span>
-            <span className="inline-flex items-center text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-              <TrendingUp size={11} className="mr-1" />
-              {activePeriodData.revenueGrowth}
-            </span>
+            <TrendingUp size={14} className="text-emerald-600" />
           </div>
-          <div className="text-2xl font-bold text-slate-800 tracking-tight">
-            {activePeriodData.revenue}
-          </div>
+          <div className="text-2xl font-bold text-slate-800 tracking-tight">LKR {metrics.revenue}</div>
           <div className="flex items-center justify-between text-xs text-slate-500 mt-2 pt-2 border-t border-slate-50">
-            <span>
-              <strong>{activePeriodData.invoicesCount} Invoices</strong> ({activePeriodData.invoicesVolume})
-            </span>
-            <ArrowUpRight size={14} className="text-slate-400 group-hover:text-blue-600 transition-colors" />
+            <span>{metrics.todayInvoicesCount} invoices today</span>
+            <ArrowUpRight size={14} className="text-slate-400 group-hover:text-blue-600" />
           </div>
         </Link>
 
-        {/* KPI 2: Operating Expenses & COGS */}
-        <Link
-          href="/accounting"
-          className="group bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md hover:border-orange-100 transition-all"
-        >
+        <Link href="/accounting" className="group bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-all">
           <div className="flex items-center justify-between text-xs font-medium text-slate-400 mb-2">
-            <span>Operating Expenses ({selectedPeriod})</span>
+            <span>COGS & Operating Expenses</span>
             <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-              Gross Margin: {activePeriodData.grossMargin}
+              GM: {metrics.grossMargin}
             </span>
           </div>
-          <div className="text-2xl font-bold text-slate-800 tracking-tight">
-            {activePeriodData.expenses}
-          </div>
+          <div className="text-2xl font-bold text-slate-800 tracking-tight">LKR {metrics.expenses}</div>
           <div className="flex items-center justify-between text-xs text-slate-500 mt-2 pt-2 border-t border-slate-50">
-            <span>
-              COGS, Payroll & Logistics ({activePeriodData.expensesGrowth})
-            </span>
-            <ArrowUpRight size={14} className="text-slate-400 group-hover:text-orange-600 transition-colors" />
+            <span>Audited General Ledger</span>
+            <ArrowUpRight size={14} className="text-slate-400 group-hover:text-orange-600" />
           </div>
         </Link>
 
-        {/* KPI 3: Net Operating Profit */}
-        <Link
-          href="/accounting/reports/profit-loss"
-          className="group bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md hover:border-emerald-100 transition-all"
-        >
+        <Link href="/accounting/reports/profit-loss" className="group bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-all">
           <div className="flex items-center justify-between text-xs font-medium text-slate-400 mb-2">
             <span>Net Operating Profit ({selectedPeriod})</span>
-            <span className="inline-flex items-center text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-              {activePeriodData.netMargin} Margin
+            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+              {metrics.netMargin}
             </span>
           </div>
-          <div className="text-2xl font-bold text-emerald-700 tracking-tight">
-            {activePeriodData.netProfit}
-          </div>
+          <div className="text-2xl font-bold text-emerald-700 tracking-tight">LKR {metrics.netProfit}</div>
           <div className="flex items-center justify-between text-xs text-slate-500 mt-2 pt-2 border-t border-slate-50">
-            <span>Audited General Ledger basis</span>
-            <ArrowUpRight size={14} className="text-slate-400 group-hover:text-emerald-600 transition-colors" />
+            <span>Revenue minus COGS & OpEx</span>
+            <ArrowUpRight size={14} className="text-slate-400 group-hover:text-emerald-600" />
           </div>
         </Link>
 
-        {/* KPI 4: Cash & Working Capital Position */}
-        <Link
-          href="/accounting/reports/balance-sheet"
-          className="group bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md hover:border-indigo-100 transition-all"
-        >
+        <Link href="/accounting/reports/balance-sheet" className="group bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-all">
           <div className="flex items-center justify-between text-xs font-medium text-slate-400 mb-2">
-            <span>Cash & Bank Liquidity</span>
-            <span className="text-[11px] font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full">
-              Current Ratio: 2.8x
-            </span>
+            <span>Cash & Bank (GL 1000)</span>
           </div>
-          <div className="text-2xl font-bold text-slate-800 tracking-tight">
-            LKR {liveStats.cashBank.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-          </div>
+          <div className="text-2xl font-bold text-slate-800 tracking-tight">LKR {metrics.cashBank}</div>
           <div className="flex items-center justify-between text-xs text-slate-500 mt-2 pt-2 border-t border-slate-50">
-            <span>
-              AR: <strong>LKR {liveStats.arOpen.toLocaleString()}</strong> • AP: <strong>LKR {liveStats.apOpen.toLocaleString()}</strong>
-            </span>
-            <ArrowUpRight size={14} className="text-slate-400 group-hover:text-indigo-600 transition-colors" />
+            <span>AR: {metrics.arOpen} • AP: {metrics.apOpen}</span>
+            <ArrowUpRight size={14} className="text-slate-400 group-hover:text-indigo-600" />
           </div>
         </Link>
       </div>
 
-      {/* 3. FOCUSED VISUAL SECTION: PERFORMANCE TREND (2/3) + SUB-LEDGER BALANCES (1/3) */}
+      {/* Chart + Working Capital */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Financial Trend Chart */}
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-base font-bold text-slate-800">
-                {activePeriodData.chartTitle}
-              </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                {activePeriodData.chartSubtitle}
-              </p>
-            </div>
-            <div className="flex items-center space-x-3 text-right">
-              <div>
-                <span className="text-[11px] text-slate-400 block font-medium">
-                  {selectedPeriod} Revenue
-                </span>
-                <span className="text-sm font-bold text-blue-600 font-mono">
-                  {activePeriodData.revenue}
-                </span>
-              </div>
-              <div className="h-6 w-px bg-slate-200" />
-              <div>
-                <span className="text-[11px] text-slate-400 block font-medium">Net Profit</span>
-                <span className="text-sm font-bold text-emerald-600 font-mono">
-                  {activePeriodData.netProfit}
-                </span>
-              </div>
+              <h2 className="text-base font-bold text-slate-800">Revenue vs COGS Velocity ({selectedPeriod})</h2>
+              <p className="text-xs text-slate-400 mt-0.5">Live invoiced revenue and cost series from PostgreSQL</p>
             </div>
           </div>
 
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={activePeriodData.chartData}
-                margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient id="dashboardRevGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#2563eb" stopOpacity={0.0} />
-                  </linearGradient>
-                  <linearGradient id="dashboardExpGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis
-                  dataKey="name"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#64748b", fontSize: 11 }}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#64748b", fontSize: 11 }}
-                  tickFormatter={(val) => (val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val)}
-                />
-                <Tooltip
-                  formatter={(value: any) => [
-                    `LKR ${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-                  ]}
-                  contentStyle={{
-                    backgroundColor: "#ffffff",
-                    borderRadius: "12px",
-                    border: "1px solid #e2e8f0",
-                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                    fontSize: "12px",
-                  }}
-                />
-                <Legend
-                  iconType="circle"
-                  iconSize={8}
-                  wrapperStyle={{ fontSize: "11px", color: "#64748b", paddingTop: "12px" }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  name="Recognized Revenue"
-                  stroke="#2563eb"
-                  strokeWidth={2.5}
-                  fillOpacity={1}
-                  fill="url(#dashboardRevGrad)"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="expenses"
-                  name="Operating Outflow"
-                  stroke="#f59e0b"
-                  strokeWidth={2}
-                  fillOpacity={1}
-                  fill="url(#dashboardExpGrad)"
-                />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 11 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 11 }} />
+                <Tooltip />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "11px" }} />
+                <Area type="monotone" dataKey="revenue" name="Revenue" stroke="#2563eb" fill="#dbeafe" strokeWidth={2} />
+                <Area type="monotone" dataKey="expenses" name="COGS / Outflow" stroke="#f59e0b" fill="#fef3c7" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Sub-Ledger Working Capital Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between space-y-5">
           <div>
             <div className="flex items-center justify-between mb-1">
-              <h2 className="text-base font-bold text-slate-800">
-                Working Capital Health
-              </h2>
-              <Link
-                href="/accounting/reports/balance-sheet"
-                className="text-xs font-semibold text-blue-600 hover:text-blue-800"
-              >
+              <h2 className="text-base font-bold text-slate-800">Working Capital Health</h2>
+              <Link href="/accounting/reports/balance-sheet" className="text-xs font-semibold text-blue-600">
                 Statement &rarr;
               </Link>
             </div>
-            <p className="text-xs text-slate-400">
-              Live status across customer receivables, vendor payables, and inventory asset.
-            </p>
+            <p className="text-xs text-slate-400">Live sub-ledger balances across tenant schemas</p>
           </div>
 
           <div className="space-y-4">
-            {/* Accounts Receivable */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <div className="flex justify-between text-xs">
-                <span className="font-semibold text-slate-700">
-                  Accounts Receivable (AR)
-                </span>
-                <span className="font-mono font-bold text-slate-900">
-                  LKR {liveStats.arOpen.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </span>
+                <span className="font-semibold text-slate-700">Accounts Receivable (AR)</span>
+                <span className="font-mono font-bold text-slate-900">LKR {metrics.arOpen}</span>
               </div>
-              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-600 rounded-full" style={{ width: "75%" }} />
-              </div>
-              <div className="flex justify-between text-[11px] text-slate-400">
-                <span>{liveStats.customersCount} active accounts</span>
-                <span className="text-emerald-600 font-medium">0 Overdue</span>
-              </div>
+              <div className="text-[11px] text-slate-400">{metrics.customersCount} registered customers</div>
             </div>
 
-            {/* Accounts Payable */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <div className="flex justify-between text-xs">
-                <span className="font-semibold text-slate-700">
-                  Accounts Payable (AP)
-                </span>
-                <span className="font-mono font-bold text-slate-900">
-                  LKR {liveStats.apOpen.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </span>
+                <span className="font-semibold text-slate-700">Accounts Payable (AP)</span>
+                <span className="font-mono font-bold text-slate-900">LKR {metrics.apOpen}</span>
               </div>
-              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full bg-amber-500 rounded-full" style={{ width: "42%" }} />
-              </div>
-              <div className="flex justify-between text-[11px] text-slate-400">
-                <span>{liveStats.suppliersCount} approved vendors</span>
-                <span className="text-emerald-600 font-medium">All bills verified</span>
-              </div>
+              <div className="text-[11px] text-slate-400">{metrics.suppliersCount} approved suppliers</div>
             </div>
 
-            {/* Inventory Valuation */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <div className="flex justify-between text-xs">
-                <span className="font-semibold text-slate-700">
-                  Total Inventory Value
-                </span>
-                <span className="font-mono font-bold text-slate-900">
-                  LKR {liveStats.inventoryValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </span>
+                <span className="font-semibold text-slate-700">Inventory Valuation (WAC)</span>
+                <span className="font-mono font-bold text-slate-900">LKR {metrics.inventoryValue}</span>
               </div>
-              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full bg-indigo-600 rounded-full" style={{ width: "65%" }} />
-              </div>
-              <div className="flex justify-between text-[11px] text-slate-400">
-                <span>{liveStats.inventoryUnits} physical units on hand</span>
-                <span className="text-blue-600 font-medium">Colombo & Kandy</span>
+              <div className="text-[11px] text-slate-400">
+                {metrics.inventoryUnits} units on hand • {metrics.lowStockCount} low stock
               </div>
             </div>
           </div>
 
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between text-xs">
-            <div>
-              <span className="text-slate-400 block text-[11px]">General Ledger Status</span>
-              <span className="font-bold text-emerald-700">
-                All Accounts Reconciled
-              </span>
-            </div>
-            <Link
-              href="/accounting/reports/trial-balance"
-              className="text-xs font-semibold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg transition-colors"
-            >
+            <span className="font-bold text-emerald-700">General Ledger Sync Active</span>
+            <Link href="/accounting/reports/trial-balance" className="text-xs font-semibold text-emerald-800 bg-emerald-100 px-3 py-1.5 rounded-lg">
               Trial Balance &rarr;
             </Link>
           </div>
         </div>
       </div>
 
-      {/* 4. OPERATIONAL WORKQUEUE (LEFT) & RECENT ACTIVITY FEED (RIGHT) */}
+      {/* Workqueue & Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Pending Operational Items */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center space-x-2">
               <Clock size={16} className="text-amber-500" />
-              <h2 className="text-sm font-bold text-slate-800">
-                Pending Actions & Approvals
-              </h2>
+              <h2 className="text-sm font-bold text-slate-800">Pending Actions & Approvals</h2>
             </div>
             <span className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-              3 Tasks Ready
+              {pendingTasks.length} Open
             </span>
           </div>
 
           <div className="space-y-3">
-            <div className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/60 flex items-center justify-between gap-3">
-              <div>
-                <div className="text-xs font-bold text-slate-800">
-                  Draft Invoice INV-2026-2403 • Apex Retail Group
+            {pendingTasks.length === 0 ? (
+              <p className="text-xs text-slate-400 py-4 text-center">No pending draft invoices, open POs, or low-stock alerts.</p>
+            ) : (
+              pendingTasks.map((t) => (
+                <div key={t.id} className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/60 flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-xs font-bold text-slate-800">{t.title}</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">{t.subtitle}</div>
+                  </div>
+                  <Link href={t.href} className={`shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg ${t.tone}`}>
+                    {t.actionLabel} &rarr;
+                  </Link>
                 </div>
-                <div className="text-[11px] text-slate-500 mt-0.5">
-                  Amount: LKR 1,845.00 • Ready for customer approval & dispatch
-                </div>
-              </div>
-              <Link
-                href="/sales"
-                className="shrink-0 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
-              >
-                Finalize &rarr;
-              </Link>
-            </div>
-
-            <div className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/60 flex items-center justify-between gap-3">
-              <div>
-                <div className="text-xs font-bold text-slate-800">
-                  Purchase Order PO-2026-1002 • Global Audio OEM
-                </div>
-                <div className="text-[11px] text-slate-500 mt-0.5">
-                  15 Units of UltraSharp 4K Monitor pending warehouse receipt
-                </div>
-              </div>
-              <Link
-                href="/purchases/grn/new"
-                className="shrink-0 text-xs font-semibold text-orange-700 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition-colors"
-              >
-                Receive Stock &rarr;
-              </Link>
-            </div>
-
-            <div className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/60 flex items-center justify-between gap-3">
-              <div>
-                <div className="text-xs font-bold text-slate-800">
-                  Low Stock Alert • 4K Monitor & Office Chair
-                </div>
-                <div className="text-[11px] text-slate-500 mt-0.5">
-                  2 items dipped below minimum reorder level in Colombo Warehouse
-                </div>
-              </div>
-              <Link
-                href="/inventory"
-                className="shrink-0 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg transition-colors"
-              >
-                Restock &rarr;
-              </Link>
-            </div>
+              ))
+            )}
           </div>
         </div>
 
-        {/* Recent Business Activity */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center space-x-2">
               <Activity size={16} className="text-indigo-600" />
-              <h2 className="text-sm font-bold text-slate-800">
-                Recent Business Transactions
-              </h2>
+              <h2 className="text-sm font-bold text-slate-800">Recent Ledger Activity</h2>
             </div>
-            <Link
-              href="/accounting/journals"
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
-            >
-              View Journal Entries &rarr;
+            <Link href="/accounting/journals" className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+              View All &rarr;
             </Link>
           </div>
 
           <div className="space-y-3">
-            {[
-              {
-                id: "INV-2026-2401",
-                module: "Sales & Billing",
-                customer: "Acme Holdings Ltd",
-                amount: "LKR 7,079.80",
-                status: "ISSUED",
-                statusColor: "bg-blue-50 text-blue-700 border-blue-200",
-              },
-              {
-                id: "GRN-2026-0501",
-                module: "Purchasing & Receiving",
-                customer: "Alpha Component Supplies",
-                amount: "LKR 11,550.00",
-                status: "RECEIVED",
-                statusColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
-              },
-              {
-                id: "WO-2026-081",
-                module: "Manufacturing & Assembly",
-                customer: "25x Wireless Headphones",
-                amount: "LKR 4,500.00",
-                status: "COMPLETED",
-                statusColor: "bg-purple-50 text-purple-700 border-purple-200",
-              },
-              {
-                id: "PAY-2026-10",
-                module: "Monthly Payroll",
-                customer: "October Salaries & Deductions (24 Staff)",
-                amount: "LKR 615,000.00",
-                status: "PAID",
-                statusColor: "bg-indigo-50 text-indigo-700 border-indigo-200",
-              },
-            ].map((item) => (
-              <div
-                key={item.id}
-                className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/60 flex items-center justify-between"
-              >
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <span className="font-mono text-xs font-bold text-slate-800">
-                      {item.id}
-                    </span>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${item.statusColor}`}
-                    >
-                      {item.status}
-                    </span>
+            {recentActivity.length === 0 ? (
+              <p className="text-xs text-slate-400 py-4 text-center">No transactions recorded yet for this tenant.</p>
+            ) : (
+              recentActivity.map((item) => (
+                <div key={item.id} className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/60 flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="font-mono text-xs font-bold text-slate-800">{item.ref}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-blue-50 text-blue-700 border-blue-200">
+                        {item.status}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">
+                      {item.detail} • {item.module}
+                    </div>
                   </div>
-                  <div className="text-[11px] text-slate-500 mt-0.5">
-                    {item.customer} • {item.module}
-                  </div>
+                  <span className="font-mono text-xs font-bold text-slate-800">{item.amount}</span>
                 </div>
-                <span className="font-mono text-xs font-bold text-slate-800">
-                  {item.amount}
-                </span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>

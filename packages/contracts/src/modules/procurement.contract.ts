@@ -135,3 +135,17 @@ export const VerifyThreeWayMatchResponseSchema = z.object({
 
 export type VerifyThreeWayMatchResponse = z.infer<typeof VerifyThreeWayMatchResponseSchema>;
 
+export const CreateSupplierRequestSchema = z.object({
+  name: z.string().min(2).max(255),
+  email: z.string().email().optional(),
+  phone: z.string().max(50).optional(),
+  address: z.string().max(500).optional(),
+  taxRegistrationNumber: z.string().max(80).optional(),
+});
+
+export type CreateSupplierRequestInput = z.input<typeof CreateSupplierRequestSchema>;
+export type CreateSupplierRequest = z.infer<typeof CreateSupplierRequestSchema>;
+
+export const CreateSupplierSchema = TenantContextSchema.merge(CreateSupplierRequestSchema);
+export type CreateSupplierDto = z.infer<typeof CreateSupplierSchema>;
+

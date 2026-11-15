@@ -1,9 +1,12 @@
 import Decimal from 'decimal.js';
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import {
+  BalanceSheetResponse,
   CheckCustomerCreditDto,
   CheckCustomerCreditResponse,
   CheckCustomerCreditSchema,
+  CreateAccountDto,
+  CreateAccountSchema,
   ERP_EVENT_PATTERNS,
   ERP_RPC_PATTERNS,
   EventEnvelope,
@@ -17,6 +20,8 @@ import {
   PayrollDisbursedEventSchema,
   PostJournalEntryDto,
   PostJournalEntrySchema,
+  RecordPaymentDto,
+  RecordPaymentSchema,
   TrialBalanceResponse,
   WorkOrderCompletedEvent,
   WorkOrderCompletedEventSchema,
@@ -42,12 +47,14 @@ import {
 } from '@zynveo/microservice-chassis';
 
 const DEFAULT_COA_SPECS = [
+  { code: '1000', name: 'Cash & Bank', type: 'ASSET' as const, normalBalance: 'DEBIT' as const },
   { code: '1100', name: 'Accounts Receivable', type: 'ASSET' as const, normalBalance: 'DEBIT' as const },
   { code: '1300', name: 'Inventory Asset', type: 'ASSET' as const, normalBalance: 'DEBIT' as const },
   { code: '2000', name: 'Accounts Payable (GRNI)', type: 'LIABILITY' as const, normalBalance: 'CREDIT' as const },
   { code: '2100', name: 'Output Tax Payable', type: 'LIABILITY' as const, normalBalance: 'CREDIT' as const },
   { code: '2200', name: 'Net Salaries Payable', type: 'LIABILITY' as const, normalBalance: 'CREDIT' as const },
   { code: '2210', name: 'Statutory EPF/ETF/APIT Payable', type: 'LIABILITY' as const, normalBalance: 'CREDIT' as const },
+  { code: '3000', name: 'Retained Earnings', type: 'EQUITY' as const, normalBalance: 'CREDIT' as const },
   { code: '4000', name: 'Sales Revenue', type: 'REVENUE' as const, normalBalance: 'CREDIT' as const },
   { code: '5000', name: 'Cost of Goods Sold', type: 'EXPENSE' as const, normalBalance: 'DEBIT' as const },
   { code: '5100', name: 'Production Absorption / WIP', type: 'EXPENSE' as const, normalBalance: 'CREDIT' as const },
@@ -186,15 +193,28 @@ export class FinanceController {
   async getTrialBalance(@Payload() rawPayload: GetTrialBalanceDto): Promise<TrialBalanceResponse> {
     const dto = GetTrialBalanceSchema.parse(rawPayload);
 
-    const accountRows = await this.db
+    const rawAccountRows = await this.db
       .select()
       .from(financeSchema.accounts)
-      .where(eq(financeSchema.accounts.tenantId, dto.tenantId));
+      .where(
+        and(
+          eq(financeSchema.accounts.tenantId, dto.tenantId),
+          isNull(financeSchema.accounts.deletedAt),
+        ),
+      );
+    const accountRows = [...rawAccountRows]
+      .filter((a: any) => !a.deletedAt)
+      .sort((a: any, b: any) => String(a.code).localeCompare(String(b.code)));
 
     const lineRows = await this.db
       .select()
       .from(financeSchema.journalLines)
-      .where(eq(financeSchema.journalLines.tenantId, dto.tenantId));
+      .where(
+        and(
+          eq(financeSchema.journalLines.tenantId, dto.tenantId),
+          isNull(financeSchema.journalLines.deletedAt),
+        ),
+      );
 
     let grandTotalDebit = new Decimal(0);
     let grandTotalCredit = new Decimal(0);
@@ -234,6 +254,453 @@ export class FinanceController {
       totalCredit: grandTotalCredit.toFixed(2),
       rows,
     };
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.FINANCE.LIST_ACCOUNTS)
+  async listAccounts(@Payload() rawPayload: { tenantId: string }) {
+    const existing = await this.db
+      .select()
+      .from(financeSchema.accounts)
+      .where(
+        and(
+          eq(financeSchema.accounts.tenantId, rawPayload.tenantId),
+          isNull(financeSchema.accounts.deletedAt),
+        ),
+      );
+
+    if (existing.length === 0) {
+      await this.db.transaction(async (tx: any) => {
+        await this.resolveOrSeedPostingAccounts(tx, rawPayload.tenantId);
+      });
+    }
+
+    const rawAccounts = await this.db
+      .select()
+      .from(financeSchema.accounts)
+      .where(
+        and(
+          eq(financeSchema.accounts.tenantId, rawPayload.tenantId),
+          isNull(financeSchema.accounts.deletedAt),
+        ),
+      );
+    const accountRows = [...rawAccounts]
+      .filter((a: any) => !a.deletedAt)
+      .sort((a: any, b: any) => String(a.code).localeCompare(String(b.code)));
+
+    const lineRows = await this.db
+      .select()
+      .from(financeSchema.journalLines)
+      .where(
+        and(
+          eq(financeSchema.journalLines.tenantId, rawPayload.tenantId),
+          isNull(financeSchema.journalLines.deletedAt),
+        ),
+      );
+
+    return accountRows.map((acct: any) => {
+      let debits = new Decimal(0);
+      let credits = new Decimal(0);
+      for (const l of lineRows) {
+        if (l.accountId === acct.id && !l.deletedAt) {
+          debits = debits.plus(new Decimal(l.debit || '0'));
+          credits = credits.plus(new Decimal(l.credit || '0'));
+        }
+      }
+      return {
+        id: acct.id,
+        code: acct.code,
+        name: acct.name,
+        type: String(acct.type).toUpperCase(),
+        normalBalance: String(acct.normalBalance).toUpperCase(),
+        description: acct.description ?? null,
+        isActive: acct.isActive,
+        totalDebits: debits.toFixed(2),
+        totalCredits: credits.toFixed(2),
+      };
+    });
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.FINANCE.CREATE_ACCOUNT)
+  async createAccount(@Payload() rawPayload: CreateAccountDto) {
+    const dto = CreateAccountSchema.parse(rawPayload);
+
+    const existing = await this.db
+      .select()
+      .from(financeSchema.accounts)
+      .where(
+        and(
+          eq(financeSchema.accounts.tenantId, dto.tenantId),
+          eq(financeSchema.accounts.code, dto.code),
+          isNull(financeSchema.accounts.deletedAt),
+        ),
+      );
+
+    if (existing.length > 0) {
+      throw new ErpRpcException(
+        'ACCOUNT_CODE_EXISTS',
+        `GL Account code ${dto.code} already exists for tenant`,
+        409,
+      );
+    }
+
+    const normalBalance =
+      dto.normalBalance ||
+      (dto.type === 'ASSET' || dto.type === 'EXPENSE' ? 'DEBIT' : 'CREDIT');
+
+    const [created] = await this.db
+      .insert(financeSchema.accounts)
+      .values({
+        tenantId: dto.tenantId,
+        code: dto.code,
+        name: dto.name,
+        type: dto.type,
+        normalBalance,
+        description: dto.description ?? null,
+        parentId: dto.parentId ?? null,
+        isActive: true,
+      })
+      .returning();
+
+    return {
+      id: created.id,
+      code: created.code,
+      name: created.name,
+      type: String(created.type).toUpperCase(),
+      normalBalance: String(created.normalBalance).toUpperCase(),
+      description: created.description ?? null,
+      isActive: created.isActive,
+      totalDebits: '0.00',
+      totalCredits: '0.00',
+    };
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.FINANCE.LIST_JOURNALS)
+  async listJournals(@Payload() rawPayload: { tenantId: string }) {
+    const entries = await this.db
+      .select()
+      .from(financeSchema.journalEntries)
+      .where(
+        and(
+          eq(financeSchema.journalEntries.tenantId, rawPayload.tenantId),
+          isNull(financeSchema.journalEntries.deletedAt),
+        ),
+      )
+      .orderBy(desc(financeSchema.journalEntries.date), desc(financeSchema.journalEntries.createdAt));
+
+    const allLines = await this.db
+      .select()
+      .from(financeSchema.journalLines)
+      .where(
+        and(
+          eq(financeSchema.journalLines.tenantId, rawPayload.tenantId),
+          isNull(financeSchema.journalLines.deletedAt),
+        ),
+      );
+
+    return entries.map((entry: any) => {
+      let totalDebit = new Decimal(0);
+      let lineCount = 0;
+      for (const l of allLines) {
+        if (l.journalEntryId === entry.id) {
+          totalDebit = totalDebit.plus(new Decimal(l.debit || '0'));
+          lineCount += 1;
+        }
+      }
+      return {
+        id: entry.id,
+        entryNumber: entry.entryNumber,
+        date: entry.date instanceof Date ? entry.date.toISOString() : String(entry.date),
+        description: entry.description,
+        reference: entry.reference,
+        sourceModule: entry.sourceModule,
+        status: String(entry.status).toUpperCase(),
+        totalAmount: totalDebit.toFixed(2),
+        lineCount,
+      };
+    });
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.FINANCE.GET_JOURNAL_DETAIL)
+  async getJournalDetail(@Payload() rawPayload: { tenantId: string; journalEntryId: string }) {
+    const [entry] = await this.db
+      .select()
+      .from(financeSchema.journalEntries)
+      .where(
+        and(
+          eq(financeSchema.journalEntries.tenantId, rawPayload.tenantId),
+          eq(financeSchema.journalEntries.id, rawPayload.journalEntryId),
+          isNull(financeSchema.journalEntries.deletedAt),
+        ),
+      );
+
+    if (!entry) {
+      throw new ErpRpcException('JOURNAL_NOT_FOUND', 'Journal entry not found', 404);
+    }
+
+    const lines = await this.db
+      .select({
+        id: financeSchema.journalLines.id,
+        accountId: financeSchema.journalLines.accountId,
+        accountCode: financeSchema.accounts.code,
+        accountName: financeSchema.accounts.name,
+        debit: financeSchema.journalLines.debit,
+        credit: financeSchema.journalLines.credit,
+        description: financeSchema.journalLines.description,
+      })
+      .from(financeSchema.journalLines)
+      .leftJoin(financeSchema.accounts, eq(financeSchema.journalLines.accountId, financeSchema.accounts.id))
+      .where(
+        and(
+          eq(financeSchema.journalLines.tenantId, rawPayload.tenantId),
+          eq(financeSchema.journalLines.journalEntryId, entry.id),
+          isNull(financeSchema.journalLines.deletedAt),
+        ),
+      );
+
+    return {
+      id: entry.id,
+      entryNumber: entry.entryNumber,
+      date: entry.date instanceof Date ? entry.date.toISOString() : String(entry.date),
+      description: entry.description,
+      reference: entry.reference,
+      sourceModule: entry.sourceModule,
+      status: String(entry.status).toUpperCase(),
+      lines,
+    };
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.FINANCE.GET_BALANCE_SHEET)
+  async getBalanceSheet(@Payload() rawPayload: { tenantId: string; asOfDate?: string }): Promise<BalanceSheetResponse> {
+    const tb = await this.getTrialBalance({
+      tenantId: rawPayload.tenantId,
+      actorUserId: rawPayload.tenantId,
+      asOfDate: rawPayload.asOfDate,
+    });
+
+    const assets: Array<{ accountId: string; code: string; name: string; amount: string }> = [];
+    const liabilities: Array<{ accountId: string; code: string; name: string; amount: string }> = [];
+    const equity: Array<{ accountId: string; code: string; name: string; amount: string }> = [];
+
+    let totalAssets = new Decimal(0);
+    let totalLiabilities = new Decimal(0);
+    let totalEquity = new Decimal(0);
+    let totalRevenue = new Decimal(0);
+    let totalExpense = new Decimal(0);
+
+    for (const row of tb.rows) {
+      const deb = new Decimal(row.totalDebit);
+      const cred = new Decimal(row.totalCredit);
+      if (row.accountType === 'ASSET') {
+        const bal = deb.minus(cred);
+        totalAssets = totalAssets.plus(bal);
+        assets.push({ accountId: row.accountId, code: row.accountCode, name: row.accountName, amount: bal.toFixed(2) });
+      } else if (row.accountType === 'LIABILITY') {
+        const bal = cred.minus(deb);
+        totalLiabilities = totalLiabilities.plus(bal);
+        liabilities.push({ accountId: row.accountId, code: row.accountCode, name: row.accountName, amount: bal.toFixed(2) });
+      } else if (row.accountType === 'EQUITY') {
+        const bal = cred.minus(deb);
+        totalEquity = totalEquity.plus(bal);
+        equity.push({ accountId: row.accountId, code: row.accountCode, name: row.accountName, amount: bal.toFixed(2) });
+      } else if (row.accountType === 'REVENUE') {
+        totalRevenue = totalRevenue.plus(cred.minus(deb));
+      } else if (row.accountType === 'EXPENSE') {
+        totalExpense = totalExpense.plus(deb.minus(cred));
+      }
+    }
+
+    const retainedEarningsCurrentPeriod = totalRevenue.minus(totalExpense).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+    const totalEquityWithIncome = totalEquity.plus(retainedEarningsCurrentPeriod).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+    const totalLiabilitiesAndEquity = totalLiabilities.plus(totalEquityWithIncome).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+
+    return {
+      asOfDate: rawPayload.asOfDate || new Date().toISOString(),
+      assets,
+      liabilities,
+      equity,
+      totalAssets: totalAssets.toFixed(2),
+      totalLiabilities: totalLiabilities.toFixed(2),
+      totalEquity: totalEquityWithIncome.toFixed(2),
+      retainedEarningsCurrentPeriod: retainedEarningsCurrentPeriod.toFixed(2),
+      isBalanced: totalAssets.toDecimalPlaces(2).equals(totalLiabilitiesAndEquity),
+    };
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.FINANCE.RECORD_PAYMENT)
+  async recordPayment(@Payload() rawPayload: RecordPaymentDto) {
+    const dto = RecordPaymentSchema.parse(rawPayload);
+
+    return this.db.transaction(async (tx: any) => {
+      const accountMap = await this.resolveOrSeedPostingAccounts(tx, dto.tenantId);
+
+      const bankAccts = await tx
+        .select()
+        .from(financeSchema.accounts)
+        .where(
+          and(
+            eq(financeSchema.accounts.tenantId, dto.tenantId),
+            eq(financeSchema.accounts.code, dto.bankAccountCode),
+            isNull(financeSchema.accounts.deletedAt),
+          ),
+        );
+
+      let bankAccount = bankAccts[0];
+      if (!bankAccount) {
+        const [created] = await tx
+          .insert(financeSchema.accounts)
+          .values({
+            tenantId: dto.tenantId,
+            code: dto.bankAccountCode,
+            name: 'Cash & Bank',
+            type: 'ASSET',
+            normalBalance: 'DEBIT',
+            isActive: true,
+          })
+          .returning();
+        bankAccount = created;
+      }
+
+      const amt = new Decimal(dto.amount).toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toFixed(2);
+      const isReceipt = dto.paymentType === 'CUSTOMER_RECEIPT';
+
+      const journalLinesInput = isReceipt
+        ? [
+            {
+              accountId: bankAccount.id,
+              debit: amt,
+              credit: '0.00',
+              description: dto.notes || `Customer receipt ${dto.referenceNumber}`,
+            },
+            {
+              accountId: accountMap.accountsReceivableAccountId,
+              debit: '0.00',
+              credit: amt,
+              description: dto.notes || `AR settlement ${dto.referenceNumber}`,
+            },
+          ]
+        : [
+            {
+              accountId: accountMap.accountsPayableAccountId,
+              debit: amt,
+              credit: '0.00',
+              description: dto.notes || `AP settlement ${dto.referenceNumber}`,
+            },
+            {
+              accountId: bankAccount.id,
+              debit: '0.00',
+              credit: amt,
+              description: dto.notes || `Supplier disbursement ${dto.referenceNumber}`,
+            },
+          ];
+
+      verifyDoubleEntryBalance(journalLinesInput);
+
+      const [entry] = await tx
+        .insert(financeSchema.journalEntries)
+        .values({
+          tenantId: dto.tenantId,
+          entryNumber: dto.referenceNumber,
+          date: new Date(dto.paymentDate),
+          description: dto.notes || (isReceipt ? 'Customer Payment Receipt' : 'Supplier Payment Disbursement'),
+          reference: dto.referenceNumber,
+          sourceModule: 'MANUAL',
+          sourceDocumentId: dto.invoiceId ?? dto.supplierBillId ?? null,
+          status: 'POSTED',
+          postedByUserId: dto.actorUserId,
+        })
+        .returning();
+
+      await tx.insert(financeSchema.journalLines).values(
+        journalLinesInput.map((l) => ({
+          tenantId: dto.tenantId,
+          journalEntryId: entry.id,
+          accountId: l.accountId,
+          debit: l.debit,
+          credit: l.credit,
+          description: l.description,
+        })),
+      );
+
+      if (isReceipt && dto.invoiceId) {
+        const arRows = await tx
+          .select()
+          .from(financeSchema.accountsReceivable)
+          .where(
+            and(
+              eq(financeSchema.accountsReceivable.tenantId, dto.tenantId),
+              eq(financeSchema.accountsReceivable.invoiceId, dto.invoiceId),
+              isNull(financeSchema.accountsReceivable.deletedAt),
+            ),
+          );
+        if (arRows[0]) {
+          const paid = new Decimal(arRows[0].paidAmount || '0').plus(new Decimal(amt));
+          const orig = new Decimal(arRows[0].originalAmount || '0');
+          const balance = Decimal.max(new Decimal(0), orig.minus(paid));
+          await tx
+            .update(financeSchema.accountsReceivable)
+            .set({
+              paidAmount: paid.toFixed(2),
+              balanceAmount: balance.toFixed(2),
+              status: balance.equals(0) ? 'PAID' : 'PARTIALLY_PAID',
+              updatedAt: new Date(),
+            })
+            .where(eq(financeSchema.accountsReceivable.id, arRows[0].id));
+        }
+      }
+
+      const outboxRow = await this.outboxService.enqueue(tx, financeSchema.financeOutboxEvents, {
+        tenantId: dto.tenantId,
+        actorUserId: dto.actorUserId,
+        sourceService: 'svc-finance',
+        aggregateType: 'JOURNAL_ENTRY',
+        aggregateId: entry.id,
+        eventName: ERP_EVENT_PATTERNS.JOURNAL_POSTED,
+        correlationId: dto.correlationId,
+        payload: {
+          journalEntryId: entry.id,
+          referenceNumber: dto.referenceNumber,
+          paymentType: dto.paymentType,
+          amount: amt,
+        },
+      });
+
+      return {
+        journalEntryId: entry.id,
+        entryNumber: entry.entryNumber,
+        paymentType: dto.paymentType,
+        amount: amt,
+        status: 'POSTED' as const,
+        outboxEventId: outboxRow.id,
+      };
+    });
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.FINANCE.LIST_AR_INVOICES)
+  async listArInvoices(@Payload() rawPayload: { tenantId: string }) {
+    return this.db
+      .select()
+      .from(financeSchema.accountsReceivable)
+      .where(
+        and(
+          eq(financeSchema.accountsReceivable.tenantId, rawPayload.tenantId),
+          isNull(financeSchema.accountsReceivable.deletedAt),
+        ),
+      )
+      .orderBy(desc(financeSchema.accountsReceivable.createdAt));
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.FINANCE.LIST_AP_BILLS)
+  async listApBills(@Payload() rawPayload: { tenantId: string }) {
+    return this.db
+      .select()
+      .from(financeSchema.accountsPayable)
+      .where(
+        and(
+          eq(financeSchema.accountsPayable.tenantId, rawPayload.tenantId),
+          isNull(financeSchema.accountsPayable.deletedAt),
+        ),
+      )
+      .orderBy(desc(financeSchema.accountsPayable.createdAt));
   }
 
   /**

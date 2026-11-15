@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Decimal from "decimal.js";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Trash2, CheckCircle2, Save } from "lucide-react";
-import { usePowerSync } from "../../../../components/PowerSyncProvider";
+import { ArrowLeft, Plus, Trash2, CheckCircle2, Save, AlertCircle } from "lucide-react";
 import { erpApi } from "../../../../lib/api";
 
 interface InvoiceLineForm {
@@ -19,16 +19,15 @@ interface InvoiceLineForm {
 }
 
 export default function NewInvoicePage() {
-  const db = usePowerSync();
   const router = useRouter();
 
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [warehouses, setWarehouses] = useState<any[]>([]);
-  const [variants, setVariants] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<Array<{ id: string; name: string; company?: string | null }>>([]);
+  const [warehouses, setWarehouses] = useState<Array<{ id: string; code: string; name: string }>>([]);
+  const [products, setProducts] = useState<Array<{ id: string; sku: string; name: string; price: string }>>([]);
 
   const [customerId, setCustomerId] = useState("");
   const [warehouseId, setWarehouseId] = useState("");
-  const [currency, setCurrency] = useState("LKR");
+  const [currency] = useState("LKR");
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
 
@@ -49,38 +48,38 @@ export default function NewInvoicePage() {
   const [error, setError] = useState("");
 
   const loadReferenceData = useCallback(async () => {
-    if (!db) return;
+    setError("");
     try {
-      const [custRows, whRows, varRows] = await Promise.all([
-        db.getAll("SELECT id, name, company FROM customers ORDER BY name ASC"),
-        db.getAll("SELECT id, name, location FROM warehouses ORDER BY name ASC"),
-        db.getAll("SELECT id, product_id, sku, name, price FROM product_variants ORDER BY name ASC"),
+      const [custRows, whRows, prodRows] = await Promise.all([
+        erpApi.sales.listCustomers(),
+        erpApi.inventory.listWarehouses(),
+        erpApi.inventory.listProducts(),
       ]);
       setCustomers(custRows);
       setWarehouses(whRows);
-      setVariants(varRows);
+      setProducts(prodRows);
       if (whRows.length > 0 && !warehouseId) {
         setWarehouseId(whRows[0].id);
       }
-    } catch (e) {
-      console.error("Failed to load PowerSync reference data:", e);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load customers, warehouses, or products from API Gateway.");
     }
-  }, [db, warehouseId]);
+  }, [warehouseId]);
 
   useEffect(() => {
     loadReferenceData();
   }, [loadReferenceData]);
 
-  const handleVariantSelect = (index: number, variantId: string) => {
-    const selected = variants.find((v) => v.id === variantId || v.product_id === variantId);
+  const handleProductSelect = (index: number, productId: string) => {
+    const selected = products.find((p) => p.id === productId);
     setLines((prev) => {
       const next = [...prev];
       next[index] = {
         ...next[index],
-        productId: selected?.product_id || variantId,
-        sku: selected?.sku || "SKU-ITEM",
+        productId: selected?.id || "",
+        sku: selected?.sku || "",
         description: selected?.name || "",
-        unitPrice: selected?.price != null ? Number(selected.price).toFixed(2) : "0.00",
+        unitPrice: selected?.price != null ? new Decimal(selected.price).toFixed(2) : "0.00",
       };
       return next;
     });
@@ -115,10 +114,48 @@ export default function NewInvoicePage() {
     setLines((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const safeDecimal = (val: string) => {
+    try {
+      return val.trim() === "" ? new Decimal(0) : new Decimal(val);
+    } catch {
+      return new Decimal(0);
+    }
+  };
+
+  const estimatedTotals = lines.reduce(
+    (acc, line) => {
+      const qty = safeDecimal(line.quantity);
+      const price = safeDecimal(line.unitPrice);
+      const disc = safeDecimal(line.discountAmount);
+      const taxRate = safeDecimal(line.taxRatePercent).div(100);
+      const lineGross = qty.mul(price);
+      const taxable = Decimal.max(new Decimal(0), lineGross.minus(disc));
+      const tax = taxable.mul(taxRate);
+      return {
+        subtotal: acc.subtotal.plus(lineGross),
+        discount: acc.discount.plus(disc),
+        tax: acc.tax.plus(tax),
+        total: acc.total.plus(taxable).plus(tax),
+      };
+    },
+    { subtotal: new Decimal(0), discount: new Decimal(0), tax: new Decimal(0), total: new Decimal(0) }
+  );
+
   const handleSave = async (finalizeImmediately: boolean) => {
     if (!customerId || !warehouseId) {
       setError("Please select both a Customer and a Dispatch Warehouse.");
       return;
+    }
+
+    for (let i = 0; i < lines.length; i++) {
+      if (!lines[i].productId) {
+        setError(`Please select a product on line ${i + 1}.`);
+        return;
+      }
+      if (safeDecimal(lines[i].quantity).lte(0)) {
+        setError(`Quantity on line ${i + 1} must be positive.`);
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -130,15 +167,15 @@ export default function NewInvoicePage() {
         warehouseId,
         currency,
         dueDate: dueDate ? new Date(`${dueDate}T00:00:00.000Z`).toISOString() : undefined,
-        notes: notes || undefined,
+        notes: notes.trim() || undefined,
         lines: lines.map((l) => ({
           productId: l.productId,
-          sku: l.sku || "SKU-ITEM",
+          sku: l.sku,
           description: l.description || l.sku,
-          quantity: (Number(l.quantity) || 1).toFixed(4),
-          unitPrice: (Number(l.unitPrice) || 0).toFixed(2),
-          discountAmount: (Number(l.discountAmount) || 0).toFixed(2),
-          taxRatePercent: (Number(l.taxRatePercent) || 0).toFixed(2),
+          quantity: safeDecimal(l.quantity).toFixed(4),
+          unitPrice: safeDecimal(l.unitPrice).toFixed(2),
+          discountAmount: safeDecimal(l.discountAmount).toFixed(2),
+          taxRatePercent: safeDecimal(l.taxRatePercent).toFixed(2),
         })),
       });
 
@@ -147,24 +184,9 @@ export default function NewInvoicePage() {
       }
 
       router.push("/sales");
-    } catch (err: any) {
-      console.warn("API Gateway offline or unreachable, saving invoice to local PowerSync store:", err);
-      try {
-        const invNum = `INV-2026-${Math.floor(2405 + Math.random() * 50)}`;
-        const total = lines.reduce(
-          (acc, l) => acc + (Number(l.quantity) || 1) * (Number(l.unitPrice) || 0),
-          0
-        );
-        if (db && db.execute) {
-          await db.execute(
-            `INSERT INTO documents (id, document_number, total, status, date) VALUES (?, ?, ?, ?, date('now'))`,
-            [crypto.randomUUID(), invNum, total, finalizeImmediately ? "Paid" : "Pending"]
-          );
-        }
-      } catch (localErr) {
-        console.warn("Local storage fallback notice:", localErr);
-      }
-      router.push("/sales");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to save invoice via API Gateway.");
+      setIsSubmitting(false);
     }
   };
 
@@ -179,14 +201,15 @@ export default function NewInvoicePage() {
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         {error && (
-          <div className="m-6 p-4 bg-red-50 text-red-600 text-sm rounded-xl">
-            {error}
+          <div className="m-6 flex items-center gap-2 p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">
+            <AlertCircle size={16} className="shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
         <div className="p-6 border-b border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-700">Customer</label>
+            <label className="text-sm font-medium text-slate-700">Customer *</label>
             <select
               required
               value={customerId}
@@ -203,7 +226,7 @@ export default function NewInvoicePage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-700">Dispatch Warehouse</label>
+            <label className="text-sm font-medium text-slate-700">Dispatch Warehouse *</label>
             <select
               required
               value={warehouseId}
@@ -213,7 +236,7 @@ export default function NewInvoicePage() {
               <option value="">Select Warehouse...</option>
               {warehouses.map((w) => (
                 <option key={w.id} value={w.id}>
-                  {w.name}
+                  {w.code} - {w.name}
                 </option>
               ))}
             </select>
@@ -225,6 +248,17 @@ export default function NewInvoicePage() {
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="space-y-1 md:col-span-3">
+            <label className="text-sm font-medium text-slate-700">Notes</label>
+            <input
+              type="text"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Optional delivery or billing instructions..."
               className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -249,13 +283,13 @@ export default function NewInvoicePage() {
                     <select
                       required
                       value={line.productId}
-                      onChange={(e) => handleVariantSelect(index, e.target.value)}
+                      onChange={(e) => handleProductSelect(index, e.target.value)}
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
                     >
                       <option value="">Select Product...</option>
-                      {variants.map((v) => (
-                        <option key={v.id} value={v.product_id || v.id}>
-                          {v.sku} — {v.name}
+                      {products.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.sku} — {p.name}
                         </option>
                       ))}
                     </select>
@@ -267,7 +301,7 @@ export default function NewInvoicePage() {
                       min="0.0001"
                       value={line.quantity}
                       onChange={(e) => handleLineChange(index, "quantity", e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-right"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-right font-mono"
                     />
                   </td>
                   <td className="p-4">
@@ -277,7 +311,7 @@ export default function NewInvoicePage() {
                       min="0"
                       value={line.unitPrice}
                       onChange={(e) => handleLineChange(index, "unitPrice", e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-right"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-right font-mono"
                     />
                   </td>
                   <td className="p-4">
@@ -287,7 +321,7 @@ export default function NewInvoicePage() {
                       min="0"
                       value={line.discountAmount}
                       onChange={(e) => handleLineChange(index, "discountAmount", e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-right"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-right font-mono"
                     />
                   </td>
                   <td className="p-4">
@@ -298,7 +332,7 @@ export default function NewInvoicePage() {
                       max="100"
                       value={line.taxRatePercent}
                       onChange={(e) => handleLineChange(index, "taxRatePercent", e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-right"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-right font-mono"
                     />
                   </td>
                   <td className="p-4 text-center">
@@ -317,22 +351,29 @@ export default function NewInvoicePage() {
           </table>
         </div>
 
-        <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
-          <button
-            type="button"
-            onClick={addLine}
-            className="flex items-center space-x-2 text-sm font-medium text-blue-600 hover:text-blue-700"
-          >
-            <Plus size={16} />
-            <span>Add Line Item</span>
-          </button>
+        <div className="p-6 bg-slate-50 border-t border-slate-100 flex flex-wrap justify-between items-center gap-4">
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={addLine}
+              className="flex items-center space-x-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+            >
+              <Plus size={16} />
+              <span>Add Line Item</span>
+            </button>
+            <div className="text-xs text-slate-500 font-mono">
+              Subtotal: LKR {estimatedTotals.subtotal.toFixed(2)} • Discount: LKR {estimatedTotals.discount.toFixed(2)} • Tax: LKR{" "}
+              {estimatedTotals.tax.toFixed(2)} • Est. Total:{" "}
+              <span className="font-bold text-slate-800">LKR {estimatedTotals.total.toFixed(2)}</span>
+            </div>
+          </div>
 
           <div className="flex items-center space-x-3">
             <button
               type="button"
               disabled={isSubmitting}
               onClick={() => handleSave(false)}
-              className="flex items-center space-x-2 px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl"
+              className="flex items-center space-x-2 px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl disabled:opacity-50"
             >
               <Save size={16} />
               <span>Save Draft</span>
@@ -341,7 +382,7 @@ export default function NewInvoicePage() {
               type="button"
               disabled={isSubmitting}
               onClick={() => handleSave(true)}
-              className="flex items-center space-x-2 px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm"
+              className="flex items-center space-x-2 px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm disabled:opacity-50"
             >
               <CheckCircle2 size={16} />
               <span>{isSubmitting ? "Finalizing..." : "Finalize & Dispatch Stock"}</span>

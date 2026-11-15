@@ -1,10 +1,12 @@
 import Decimal from 'decimal.js';
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import {
   ApproveGrnDto,
   ApproveGrnSchema,
   CreatePurchaseOrderDto,
   CreatePurchaseOrderSchema,
+  CreateSupplierDto,
+  CreateSupplierSchema,
   ERP_EVENT_PATTERNS,
   ERP_RPC_PATTERNS,
   EventEnvelope,
@@ -473,6 +475,108 @@ export class ProcurementController {
         return { purchaseRequisitionId: pr.id, prNumber: pr.prNumber };
       },
     );
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.PROCUREMENT.LIST_SUPPLIERS)
+  async listSuppliers(@Payload() rawPayload: { tenantId: string }) {
+    return this.db
+      .select()
+      .from(scmSchema.suppliers)
+      .where(
+        and(
+          eq(scmSchema.suppliers.tenantId, rawPayload.tenantId),
+          isNull(scmSchema.suppliers.deletedAt),
+        ),
+      )
+      .orderBy(desc(scmSchema.suppliers.createdAt));
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.PROCUREMENT.CREATE_SUPPLIER)
+  async createSupplier(@Payload() rawPayload: CreateSupplierDto) {
+    const dto = CreateSupplierSchema.parse(rawPayload);
+    const [supplier] = await this.db
+      .insert(scmSchema.suppliers)
+      .values({
+        tenantId: dto.tenantId,
+        name: dto.name,
+        email: dto.email ?? null,
+        phone: dto.phone ?? null,
+        address: dto.address ?? null,
+        taxRegistrationNumber: dto.taxRegistrationNumber ?? null,
+        isActive: true,
+      })
+      .returning();
+
+    return supplier;
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.PROCUREMENT.LIST_PURCHASE_ORDERS)
+  async listPurchaseOrders(@Payload() rawPayload: { tenantId: string }) {
+    const pos = await this.db
+      .select({
+        id: scmSchema.purchaseOrders.id,
+        poNumber: scmSchema.purchaseOrders.poNumber,
+        supplierId: scmSchema.purchaseOrders.supplierId,
+        supplierName: scmSchema.suppliers.name,
+        warehouseId: scmSchema.purchaseOrders.warehouseId,
+        status: scmSchema.purchaseOrders.status,
+        orderDate: scmSchema.purchaseOrders.orderDate,
+        expectedDeliveryDate: scmSchema.purchaseOrders.expectedDeliveryDate,
+        subtotalAmount: scmSchema.purchaseOrders.subtotalAmount,
+        taxAmount: scmSchema.purchaseOrders.taxAmount,
+        totalAmount: scmSchema.purchaseOrders.totalAmount,
+        notes: scmSchema.purchaseOrders.notes,
+      })
+      .from(scmSchema.purchaseOrders)
+      .leftJoin(scmSchema.suppliers, eq(scmSchema.purchaseOrders.supplierId, scmSchema.suppliers.id))
+      .where(
+        and(
+          eq(scmSchema.purchaseOrders.tenantId, rawPayload.tenantId),
+          isNull(scmSchema.purchaseOrders.deletedAt),
+        ),
+      )
+      .orderBy(desc(scmSchema.purchaseOrders.orderDate));
+
+    const lines = await this.db
+      .select()
+      .from(scmSchema.poLines)
+      .where(
+        and(
+          eq(scmSchema.poLines.tenantId, rawPayload.tenantId),
+          isNull(scmSchema.poLines.deletedAt),
+        ),
+      );
+
+    return pos.map((po: any) => ({
+      ...po,
+      lines: lines.filter((l: any) => l.purchaseOrderId === po.id),
+    }));
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.PROCUREMENT.LIST_GRNS)
+  async listGrns(@Payload() rawPayload: { tenantId: string }) {
+    return this.db
+      .select({
+        id: scmSchema.goodsReceivedNotes.id,
+        grnNumber: scmSchema.goodsReceivedNotes.grnNumber,
+        purchaseOrderId: scmSchema.goodsReceivedNotes.purchaseOrderId,
+        supplierId: scmSchema.goodsReceivedNotes.supplierId,
+        supplierName: scmSchema.suppliers.name,
+        warehouseId: scmSchema.goodsReceivedNotes.warehouseId,
+        status: scmSchema.goodsReceivedNotes.status,
+        date: scmSchema.goodsReceivedNotes.date,
+        total: scmSchema.goodsReceivedNotes.total,
+        approvedAt: scmSchema.goodsReceivedNotes.approvedAt,
+      })
+      .from(scmSchema.goodsReceivedNotes)
+      .leftJoin(scmSchema.suppliers, eq(scmSchema.goodsReceivedNotes.supplierId, scmSchema.suppliers.id))
+      .where(
+        and(
+          eq(scmSchema.goodsReceivedNotes.tenantId, rawPayload.tenantId),
+          isNull(scmSchema.goodsReceivedNotes.deletedAt),
+        ),
+      )
+      .orderBy(desc(scmSchema.goodsReceivedNotes.date));
   }
 }
 

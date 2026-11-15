@@ -41,3 +41,22 @@ export const PayrollDisbursedEventSchema = TenantContextSchema.extend({
 export type PayrollDisbursedEventInput = z.input<typeof PayrollDisbursedEventSchema>;
 export type PayrollDisbursedEvent = z.infer<typeof PayrollDisbursedEventSchema>;
 
+export const CreateEmployeeRequestSchema = z.object({
+  employeeNumber: z.string().min(1).max(50),
+  firstName: z.string().min(1).max(255),
+  lastName: z.string().min(1).max(255),
+  email: z.string().email().optional(),
+  phone: z.string().max(50).optional(),
+  epfNumber: z.string().max(50).optional(),
+  nicNumber: z.string().max(50).optional(),
+  basicSalary: NonNegativeMoneySchema,
+  fixedAllowances: NonNegativeMoneySchema.default('0.00'),
+  joinedDate: z.string().datetime().optional(),
+});
+
+export type CreateEmployeeRequestInput = z.input<typeof CreateEmployeeRequestSchema>;
+export type CreateEmployeeRequest = z.infer<typeof CreateEmployeeRequestSchema>;
+
+export const CreateEmployeeSchema = TenantContextSchema.merge(CreateEmployeeRequestSchema);
+export type CreateEmployeeDto = z.infer<typeof CreateEmployeeSchema>;
+

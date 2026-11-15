@@ -1,10 +1,12 @@
 import Decimal from 'decimal.js';
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import {
   AtomicStockMutationResponse,
   CheckCustomerCreditResponse,
   ConvertQuoteToInvoiceDto,
   ConvertQuoteToInvoiceSchema,
+  CreateCustomerDto,
+  CreateCustomerSchema,
   CreateDraftInvoiceDto,
   CreateDraftInvoiceSchema,
   CreateSlaTicketDto,
@@ -390,6 +392,130 @@ export class CrmSalesController {
       status: ticket.status,
       slaDeadline: slaDeadline.toISOString(),
     };
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.SALES_CRM.LIST_INVOICES)
+  async listInvoices(@Payload() rawPayload: { tenantId: string }) {
+    return this.db
+      .select({
+        id: salesCrmSchema.invoices.id,
+        invoiceNumber: salesCrmSchema.invoices.invoiceNumber,
+        customerId: salesCrmSchema.invoices.customerId,
+        customerName: salesCrmSchema.customers.name,
+        warehouseId: salesCrmSchema.invoices.warehouseId,
+        currency: salesCrmSchema.invoices.currency,
+        invoiceDate: salesCrmSchema.invoices.invoiceDate,
+        dueDate: salesCrmSchema.invoices.dueDate,
+        subtotalAmount: salesCrmSchema.invoices.subtotalAmount,
+        discountAmount: salesCrmSchema.invoices.discountAmount,
+        taxAmount: salesCrmSchema.invoices.taxAmount,
+        totalAmount: salesCrmSchema.invoices.totalAmount,
+        totalCogsAmount: salesCrmSchema.invoices.totalCogsAmount,
+        status: salesCrmSchema.invoices.status,
+      })
+      .from(salesCrmSchema.invoices)
+      .leftJoin(
+        salesCrmSchema.customers,
+        eq(salesCrmSchema.invoices.customerId, salesCrmSchema.customers.id),
+      )
+      .where(
+        and(
+          eq(salesCrmSchema.invoices.tenantId, rawPayload.tenantId),
+          isNull(salesCrmSchema.invoices.deletedAt),
+        ),
+      )
+      .orderBy(desc(salesCrmSchema.invoices.invoiceDate));
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.SALES_CRM.LIST_QUOTATIONS)
+  async listQuotations(@Payload() rawPayload: { tenantId: string }) {
+    return this.db
+      .select({
+        id: salesCrmSchema.quotations.id,
+        quoteNumber: salesCrmSchema.quotations.quoteNumber,
+        customerId: salesCrmSchema.quotations.customerId,
+        customerName: salesCrmSchema.customers.name,
+        validUntil: salesCrmSchema.quotations.validUntil,
+        totalAmount: salesCrmSchema.quotations.totalAmount,
+        status: salesCrmSchema.quotations.status,
+        createdAt: salesCrmSchema.quotations.createdAt,
+      })
+      .from(salesCrmSchema.quotations)
+      .leftJoin(
+        salesCrmSchema.customers,
+        eq(salesCrmSchema.quotations.customerId, salesCrmSchema.customers.id),
+      )
+      .where(
+        and(
+          eq(salesCrmSchema.quotations.tenantId, rawPayload.tenantId),
+          isNull(salesCrmSchema.quotations.deletedAt),
+        ),
+      )
+      .orderBy(desc(salesCrmSchema.quotations.createdAt));
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.SALES_CRM.LIST_CUSTOMERS)
+  async listCustomers(@Payload() rawPayload: { tenantId: string }) {
+    return this.db
+      .select()
+      .from(salesCrmSchema.customers)
+      .where(
+        and(
+          eq(salesCrmSchema.customers.tenantId, rawPayload.tenantId),
+          isNull(salesCrmSchema.customers.deletedAt),
+        ),
+      )
+      .orderBy(desc(salesCrmSchema.customers.createdAt));
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.SALES_CRM.CREATE_CUSTOMER)
+  async createCustomer(@Payload() rawPayload: CreateCustomerDto) {
+    const dto = CreateCustomerSchema.parse(rawPayload);
+
+    const [customer] = await this.db
+      .insert(salesCrmSchema.customers)
+      .values({
+        tenantId: dto.tenantId,
+        name: dto.name,
+        email: dto.email ?? null,
+        phone: dto.phone ?? null,
+        address: dto.address ?? null,
+        company: dto.company ?? null,
+        tier: dto.tier,
+        creditLimit: new Decimal(dto.creditLimit).toFixed(2),
+        isActive: true,
+      })
+      .returning();
+
+    return customer;
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.SALES_CRM.LIST_SLA_TICKETS)
+  async listSlaTickets(@Payload() rawPayload: { tenantId: string }) {
+    return this.db
+      .select({
+        id: salesCrmSchema.complaintTickets.id,
+        customerId: salesCrmSchema.complaintTickets.customerId,
+        customerName: salesCrmSchema.customers.name,
+        subject: salesCrmSchema.complaintTickets.subject,
+        description: salesCrmSchema.complaintTickets.description,
+        severity: salesCrmSchema.complaintTickets.severity,
+        status: salesCrmSchema.complaintTickets.status,
+        slaDeadline: salesCrmSchema.complaintTickets.slaDeadline,
+        createdAt: salesCrmSchema.complaintTickets.createdAt,
+      })
+      .from(salesCrmSchema.complaintTickets)
+      .leftJoin(
+        salesCrmSchema.customers,
+        eq(salesCrmSchema.complaintTickets.customerId, salesCrmSchema.customers.id),
+      )
+      .where(
+        and(
+          eq(salesCrmSchema.complaintTickets.tenantId, rawPayload.tenantId),
+          isNull(salesCrmSchema.complaintTickets.deletedAt),
+        ),
+      )
+      .orderBy(desc(salesCrmSchema.complaintTickets.createdAt));
   }
 }
 

@@ -96,14 +96,30 @@ export async function sendDualEmail(opts: {
   adminHtml: string;
 }) {
   const configuredAdmin = process.env.ADMIN_EMAIL;
-  const adminEmail = (!configuredAdmin || configuredAdmin === "hello@zynveo.com")
-    ? (process.env.SMTP_USER || "daniru.desilva1019@gmail.com")
-    : configuredAdmin;
+  const adminEmail =
+    configuredAdmin && configuredAdmin !== "hello@zynveo.com"
+      ? configuredAdmin
+      : process.env.SMTP_USER;
 
-  const results = await Promise.allSettled([
-    sendEmail({ to: opts.userEmail, subject: opts.userSubject, html: opts.userHtml }),
-    sendEmail({ to: adminEmail, subject: opts.adminSubject, html: opts.adminHtml }),
-  ]);
+  const userPromise = sendEmail({
+    to: opts.userEmail,
+    subject: opts.userSubject,
+    html: opts.userHtml,
+  });
+
+  const adminPromise = adminEmail
+    ? sendEmail({ to: adminEmail, subject: opts.adminSubject, html: opts.adminHtml })
+    : Promise.resolve({
+        success: false,
+        provider: "none",
+        error: "ADMIN_EMAIL / SMTP_USER not configured; skipping admin notification",
+      });
+
+  if (!adminEmail) {
+    console.warn("[Email] ADMIN_EMAIL and SMTP_USER not configured; skipping admin notification email.");
+  }
+
+  const results = await Promise.allSettled([userPromise, adminPromise]);
 
   return {
     userEmail: results[0].status === "fulfilled" ? results[0].value : { success: false, provider: "error" },

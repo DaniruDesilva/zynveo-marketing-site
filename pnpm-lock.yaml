@@ -408,6 +408,9 @@ importers:
       '@zynveo/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      decimal.js:
+        specifier: ^10.4.3
+        version: 10.6.0
       lucide-react:
         specifier: ^0.379.0
         version: 0.379.0(react@18.3.1)

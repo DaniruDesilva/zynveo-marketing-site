@@ -1,6 +1,8 @@
 import Decimal from 'decimal.js';
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import {
+  CreateEmployeeDto,
+  CreateEmployeeSchema,
   ERP_EVENT_PATTERNS,
   ERP_RPC_PATTERNS,
   ExecutePayrollRunDto,
@@ -328,6 +330,124 @@ export class HrPayrollController {
       pdfS3Key: item.pdfS3Key,
       netSalary: item.netSalary,
     };
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.HR_PAYROLL.LIST_EMPLOYEES)
+  async listEmployees(@Payload() rawPayload: { tenantId: string }) {
+    const emps = await this.db
+      .select()
+      .from(hrSchema.employees)
+      .where(
+        and(
+          eq(hrSchema.employees.tenantId, rawPayload.tenantId),
+          isNull(hrSchema.employees.deletedAt),
+        ),
+      )
+      .orderBy(desc(hrSchema.employees.createdAt));
+
+    const structures = await this.db
+      .select()
+      .from(hrSchema.salaryStructures)
+      .where(
+        and(
+          eq(hrSchema.salaryStructures.tenantId, rawPayload.tenantId),
+          eq(hrSchema.salaryStructures.isActive, true),
+          isNull(hrSchema.salaryStructures.deletedAt),
+        ),
+      );
+
+    return emps.map((e: any) => {
+      const struct = structures.find((s: any) => s.employeeId === e.id);
+      return {
+        id: e.id,
+        employeeNumber: e.employeeNumber,
+        firstName: e.firstName,
+        lastName: e.lastName,
+        name: `${e.firstName} ${e.lastName}`,
+        email: e.email,
+        phone: e.phone,
+        epfNumber: e.epfNumber,
+        joinedDate: e.joinedDate,
+        isActive: e.isActive,
+        basicSalary: struct?.basicSalary ?? '0.00',
+        fixedAllowances: struct?.fixedAllowances ?? '0.00',
+      };
+    });
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.HR_PAYROLL.CREATE_EMPLOYEE)
+  async createEmployee(@Payload() rawPayload: CreateEmployeeDto) {
+    const dto = CreateEmployeeSchema.parse(rawPayload);
+
+    return this.db.transaction(async (tx: any) => {
+      const [emp] = await tx
+        .insert(hrSchema.employees)
+        .values({
+          tenantId: dto.tenantId,
+          employeeNumber: dto.employeeNumber,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          email: dto.email ?? null,
+          phone: dto.phone ?? null,
+          epfNumber: dto.epfNumber ?? null,
+          nicNumber: dto.nicNumber ?? null,
+          joinedDate: dto.joinedDate ? new Date(dto.joinedDate) : new Date(),
+          isActive: true,
+        })
+        .returning();
+
+      const basic = new Decimal(dto.basicSalary).toFixed(2);
+      const allow = new Decimal(dto.fixedAllowances).toFixed(2);
+      await tx.insert(hrSchema.salaryStructures).values({
+        tenantId: dto.tenantId,
+        employeeId: emp.id,
+        basicSalary: basic,
+        fixedAllowances: allow,
+        overtimeHourlyRate: '0.00',
+        isActive: true,
+      });
+
+      return {
+        id: emp.id,
+        employeeNumber: emp.employeeNumber,
+        firstName: emp.firstName,
+        lastName: emp.lastName,
+        name: `${emp.firstName} ${emp.lastName}`,
+        email: emp.email,
+        phone: emp.phone,
+        epfNumber: emp.epfNumber,
+        isActive: emp.isActive,
+        basicSalary: basic,
+        fixedAllowances: allow,
+      };
+    });
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.HR_PAYROLL.LIST_PAYROLL_RUNS)
+  async listPayrollRuns(@Payload() rawPayload: { tenantId: string }) {
+    return this.db
+      .select()
+      .from(hrSchema.payrollRuns)
+      .where(
+        and(
+          eq(hrSchema.payrollRuns.tenantId, rawPayload.tenantId),
+          isNull(hrSchema.payrollRuns.deletedAt),
+        ),
+      )
+      .orderBy(desc(hrSchema.payrollRuns.periodYear), desc(hrSchema.payrollRuns.periodMonth), desc(hrSchema.payrollRuns.createdAt));
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.HR_PAYROLL.LIST_DEPARTMENTS)
+  async listDepartments(@Payload() rawPayload: { tenantId: string }) {
+    return this.db
+      .select()
+      .from(hrSchema.departments)
+      .where(
+        and(
+          eq(hrSchema.departments.tenantId, rawPayload.tenantId),
+          isNull(hrSchema.departments.deletedAt),
+        ),
+      );
   }
 }
 

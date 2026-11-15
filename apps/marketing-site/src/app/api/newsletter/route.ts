@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 
     // ── Insert into Supabase with resilience ────────────────────
     const { error: dbError, isUniqueViolation, isNetworkError } = await runSupabaseSafe(
-      supabase.from("newsletter_subscribers").insert({ email: normalizedEmail }),
+      supabase ? supabase.from("newsletter_subscribers").insert({ email: normalizedEmail }) : null,
       { timeoutMs: 1800, context: "Newsletter API" }
     );
 

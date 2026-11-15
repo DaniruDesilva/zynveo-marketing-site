@@ -1,8 +1,12 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import {
   ERP_RPC_PATTERNS,
+  InviteUserDto,
+  InviteUserSchema,
   LogAuditTrailDto,
   LogAuditTrailSchema,
+  UpdateTenantSettingsDto,
+  UpdateTenantSettingsSchema,
   UserRole,
   UserRoleEnum,
   ValidateTenantAccessDto,
@@ -142,7 +146,13 @@ export class IamTenantController {
       })
       .from(iamSchema.tenantUsers)
       .innerJoin(iamSchema.users, eq(iamSchema.tenantUsers.userId, iamSchema.users.id))
-      .where(eq(iamSchema.tenantUsers.tenantId, rawPayload.tenantId));
+      .where(
+        and(
+          eq(iamSchema.tenantUsers.tenantId, rawPayload.tenantId),
+          isNull(iamSchema.tenantUsers.deletedAt),
+          isNull(iamSchema.users.deletedAt),
+        ),
+      );
 
     return list.map((item: any) => ({
       id: item.id,
@@ -152,6 +162,180 @@ export class IamTenantController {
       branchId: item.branchId,
       isActive: item.isActive,
     }));
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.IAM.GET_TENANT_SETTINGS)
+  async getTenantSettings(@Payload() rawPayload: { tenantId: string }) {
+    const [tenant] = await this.db
+      .select()
+      .from(iamSchema.tenants)
+      .where(
+        and(
+          eq(iamSchema.tenants.id, rawPayload.tenantId),
+          isNull(iamSchema.tenants.deletedAt),
+        ),
+      );
+
+    const branchRows = await this.db
+      .select()
+      .from(iamSchema.branches)
+      .where(
+        and(
+          eq(iamSchema.branches.tenantId, rawPayload.tenantId),
+          isNull(iamSchema.branches.deletedAt),
+        ),
+      );
+
+    return {
+      tenantId: tenant?.id || rawPayload.tenantId,
+      name: tenant?.name || 'Zynveo Enterprise Holdings',
+      slug: tenant?.slug || 'zynveo-enterprise',
+      baseCurrency: tenant?.baseCurrency || 'USD',
+      isActive: tenant?.isActive ?? true,
+      branchCount: branchRows.length,
+    };
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.IAM.UPDATE_TENANT_SETTINGS)
+  async updateTenantSettings(@Payload() rawPayload: UpdateTenantSettingsDto) {
+    const dto = UpdateTenantSettingsSchema.parse(rawPayload);
+
+    return this.db.transaction(async (tx: any) => {
+      const updates: Record<string, unknown> = { updatedAt: new Date() };
+      if (dto.companyName) updates.name = dto.companyName;
+      if (dto.baseCurrency) updates.baseCurrency = dto.baseCurrency.toUpperCase();
+
+      const [updated] = await tx
+        .update(iamSchema.tenants)
+        .set(updates)
+        .where(
+          and(
+            eq(iamSchema.tenants.id, dto.tenantId),
+            isNull(iamSchema.tenants.deletedAt),
+          ),
+        )
+        .returning();
+
+      await tx.insert(iamSchema.auditLogs).values({
+        tenantId: dto.tenantId,
+        actorUserId: dto.actorUserId,
+        branchId: dto.branchId ?? null,
+        correlationId: dto.correlationId ?? null,
+        action: 'TENANT_SETTINGS_UPDATED',
+        resourceType: 'TENANT',
+        resourceId: dto.tenantId,
+        metadata: {
+          companyName: dto.companyName,
+          baseCurrency: dto.baseCurrency,
+          taxId: dto.taxId,
+          fiscalYearStartMonth: dto.fiscalYearStartMonth,
+        },
+      });
+
+      const branchRows = await tx
+        .select()
+        .from(iamSchema.branches)
+        .where(
+          and(
+            eq(iamSchema.branches.tenantId, dto.tenantId),
+            isNull(iamSchema.branches.deletedAt),
+          ),
+        );
+
+      return {
+        tenantId: updated?.id || dto.tenantId,
+        name: updated?.name || dto.companyName || 'Zynveo Enterprise Holdings',
+        slug: updated?.slug || 'zynveo-enterprise',
+        baseCurrency: updated?.baseCurrency || dto.baseCurrency || 'USD',
+        isActive: updated?.isActive ?? true,
+        branchCount: branchRows.length,
+      };
+    });
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.IAM.LIST_BRANCHES)
+  async listBranches(@Payload() rawPayload: { tenantId: string }) {
+    return this.db
+      .select()
+      .from(iamSchema.branches)
+      .where(
+        and(
+          eq(iamSchema.branches.tenantId, rawPayload.tenantId),
+          isNull(iamSchema.branches.deletedAt),
+        ),
+      );
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.IAM.INVITE_USER)
+  async inviteUser(@Payload() rawPayload: InviteUserDto) {
+    const dto = InviteUserSchema.parse(rawPayload);
+
+    return this.db.transaction(async (tx: any) => {
+      const existingUsers = await tx
+        .select()
+        .from(iamSchema.users)
+        .where(and(eq(iamSchema.users.email, dto.email), isNull(iamSchema.users.deletedAt)));
+
+      let user = existingUsers[0];
+      if (!user) {
+        const [createdUser] = await tx
+          .insert(iamSchema.users)
+          .values({
+            email: dto.email,
+            firstName: dto.firstName,
+            lastName: dto.lastName,
+            isActive: true,
+          })
+          .returning();
+        user = createdUser;
+      }
+
+      const existingMembership = await tx
+        .select()
+        .from(iamSchema.tenantUsers)
+        .where(
+          and(
+            eq(iamSchema.tenantUsers.tenantId, dto.tenantId),
+            eq(iamSchema.tenantUsers.userId, user.id),
+            isNull(iamSchema.tenantUsers.deletedAt),
+          ),
+        );
+
+      let membership = existingMembership[0];
+      if (!membership) {
+        const [createdMembership] = await tx
+          .insert(iamSchema.tenantUsers)
+          .values({
+            tenantId: dto.tenantId,
+            userId: user.id,
+            branchId: dto.branchId ?? null,
+            role: dto.role,
+            isActive: true,
+          })
+          .returning();
+        membership = createdMembership;
+      }
+
+      await tx.insert(iamSchema.auditLogs).values({
+        tenantId: dto.tenantId,
+        actorUserId: dto.actorUserId,
+        branchId: dto.branchId ?? null,
+        correlationId: dto.correlationId ?? null,
+        action: 'USER_INVITED',
+        resourceType: 'USER',
+        resourceId: user.id,
+        metadata: { email: dto.email, role: dto.role },
+      });
+
+      return {
+        id: user.id,
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        role: membership.role,
+        branchId: membership.branchId,
+        isActive: membership.isActive,
+      };
+    });
   }
 
   @MessagePattern(ERP_RPC_PATTERNS.IAM.LOG_AUDIT_TRAIL)

@@ -125,3 +125,19 @@ export const CreateSlaTicketSchema = TenantContextSchema.merge(CreateSlaTicketRe
 export type CreateSlaTicketInput = z.input<typeof CreateSlaTicketSchema>;
 export type CreateSlaTicketDto = z.infer<typeof CreateSlaTicketSchema>;
 
+export const CreateCustomerRequestSchema = z.object({
+  name: z.string().min(2).max(255),
+  email: z.string().email().optional(),
+  phone: z.string().max(50).optional(),
+  address: z.string().max(500).optional(),
+  company: z.string().max(255).optional(),
+  tier: z.string().max(50).default('STANDARD'),
+  creditLimit: NonNegativeMoneySchema.default('100000.00'),
+});
+
+export type CreateCustomerRequestInput = z.input<typeof CreateCustomerRequestSchema>;
+export type CreateCustomerRequest = z.infer<typeof CreateCustomerRequestSchema>;
+
+export const CreateCustomerSchema = TenantContextSchema.merge(CreateCustomerRequestSchema);
+export type CreateCustomerDto = z.infer<typeof CreateCustomerSchema>;
+

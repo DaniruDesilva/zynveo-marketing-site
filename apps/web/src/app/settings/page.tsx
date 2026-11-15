@@ -201,45 +201,114 @@ export default function SettingsPage() {
   const [enforceRowLocking, setEnforceRowLocking] = useState(true);
 
   // Tab 4: System & Gateway Diagnostics State
-  const [gatewayStatus, setGatewayStatus] = useState<"ONLINE" | "CHECKING" | "LOCAL_FALLBACK">("ONLINE");
-  const [lastSyncTime, setLastSyncTime] = useState("Up to date");
+  const [gatewayStatus, setGatewayStatus] = useState<"ONLINE" | "CHECKING" | "OFFLINE">("CHECKING");
+  const [lastSyncTime, setLastSyncTime] = useState("Checking...");
+
+  const loadSettingsData = React.useCallback(async () => {
+    try {
+      const [settings, branchRows, userRows] = await Promise.all([
+        erpApi.iam.getSettings(),
+        erpApi.iam.listBranches(),
+        erpApi.iam.listUsers(),
+      ]);
+      if (settings) {
+        setOrgName(settings.name);
+        setTenantSlug(settings.slug);
+        setBaseCurrency(settings.baseCurrency);
+      }
+      if (Array.isArray(branchRows) && branchRows.length > 0) {
+        setBranches(
+          branchRows.map((b: any, idx: number) => ({
+            id: b.id,
+            code: b.code,
+            name: b.name,
+            city: b.address || "Headquarters",
+            isHeadquarters: idx === 0,
+            status: b.isActive === false ? "INACTIVE" : "ACTIVE",
+          }))
+        );
+      }
+      if (Array.isArray(userRows) && userRows.length > 0) {
+        setUsers(
+          userRows.map((u: any) => ({
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            role: String(u.role || "VIEWER").toUpperCase() as UserRole,
+            branch: u.branchId || "HQ",
+            mfaEnabled: true,
+            status: u.isActive === false ? "SUSPENDED" : "ACTIVE",
+          }))
+        );
+      }
+      setGatewayStatus("ONLINE");
+      setLastSyncTime(`Synchronized at ${new Date().toLocaleTimeString()}`);
+    } catch {
+      setGatewayStatus("OFFLINE");
+      setLastSyncTime("API Gateway unavailable");
+    }
+  }, []);
+
+  React.useEffect(() => {
+    loadSettingsData();
+  }, [loadSettingsData]);
 
   const showToast = (msg: string) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 6000);
   };
 
-  const handleSaveSettings = () => {
+  const handleSaveSettings = async () => {
     setIsSaving(true);
-    setTimeout(() => {
+    try {
+      await erpApi.iam.updateSettings({
+        companyName: orgName,
+        baseCurrency,
+        taxId: taxTin,
+      });
+      showToast(`Organization settings saved for "${orgName}" via API Gateway.`);
+    } catch (err: any) {
+      showToast(`Failed to save settings: ${err?.message || "Gateway error"}`);
+    } finally {
       setIsSaving(false);
-      showToast(
-        `Organization settings saved for "${orgName}" across all active branches.`
-      );
-    }, 350);
+    }
   };
 
-  const handleInviteUser = (e: React.FormEvent) => {
+  const handleInviteUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteName.trim() || !inviteEmail.trim()) return;
 
-    const newUser: TenantUser = {
-      id: `usr-${Date.now()}`,
-      name: inviteName.trim(),
-      email: inviteEmail.trim().toLowerCase(),
-      role: inviteRole,
-      branch: inviteBranch,
-      mfaEnabled: true,
-      status: "ACTIVE",
-    };
+    const parts = inviteName.trim().split(/\s+/);
+    const firstName = parts[0] || "Staff";
+    const lastName = parts.slice(1).join(" ") || "Member";
 
-    setUsers((prev) => [newUser, ...prev]);
-    setIsInviteOpen(false);
-    setInviteName("");
-    setInviteEmail("");
-    showToast(
-      `New staff account created: ${newUser.name} (${newUser.role}) assigned to ${newUser.branch}.`
-    );
+    try {
+      const created = await erpApi.iam.inviteUser({
+        firstName,
+        lastName,
+        email: inviteEmail.trim().toLowerCase(),
+        role: inviteRole,
+        branchId: branches.find((b) => b.code === inviteBranch || b.id === inviteBranch)?.id,
+      });
+      setUsers((prev) => [
+        {
+          id: created.id,
+          name: created.name,
+          email: created.email,
+          role: String(created.role).toUpperCase() as UserRole,
+          branch: inviteBranch,
+          mfaEnabled: true,
+          status: "ACTIVE",
+        },
+        ...prev,
+      ]);
+      setIsInviteOpen(false);
+      setInviteName("");
+      setInviteEmail("");
+      showToast(`Staff account invited: ${created.name} (${created.role}).`);
+    } catch (err: any) {
+      showToast(`Invite failed: ${err?.message || "Gateway error"}`);
+    }
   };
 
   const handleToggleUserStatus = (id: string) => {
@@ -247,7 +316,7 @@ export default function SettingsPage() {
       prev.map((u) => {
         if (u.id !== id) return u;
         const nextStatus = u.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
-        showToast(`User access updated: ${u.name} is now ${nextStatus}.`);
+        showToast(`User access status updated locally: ${u.name} (${nextStatus}).`);
         return { ...u, status: nextStatus };
       })
     );
@@ -256,26 +325,22 @@ export default function SettingsPage() {
   const handleVerifyGateway = async () => {
     setGatewayStatus("CHECKING");
     try {
+      await erpApi.checkHealth();
       await erpApi.iam.getMe();
       setGatewayStatus("ONLINE");
-      showToast("All business modules and cloud services are online and responding normally.");
-    } catch {
-      setGatewayStatus("ONLINE");
-      showToast(
-        "All business modules are synchronized and ready for offline or online operation."
-      );
+      setLastSyncTime(`Verified at ${new Date().toLocaleTimeString()}`);
+      showToast("API Gateway health and IAM RPC verified successfully.");
+    } catch (err: any) {
+      setGatewayStatus("OFFLINE");
+      setLastSyncTime(`Offline check at ${new Date().toLocaleTimeString()}`);
+      showToast(`API Gateway offline or unauthorized: ${err?.message || "Connection failed"}`);
     }
-    setLastSyncTime(`Updated at ${new Date().toLocaleTimeString()}`);
   };
 
-  const handleResyncReplica = () => {
-    setLastSyncTime("Refreshing records...");
-    setTimeout(() => {
-      setLastSyncTime(`Updated at ${new Date().toLocaleTimeString()}`);
-      showToast(
-        "All financial accounts, inventory records, and branch settings are synchronized."
-      );
-    }, 400);
+  const handleResyncReplica = async () => {
+    setLastSyncTime("Refreshing from API Gateway...");
+    await loadSettingsData();
+    showToast("Reloaded organization settings, branches, and IAM users from API Gateway.");
   };
 
   return (

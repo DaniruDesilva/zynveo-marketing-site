@@ -1,145 +1,247 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { usePowerSync } from "../../../../components/PowerSyncProvider";
-import { ArrowLeft, Download, Printer } from "lucide-react";
+import Decimal from "decimal.js";
+import { ArrowLeft, Download, Printer, AlertCircle, RefreshCw } from "lucide-react";
 import Link from "next/link";
+import { erpApi } from "../../../../lib/api";
+
+interface AccountLine {
+  id: string;
+  code: string;
+  name: string;
+  balance: Decimal;
+}
 
 export default function ProfitAndLossReport() {
-  const db = usePowerSync();
-  const [data, setData] = useState<any>({
-    revenue: [],
-    expenses: [],
-    totalRevenue: 0,
-    totalExpenses: 0,
-    netIncome: 0
+  const now = new Date();
+  const defaultStart = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-01`;
+  const defaultEnd = now.toISOString().split("T")[0];
+
+  const [startDate, setStartDate] = useState(defaultStart);
+  const [endDate, setEndDate] = useState(defaultEnd);
+  const [revenueRows, setRevenueRows] = useState<AccountLine[]>([]);
+  const [expenseRows, setExpenseRows] = useState<AccountLine[]>([]);
+  const [summary, setSummary] = useState({
+    totalRevenue: new Decimal(0),
+    totalCogs: new Decimal(0),
+    grossProfit: new Decimal(0),
+    totalOperatingExpenses: new Decimal(0),
+    netProfit: new Decimal(0),
   });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchReport = useCallback(async () => {
-    if (!db) return;
+    setIsLoading(true);
+    setError(null);
     try {
-      const result = await db.getAll(`
-        SELECT 
-          a.code, a.name, a.type, a.normal_balance,
-          SUM(jl.debit) as total_debits,
-          SUM(jl.credit) as total_credits
-        FROM accounts a
-        JOIN journal_lines jl ON a.id = jl.account_id
-        WHERE a.type IN ('revenue', 'expense')
-        GROUP BY a.id, a.code, a.name, a.type, a.normal_balance
-        ORDER BY a.code ASC
-      `);
+      const startIso = new Date(`${startDate}T00:00:00.000Z`).toISOString();
+      const endIso = new Date(`${endDate}T23:59:59.999Z`).toISOString();
 
-      const revenue: any[] = [];
-      const expenses: any[] = [];
-      let totalRev = 0;
-      let totalExp = 0;
+      const [pnl, accounts] = await Promise.all([
+        erpApi.bi.getProfitAndLoss(startIso, endIso),
+        erpApi.finance.listAccounts(),
+      ]);
 
-      result.forEach((row: any) => {
-        const d = Number(row.total_debits || 0);
-        const c = Number(row.total_credits || 0);
-        const nb = (row.normal_balance || '').toLowerCase();
-        const t = (row.type || '').toLowerCase();
-        const balance = nb === 'debit' ? (d - c) : (c - d);
-        
-        if (t === 'revenue') {
-          revenue.push({ ...row, balance });
-          totalRev += balance;
-        } else if (t === 'expense') {
-          expenses.push({ ...row, balance });
-          totalExp += balance;
+      const revs: AccountLine[] = [];
+      const exps: AccountLine[] = [];
+
+      for (const row of accounts) {
+        const debit = new Decimal(row.totalDebits || "0");
+        const credit = new Decimal(row.totalCredits || "0");
+        const nb = (row.normalBalance || "DEBIT").toUpperCase();
+        const bal = nb === "DEBIT" ? debit.minus(credit) : credit.minus(debit);
+
+        if (row.type === "REVENUE") {
+          revs.push({ id: row.id, code: row.code, name: row.name, balance: bal });
+        } else if (row.type === "EXPENSE") {
+          exps.push({ id: row.id, code: row.code, name: row.name, balance: bal });
         }
-      });
+      }
 
-      setData({
-        revenue,
-        expenses,
-        totalRevenue: totalRev,
-        totalExpenses: totalExp,
-        netIncome: totalRev - totalExp
+      setRevenueRows(revs);
+      setExpenseRows(exps);
+      setSummary({
+        totalRevenue: new Decimal(pnl.totalRevenue || "0"),
+        totalCogs: new Decimal(pnl.totalCogs || "0"),
+        grossProfit: new Decimal(pnl.grossProfit || "0"),
+        totalOperatingExpenses: new Decimal(pnl.totalOperatingExpenses || "0"),
+        netProfit: new Decimal(pnl.netProfit || "0"),
       });
-    } catch (e) {
-      console.error(e);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to fetch Profit & Loss statement.");
+    } finally {
+      setIsLoading(false);
     }
-  }, [db]);
+  }, [startDate, endDate]);
 
   useEffect(() => {
     fetchReport();
   }, [fetchReport]);
 
+  const formatMoney = (dec: Decimal) =>
+    Number(dec.toFixed(2)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const handlePrint = () => {
+    if (typeof window !== "undefined") window.print();
+  };
+
+  const handleExportCsv = () => {
+    const csvRows = [
+      ["Section", "Code", "Account / Line", "Amount (LKR)"],
+      ...revenueRows.map((r) => ["Revenue (Ledger YTD)", r.code, `"${r.name.replace(/"/g, '""')}"`, r.balance.toFixed(2)]),
+      ...expenseRows.map((r) => ["Expense (Ledger YTD)", r.code, `"${r.name.replace(/"/g, '""')}"`, r.balance.toFixed(2)]),
+      ["Period Summary", "", `Revenue (${startDate}..${endDate})`, summary.totalRevenue.toFixed(2)],
+      ["Period Summary", "", "Cost of Goods Sold", summary.totalCogs.toFixed(2)],
+      ["Period Summary", "", "Gross Profit", summary.grossProfit.toFixed(2)],
+      ["Period Summary", "", "Operating Expenses", summary.totalOperatingExpenses.toFixed(2)],
+      ["Period Summary", "", "Net Profit", summary.netProfit.toFixed(2)],
+    ];
+    const blob = new Blob([csvRows.map((line) => line.join(",")).join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `profit-and-loss-${startDate}-to-${endDate}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto mb-10">
-      <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+      <div className="flex flex-wrap justify-between items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <div className="flex items-center space-x-4">
           <Link href="/accounting/reports" className="text-slate-400 hover:text-slate-600 transition-colors">
             <ArrowLeft size={20} />
           </Link>
           <div>
             <h1 className="text-xl font-semibold text-slate-800">Profit and Loss</h1>
-            <p className="text-sm text-slate-500 mt-1">Year to Date</p>
+            <p className="text-sm text-slate-500 mt-1">
+              Period: {startDate} to {endDate}
+            </p>
           </div>
         </div>
-        <div className="flex space-x-3">
-          <button className="flex items-center space-x-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 px-4 py-2 rounded-xl hover:bg-slate-50 transition-colors shadow-sm">
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs"
+          />
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs"
+          />
+          <button
+            type="button"
+            onClick={fetchReport}
+            disabled={isLoading}
+            className="flex items-center space-x-1 text-sm font-medium text-slate-600 bg-white border border-slate-200 px-3 py-2 rounded-xl hover:bg-slate-50 transition-colors shadow-sm"
+          >
+            <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
+          </button>
+          <button
+            type="button"
+            onClick={handlePrint}
+            className="flex items-center space-x-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 px-4 py-2 rounded-xl hover:bg-slate-50 transition-colors shadow-sm"
+          >
             <Printer size={16} />
             <span>Print</span>
           </button>
-          <button className="flex items-center space-x-2 text-sm font-medium text-white bg-blue-600 px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors shadow-sm">
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            className="flex items-center space-x-2 text-sm font-medium text-white bg-blue-600 px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
+          >
             <Download size={16} />
             <span>Export CSV</span>
           </button>
         </div>
       </div>
 
+      {error && (
+        <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl text-sm">
+          <AlertCircle size={16} className="shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden p-8">
         <div className="text-center mb-8">
           <h2 className="text-2xl font-bold text-slate-800">Income Statement</h2>
-          <p className="text-slate-500">For the period ending {new Date().toLocaleDateString()}</p>
+          <p className="text-slate-500">
+            For the period {startDate} through {endDate}
+          </p>
         </div>
 
-        {/* REVENUE */}
         <div className="mb-6">
-          <h3 className="text-lg font-semibold text-slate-800 border-b-2 border-slate-800 pb-2 mb-4">Revenue</h3>
+          <h3 className="text-lg font-semibold text-slate-800 border-b-2 border-slate-800 pb-2 mb-4">
+            Period Performance Summary (BI Reporting)
+          </h3>
+          <div className="space-y-2.5 text-sm">
+            <div className="flex justify-between py-1">
+              <span className="text-slate-600">Period Revenue</span>
+              <span className="font-mono font-semibold text-slate-800">LKR {formatMoney(summary.totalRevenue)}</span>
+            </div>
+            <div className="flex justify-between py-1">
+              <span className="text-slate-600">Cost of Goods Sold (COGS)</span>
+              <span className="font-mono text-rose-600">({formatMoney(summary.totalCogs)})</span>
+            </div>
+            <div className="flex justify-between py-2 border-t border-slate-200 font-semibold">
+              <span className="text-slate-800">Gross Profit</span>
+              <span className="font-mono text-slate-800">LKR {formatMoney(summary.grossProfit)}</span>
+            </div>
+            <div className="flex justify-between py-1">
+              <span className="text-slate-600">Operating Expenses</span>
+              <span className="font-mono text-rose-600">({formatMoney(summary.totalOperatingExpenses)})</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <h3 className="text-base font-semibold text-slate-800 border-b border-slate-200 pb-2 mb-3">
+            Ledger Revenue Accounts (Cumulative)
+          </h3>
           <div className="space-y-2">
-            {data.revenue.map((r: any, i: number) => (
-              <div key={i} className="flex justify-between items-center py-1">
-                <span className="text-slate-600">{r.name}</span>
-                <span className="text-slate-800">{r.balance.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+            {revenueRows.map((r) => (
+              <div key={r.id} className="flex justify-between items-center py-1 text-sm">
+                <span className="text-slate-600">
+                  <span className="font-mono text-xs text-slate-400 mr-2">{r.code}</span>
+                  {r.name}
+                </span>
+                <span className="font-mono text-slate-800">{formatMoney(r.balance)}</span>
               </div>
             ))}
-            {data.revenue.length === 0 && <div className="text-slate-400 italic py-1">No revenue recorded</div>}
-          </div>
-          <div className="flex justify-between items-center pt-3 mt-3 border-t border-slate-200 font-semibold">
-            <span className="text-slate-800">Total Revenue</span>
-            <span className="text-slate-800">{data.totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+            {revenueRows.length === 0 && <div className="text-slate-400 italic py-1 text-sm">No revenue accounts</div>}
           </div>
         </div>
 
-        {/* EXPENSES */}
         <div className="mb-6">
-          <h3 className="text-lg font-semibold text-slate-800 border-b-2 border-slate-800 pb-2 mb-4">Operating Expenses</h3>
+          <h3 className="text-base font-semibold text-slate-800 border-b border-slate-200 pb-2 mb-3">
+            Ledger Expense Accounts (Cumulative)
+          </h3>
           <div className="space-y-2">
-            {data.expenses.map((r: any, i: number) => (
-              <div key={i} className="flex justify-between items-center py-1">
-                <span className="text-slate-600">{r.name}</span>
-                <span className="text-slate-800">{r.balance.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+            {expenseRows.map((r) => (
+              <div key={r.id} className="flex justify-between items-center py-1 text-sm">
+                <span className="text-slate-600">
+                  <span className="font-mono text-xs text-slate-400 mr-2">{r.code}</span>
+                  {r.name}
+                </span>
+                <span className="font-mono text-slate-800">{formatMoney(r.balance)}</span>
               </div>
             ))}
-            {data.expenses.length === 0 && <div className="text-slate-400 italic py-1">No expenses recorded</div>}
-          </div>
-          <div className="flex justify-between items-center pt-3 mt-3 border-t border-slate-200 font-semibold">
-            <span className="text-slate-800">Total Expenses</span>
-            <span className="text-slate-800">{data.totalExpenses.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+            {expenseRows.length === 0 && <div className="text-slate-400 italic py-1 text-sm">No expense accounts</div>}
           </div>
         </div>
 
-        {/* NET INCOME */}
         <div className="flex justify-between items-center pt-4 mt-8 border-t-4 border-slate-800">
-          <span className="text-xl font-bold text-slate-800">Net Income</span>
-          <span className={`text-xl font-bold ${data.netIncome >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-            {data.netIncome < 0 ? '(' : ''}
-            LKR {Math.abs(data.netIncome).toLocaleString(undefined, {minimumFractionDigits: 2})}
-            {data.netIncome < 0 ? ')' : ''}
+          <span className="text-xl font-bold text-slate-800">Period Net Income</span>
+          <span className={`text-xl font-mono font-bold ${summary.netProfit.gte(0) ? "text-emerald-600" : "text-rose-600"}`}>
+            {summary.netProfit.lt(0) ? "(" : ""}
+            LKR {formatMoney(summary.netProfit.abs())}
+            {summary.netProfit.lt(0) ? ")" : ""}
           </span>
         </div>
       </div>

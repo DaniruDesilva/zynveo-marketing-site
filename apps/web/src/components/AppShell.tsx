@@ -28,10 +28,13 @@ import {
   UserCheck2,
 } from "lucide-react";
 import { PowerSyncProvider } from "./PowerSyncProvider";
+import { RouteGuard } from "./RouteGuard";
 import { SidebarNavItem } from "./SidebarNavItem";
 import { SidebarQuickCreate } from "./SidebarQuickCreate";
 import { useAuth } from "./AuthProvider";
 import { DEMO_PERSONAS, DEMO_TENANT } from "../lib/authTypes";
+import { isDemoModeEnabled } from "../lib/authStore";
+import { canAccessRoute } from "../lib/routeAccess";
 import { UserRole } from "@zynveo/contracts";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -51,10 +54,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [branchOpen, setBranchOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const branchRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
 
   // Close menus when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+      if (branchRef.current && !branchRef.current.contains(event.target as Node)) {
+        setBranchOpen(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setNotifOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -73,22 +93,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  const currentPersona = (role && DEMO_PERSONAS[role]) || DEMO_PERSONAS.OWNER;
+  const demoEnabled = isDemoModeEnabled();
+  const currentPersona = (role && DEMO_PERSONAS[role]) || DEMO_PERSONAS.VIEWER;
   const initials = (user?.fullName || currentPersona.fullName)
     .split(" ")
     .map((n) => n[0])
     .join("")
     .slice(0, 2);
 
-  // Permission-aware navigation logic
-  const isOwnerOrAdmin = role === "OWNER" || role === "ADMIN";
-  const showInventory = isOwnerOrAdmin || can("inventory.stock.view") || role === "WAREHOUSE_MANAGER";
-  const showSales = isOwnerOrAdmin || can("sales.invoice.view") || role === "SALES_REP" || role === "ACCOUNTANT";
-  const showPurchases = isOwnerOrAdmin || can("procurement.po.view") || role === "PROCUREMENT_OFFICER" || role === "WAREHOUSE_MANAGER";
-  const showManufacturing = isOwnerOrAdmin || can("manufacturing.bom.manage") || role === "PRODUCTION_MANAGER";
-  const showAccounting = isOwnerOrAdmin || can("finance.accounts.view") || role === "ACCOUNTANT";
-  const showHr = isOwnerOrAdmin || can("hr.employee.view") || role === "HR_MANAGER";
-  const showReports = isOwnerOrAdmin || can("bi.financial_reports.view") || role === "ACCOUNTANT" || role === "VIEWER";
+  // Permission-aware navigation logic backed by shared routeAccess policy
+  const roles = user?.roles || [];
+  const showInventory = canAccessRoute("/inventory", roles, permissions);
+  const showSales = canAccessRoute("/sales", roles, permissions);
+  const showPurchases = canAccessRoute("/purchases", roles, permissions);
+  const showManufacturing = canAccessRoute("/manufacturing", roles, permissions);
+  const showAccounting = canAccessRoute("/accounting", roles, permissions);
+  const showHr = canAccessRoute("/hr", roles, permissions);
+  const showReports = canAccessRoute("/reports", roles, permissions);
+  const showPeople = canAccessRoute("/people", roles, permissions);
+  const showCrm = canAccessRoute("/crm", roles, permissions);
+  const showWorkflow = canAccessRoute("/workflow", roles, permissions);
+  const showDocuments = canAccessRoute("/documents", roles, permissions);
+  const showSettings = canAccessRoute("/settings", roles, permissions);
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -105,7 +131,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 uppercase border border-slate-200">
-            {role || 'OWNER'}
+            {role || 'GUEST'}
           </span>
         </div>
 
@@ -167,24 +193,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {/* Section 4: Relationships & Workflow (Issue 11 preserved untouched) */}
-          <div>
-            <div className="px-6 pb-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              Relationships & Workflow
+          {/* Section 4: Relationships & Workflow */}
+          {(showPeople || showCrm || showWorkflow || showDocuments) && (
+            <div>
+              <div className="px-6 pb-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                Relationships & Workflow
+              </div>
+              {showPeople && <SidebarNavItem href="/people" icon={<Users size={18} />} label="People Directory" />}
+              {showCrm && <SidebarNavItem href="/crm" icon={<Briefcase size={18} />} label="CRM & Tickets" />}
+              {showWorkflow && <SidebarNavItem href="/workflow" icon={<GitMerge size={18} />} label="Workflow Approvals" />}
+              {showDocuments && <SidebarNavItem href="/documents" icon={<FileText size={18} />} label="Documents Archive" />}
             </div>
-            <SidebarNavItem href="/people" icon={<Users size={18} />} label="People Directory" />
-            <SidebarNavItem href="/crm" icon={<Briefcase size={18} />} label="CRM & Tickets" />
-            <SidebarNavItem href="/workflow" icon={<GitMerge size={18} />} label="Workflow Approvals" />
-            <SidebarNavItem href="/documents" icon={<FileText size={18} />} label="Documents Archive" />
-          </div>
+          )}
 
           {/* Section 5: System */}
-          <div>
-            <div className="px-6 pb-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              System
+          {showSettings && (
+            <div>
+              <div className="px-6 pb-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                System
+              </div>
+              <SidebarNavItem href="/settings" icon={<Settings size={18} />} label="Settings" />
             </div>
-            <SidebarNavItem href="/settings" icon={<Settings size={18} />} label="Settings" />
-          </div>
+          )}
         </nav>
 
         {/* User Mini Profile in Sidebar Footer */}
@@ -272,10 +302,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* Right Header Controls */}
           <div className="flex items-center space-x-4">
-            <button className="flex items-center space-x-1 text-xs font-medium text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-100">
+            <Link
+              href={canAccessRoute("/settings", role ? [role] : [], permissions) ? "/settings" : "/reports"}
+              className="flex items-center space-x-1 text-xs font-medium text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-100 hover:bg-blue-100 transition-colors"
+              title="Workspace Plan & Settings"
+            >
               <Diamond size={14} className="fill-blue-600" />
               <span>Enterprise</span>
-            </button>
+            </Link>
 
             {can("sales.invoice.create") && (
               <Link
@@ -286,10 +320,43 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             )}
 
-            <button className="text-slate-400 hover:text-slate-600 relative">
-              <Bell size={20} />
-              <span className="absolute top-0 right-0 w-2 h-2 rounded-full bg-blue-600" />
-            </button>
+            <div className="relative" ref={notifRef}>
+              <button
+                type="button"
+                onClick={() => setNotifOpen(!notifOpen)}
+                className="text-slate-400 hover:text-slate-600 relative p-1.5 rounded-full hover:bg-slate-100 transition-colors"
+                aria-label="System notifications"
+              >
+                <Bell size={20} />
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-600" />
+              </button>
+              {notifOpen && (
+                <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-50">
+                  <div className="px-3.5 py-2 border-b border-slate-100 flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800">Workspace Alerts</span>
+                    <span className="text-[10px] font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">Live</span>
+                  </div>
+                  <div className="divide-y divide-slate-50 text-xs">
+                    <Link
+                      href="/inventory"
+                      onClick={() => setNotifOpen(false)}
+                      className="block px-3.5 py-2.5 hover:bg-slate-50"
+                    >
+                      <p className="font-semibold text-slate-700">Inventory & Reorder Alerts</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">Review low stock levels and movements</p>
+                    </Link>
+                    <Link
+                      href="/accounting/journals"
+                      onClick={() => setNotifOpen(false)}
+                      className="block px-3.5 py-2.5 hover:bg-slate-50"
+                    >
+                      <p className="font-semibold text-slate-700">General Ledger Sync</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">Inspect posted sub-ledger journals</p>
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Active User Menu with Dropdown */}
             <div className="relative" ref={menuRef}>
@@ -303,7 +370,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     {user?.fullName || currentPersona.fullName}
                   </div>
                   <div className="text-[10px] font-medium text-blue-600 uppercase tracking-wider">
-                    {role || 'OWNER'}
+                    {role || 'GUEST'}
                   </div>
                 </div>
                 <div
@@ -326,7 +393,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     </p>
                     <div className="flex items-center space-x-2 mt-2">
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
-                        {role || 'OWNER'}
+                        {role || 'GUEST'}
                       </span>
                       <span className="text-[10px] text-slate-500">
                         {permissions.length} Active Permissions
@@ -334,44 +401,48 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     </div>
                   </div>
 
-                  {/* Switch Demo Persona (Interview Helper) */}
-                  <div className="p-2">
-                    <div className="px-2 py-1 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                      <span>Switch Persona (Demo)</span>
-                      <Sparkles size={12} className="text-blue-500" />
+                  {/* Switch Demo Persona (only when NEXT_PUBLIC_DEMO_MODE=true) */}
+                  {demoEnabled && (
+                    <div className="p-2">
+                      <div className="px-2 py-1 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        <span>Switch Persona (Demo)</span>
+                        <Sparkles size={12} className="text-blue-500" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-1 mt-1">
+                        {Object.values(DEMO_PERSONAS).slice(0, 6).map((p) => (
+                          <button
+                            key={p.role}
+                            type="button"
+                            onClick={() => {
+                              signInWithDemo(p.role);
+                              setMenuOpen(false);
+                            }}
+                            className={`text-left px-2 py-1.5 rounded-lg text-[11px] transition-colors ${
+                              role === p.role
+                                ? 'bg-blue-50 font-bold text-blue-600'
+                                : 'text-slate-600 hover:bg-slate-100'
+                            }`}
+                          >
+                            <div className="truncate font-medium">{p.fullName.split(' ')[0]}</div>
+                            <div className="text-[9px] text-slate-400 truncate">{p.badge}</div>
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-1 mt-1">
-                      {Object.values(DEMO_PERSONAS).slice(0, 6).map((p) => (
-                        <button
-                          key={p.role}
-                          type="button"
-                          onClick={() => {
-                            signInWithDemo(p.role);
-                            setMenuOpen(false);
-                          }}
-                          className={`text-left px-2 py-1.5 rounded-lg text-[11px] transition-colors ${
-                            role === p.role
-                              ? 'bg-blue-50 font-bold text-blue-600'
-                              : 'text-slate-600 hover:bg-slate-100'
-                          }`}
-                        >
-                          <div className="truncate font-medium">{p.fullName.split(' ')[0]}</div>
-                          <div className="text-[9px] text-slate-400 truncate">{p.badge}</div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  )}
 
                   {/* Links & Sign Out */}
                   <div className="p-1.5">
-                    <Link
-                      href="/settings"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-100 transition-colors"
-                    >
-                      <Settings size={15} className="text-slate-400" />
-                      <span>Security & Roles Settings</span>
-                    </Link>
+                    {showSettings && (
+                      <Link
+                        href="/settings"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-100 transition-colors"
+                      >
+                        <Settings size={15} className="text-slate-400" />
+                        <span>Security & Roles Settings</span>
+                      </Link>
+                    )}
                     <button
                       type="button"
                       onClick={() => {
@@ -390,9 +461,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        {/* Page Content Wrapped in PowerSync */}
+        {/* Page Content Wrapped in RouteGuard + PowerSync */}
         <main className="flex-1 overflow-y-auto relative bg-[#f0f4f8]">
-          <PowerSyncProvider>{children}</PowerSyncProvider>
+          <RouteGuard>
+            <PowerSyncProvider>{children}</PowerSyncProvider>
+          </RouteGuard>
         </main>
       </div>
     </div>

@@ -1,17 +1,26 @@
+import { randomUUID } from 'node:crypto';
 import Decimal from 'decimal.js';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import {
+  AdjustStockDto,
+  AdjustStockSchema,
   AtomicStockMutationDto,
   AtomicStockMutationResponse,
   AtomicStockMutationSchema,
+  CreateProductDto,
+  CreateProductSchema,
   ERP_EVENT_PATTERNS,
   ERP_RPC_PATTERNS,
   EventEnvelope,
   GrnApprovedEvent,
   GrnApprovedEventSchema,
   LowStockThresholdBreachedEventSchema,
+  SoftDeleteProductDto,
+  SoftDeleteProductSchema,
   StockReservationDto,
   StockReservationSchema,
+  UpdateProductDto,
+  UpdateProductSchema,
 } from '@zynveo/contracts';
 import {
   allocateFefoBatches,
@@ -521,6 +530,414 @@ export class InventoryWmsController {
         ),
       );
     return Array.isArray(rows) ? rows : [];
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.INVENTORY_WMS.LIST_WAREHOUSES)
+  async listWarehouses(@Payload() rawPayload: { tenantId: string }) {
+    return this.db
+      .select()
+      .from(inventorySchema.warehouses)
+      .where(
+        and(
+          eq(inventorySchema.warehouses.tenantId, rawPayload.tenantId),
+          isNull(inventorySchema.warehouses.deletedAt),
+        ),
+      );
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.INVENTORY_WMS.LIST_PRODUCTS)
+  async listProducts(@Payload() rawPayload: { tenantId: string }) {
+    const prodRows = await this.db
+      .select()
+      .from(inventorySchema.products)
+      .where(
+        and(
+          eq(inventorySchema.products.tenantId, rawPayload.tenantId),
+          isNull(inventorySchema.products.deletedAt),
+        ),
+      );
+
+    const variantRows = await this.db
+      .select()
+      .from(inventorySchema.productVariants)
+      .where(
+        and(
+          eq(inventorySchema.productVariants.tenantId, rawPayload.tenantId),
+          isNull(inventorySchema.productVariants.deletedAt),
+        ),
+      );
+
+    const stockRows = await this.db
+      .select()
+      .from(inventorySchema.stockLevels)
+      .where(
+        and(
+          eq(inventorySchema.stockLevels.tenantId, rawPayload.tenantId),
+          isNull(inventorySchema.stockLevels.deletedAt),
+        ),
+      );
+
+    return prodRows.map((p: any) => {
+      const variants = variantRows.filter((v: any) => v.productId === p.id);
+      const primary = variants[0];
+      const matchingStock = stockRows.filter(
+        (s: any) => s.productId === p.id || (primary && s.variantId === primary.id),
+      );
+
+      let totalQty = new Decimal(0);
+      let totalReserved = new Decimal(0);
+      let latestWac = new Decimal(primary?.wacCost || primary?.cost || '0');
+
+      for (const s of matchingStock) {
+        totalQty = totalQty.plus(new Decimal(s.quantity || '0'));
+        totalReserved = totalReserved.plus(new Decimal(s.reservedQuantity || '0'));
+        if (new Decimal(s.unitWacCost || '0').gt(0)) {
+          latestWac = new Decimal(s.unitWacCost);
+        }
+      }
+
+      return {
+        id: p.id,
+        variantId: primary?.id ?? p.id,
+        sku: primary?.sku || `SKU-${p.id.slice(0, 8)}`,
+        name: p.name,
+        description: p.description ?? '',
+        category: p.category ?? 'General',
+        brand: p.brand ?? 'Zynveo',
+        price: primary?.price ?? '0.00',
+        cost: primary?.cost ?? '0.00',
+        wacCost: latestWac.toFixed(2),
+        stock: totalQty.toFixed(4),
+        reserved: totalReserved.toFixed(4),
+        reorderThreshold: String(p.reorderThreshold || '10.0000'),
+        isActive: p.isActive,
+      };
+    });
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.INVENTORY_WMS.CREATE_PRODUCT)
+  async createProduct(@Payload() rawPayload: CreateProductDto) {
+    const dto = CreateProductSchema.parse(rawPayload);
+
+    return this.db.transaction(async (tx: any) => {
+      const [product] = await tx
+        .insert(inventorySchema.products)
+        .values({
+          tenantId: dto.tenantId,
+          name: dto.name,
+          description: dto.description ?? null,
+          category: dto.category ?? 'General',
+          brand: dto.brand ?? 'Zynveo',
+          reorderThreshold: new Decimal(dto.reorderThreshold).toFixed(4),
+          isActive: true,
+        })
+        .returning();
+
+      const price = new Decimal(dto.price).toFixed(2);
+      const cost = new Decimal(dto.cost).toFixed(2);
+
+      const [variant] = await tx
+        .insert(inventorySchema.productVariants)
+        .values({
+          tenantId: dto.tenantId,
+          productId: product.id,
+          sku: dto.sku,
+          name: dto.name,
+          price,
+          cost,
+          wacCost: cost,
+          isActive: true,
+        })
+        .returning();
+
+      const initQty = new Decimal(dto.initialStock || '0');
+      if (initQty.gt(0)) {
+        let targetWhId = dto.warehouseId;
+        if (!targetWhId) {
+          const whs = await tx
+            .select()
+            .from(inventorySchema.warehouses)
+            .where(
+              and(
+                eq(inventorySchema.warehouses.tenantId, dto.tenantId),
+                isNull(inventorySchema.warehouses.deletedAt),
+              ),
+            );
+          if (whs[0]) {
+            targetWhId = whs[0].id;
+          } else {
+            const [createdWh] = await tx
+              .insert(inventorySchema.warehouses)
+              .values({
+                tenantId: dto.tenantId,
+                code: 'WH-MAIN-01',
+                name: 'Main Warehouse',
+                isActive: true,
+              })
+              .returning();
+            targetWhId = createdWh.id;
+          }
+        }
+
+        const totalVal = initQty.mul(new Decimal(cost)).toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toFixed(2);
+        await tx.insert(inventorySchema.stockLevels).values({
+          tenantId: dto.tenantId,
+          productId: product.id,
+          variantId: variant.id,
+          warehouseId: targetWhId,
+          quantity: initQty.toFixed(4),
+          reservedQuantity: '0.0000',
+          unitWacCost: cost,
+        });
+
+        await tx.insert(inventorySchema.stockMovements).values({
+          tenantId: dto.tenantId,
+          warehouseId: targetWhId,
+          productId: product.id,
+          variantId: variant.id,
+          reason: 'STOCK_ADJUSTMENT',
+          referenceDocumentId: product.id,
+          quantityDelta: initQty.toFixed(4),
+          balanceAfter: initQty.toFixed(4),
+          unitCostAtMovement: cost,
+          totalValuationDelta: totalVal,
+          actorUserId: dto.actorUserId,
+          notes: `Initial opening stock for SKU ${dto.sku}`,
+        });
+      }
+
+      return {
+        id: product.id,
+        variantId: variant.id,
+        sku: variant.sku,
+        name: product.name,
+        category: product.category,
+        brand: product.brand,
+        price: variant.price,
+        cost: variant.cost,
+        wacCost: variant.wacCost,
+        stock: initQty.toFixed(4),
+        reserved: '0.0000',
+        reorderThreshold: product.reorderThreshold,
+        isActive: product.isActive,
+      };
+    });
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.INVENTORY_WMS.UPDATE_PRODUCT)
+  async updateProduct(@Payload() rawPayload: UpdateProductDto) {
+    const dto = UpdateProductSchema.parse(rawPayload);
+
+    return this.db.transaction(async (tx: any) => {
+      const existing = await tx
+        .select()
+        .from(inventorySchema.products)
+        .where(
+          and(
+            eq(inventorySchema.products.id, dto.productId),
+            eq(inventorySchema.products.tenantId, dto.tenantId),
+            isNull(inventorySchema.products.deletedAt),
+          ),
+        );
+
+      if (!existing[0]) {
+        throw new ErpRpcException('PRODUCT_NOT_FOUND', `Product ${dto.productId} not found`, 404);
+      }
+
+      const prodUpdates: Record<string, unknown> = { updatedAt: new Date() };
+      if (dto.name !== undefined) prodUpdates.name = dto.name;
+      if (dto.description !== undefined) prodUpdates.description = dto.description;
+      if (dto.category !== undefined) prodUpdates.category = dto.category;
+      if (dto.brand !== undefined) prodUpdates.brand = dto.brand;
+      if (dto.reorderThreshold !== undefined) {
+        prodUpdates.reorderThreshold = new Decimal(dto.reorderThreshold).toFixed(4);
+      }
+      if (dto.isActive !== undefined) prodUpdates.isActive = dto.isActive;
+
+      const [updatedProd] = await tx
+        .update(inventorySchema.products)
+        .set(prodUpdates)
+        .where(
+          and(
+            eq(inventorySchema.products.id, dto.productId),
+            eq(inventorySchema.products.tenantId, dto.tenantId),
+          ),
+        )
+        .returning();
+
+      const varUpdates: Record<string, unknown> = { updatedAt: new Date() };
+      if (dto.sku !== undefined) varUpdates.sku = dto.sku;
+      if (dto.name !== undefined) varUpdates.name = dto.name;
+      if (dto.price !== undefined) varUpdates.price = new Decimal(dto.price).toFixed(2);
+      if (dto.cost !== undefined) varUpdates.cost = new Decimal(dto.cost).toFixed(2);
+      if (dto.isActive !== undefined) varUpdates.isActive = dto.isActive;
+
+      await tx
+        .update(inventorySchema.productVariants)
+        .set(varUpdates)
+        .where(
+          and(
+            eq(inventorySchema.productVariants.productId, dto.productId),
+            eq(inventorySchema.productVariants.tenantId, dto.tenantId),
+          ),
+        );
+
+      return { success: true, productId: updatedProd.id, name: updatedProd.name };
+    });
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.INVENTORY_WMS.SOFT_DELETE_PRODUCT)
+  async softDeleteProduct(@Payload() rawPayload: SoftDeleteProductDto) {
+    const dto = SoftDeleteProductSchema.parse(rawPayload);
+
+    return this.db.transaction(async (tx: any) => {
+      const now = new Date();
+      const [updated] = await tx
+        .update(inventorySchema.products)
+        .set({ deletedAt: now, isActive: false, updatedAt: now })
+        .where(
+          and(
+            eq(inventorySchema.products.id, dto.productId),
+            eq(inventorySchema.products.tenantId, dto.tenantId),
+            isNull(inventorySchema.products.deletedAt),
+          ),
+        )
+        .returning();
+
+      if (!updated) {
+        throw new ErpRpcException('PRODUCT_NOT_FOUND', `Product ${dto.productId} not found`, 404);
+      }
+
+      await tx
+        .update(inventorySchema.productVariants)
+        .set({ deletedAt: now, isActive: false, updatedAt: now })
+        .where(
+          and(
+            eq(inventorySchema.productVariants.productId, dto.productId),
+            eq(inventorySchema.productVariants.tenantId, dto.tenantId),
+          ),
+        );
+
+      return { success: true, productId: dto.productId, deletedAt: now.toISOString() };
+    });
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.INVENTORY_WMS.LIST_STOCK_LEVELS)
+  async listStockLevels(@Payload() rawPayload: { tenantId: string }) {
+    return this.db
+      .select({
+        id: inventorySchema.stockLevels.id,
+        warehouseId: inventorySchema.stockLevels.warehouseId,
+        warehouseName: inventorySchema.warehouses.name,
+        warehouseCode: inventorySchema.warehouses.code,
+        productId: inventorySchema.stockLevels.productId,
+        productName: inventorySchema.products.name,
+        variantId: inventorySchema.stockLevels.variantId,
+        sku: inventorySchema.productVariants.sku,
+        quantity: inventorySchema.stockLevels.quantity,
+        reservedQuantity: inventorySchema.stockLevels.reservedQuantity,
+        unitWacCost: inventorySchema.stockLevels.unitWacCost,
+        batchNumber: inventorySchema.stockLevels.batchNumber,
+      })
+      .from(inventorySchema.stockLevels)
+      .leftJoin(inventorySchema.warehouses, eq(inventorySchema.stockLevels.warehouseId, inventorySchema.warehouses.id))
+      .leftJoin(inventorySchema.products, eq(inventorySchema.stockLevels.productId, inventorySchema.products.id))
+      .leftJoin(inventorySchema.productVariants, eq(inventorySchema.stockLevels.variantId, inventorySchema.productVariants.id))
+      .where(
+        and(
+          eq(inventorySchema.stockLevels.tenantId, rawPayload.tenantId),
+          isNull(inventorySchema.stockLevels.deletedAt),
+        ),
+      );
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.INVENTORY_WMS.LIST_STOCK_MOVEMENTS)
+  async listStockMovements(@Payload() rawPayload: { tenantId: string }) {
+    return this.db
+      .select({
+        id: inventorySchema.stockMovements.id,
+        warehouseId: inventorySchema.stockMovements.warehouseId,
+        warehouseCode: inventorySchema.warehouses.code,
+        productId: inventorySchema.stockMovements.productId,
+        productName: inventorySchema.products.name,
+        reason: inventorySchema.stockMovements.reason,
+        referenceDocumentId: inventorySchema.stockMovements.referenceDocumentId,
+        batchNumber: inventorySchema.stockMovements.batchNumber,
+        quantityDelta: inventorySchema.stockMovements.quantityDelta,
+        balanceAfter: inventorySchema.stockMovements.balanceAfter,
+        unitCostAtMovement: inventorySchema.stockMovements.unitCostAtMovement,
+        totalValuationDelta: inventorySchema.stockMovements.totalValuationDelta,
+        notes: inventorySchema.stockMovements.notes,
+        createdAt: inventorySchema.stockMovements.createdAt,
+      })
+      .from(inventorySchema.stockMovements)
+      .leftJoin(inventorySchema.warehouses, eq(inventorySchema.stockMovements.warehouseId, inventorySchema.warehouses.id))
+      .leftJoin(inventorySchema.products, eq(inventorySchema.stockMovements.productId, inventorySchema.products.id))
+      .where(
+        and(
+          eq(inventorySchema.stockMovements.tenantId, rawPayload.tenantId),
+          isNull(inventorySchema.stockMovements.deletedAt),
+        ),
+      )
+      .orderBy(desc(inventorySchema.stockMovements.createdAt));
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.INVENTORY_WMS.ADJUST_STOCK)
+  async adjustStock(@Payload() rawPayload: AdjustStockDto): Promise<AtomicStockMutationResponse> {
+    const dto = AdjustStockSchema.parse(rawPayload);
+    const delta = new Decimal(dto.quantityDelta);
+
+    const variants = await this.db
+      .select()
+      .from(inventorySchema.productVariants)
+      .where(
+        and(
+          eq(inventorySchema.productVariants.tenantId, dto.tenantId),
+          eq(inventorySchema.productVariants.productId, dto.productId),
+          isNull(inventorySchema.productVariants.deletedAt),
+        ),
+      );
+
+    const sku = variants[0]?.sku || `SKU-${dto.productId.slice(0, 8)}`;
+    const absQty = delta.abs().toFixed(4);
+    const refDocId = randomUUID();
+
+    if (delta.gt(0)) {
+      return this.atomicStockIncrement({
+        tenantId: dto.tenantId,
+        branchId: dto.branchId,
+        actorUserId: dto.actorUserId,
+        correlationId: dto.correlationId,
+        warehouseId: dto.warehouseId,
+        referenceDocumentId: refDocId,
+        reason: 'STOCK_ADJUSTMENT',
+        items: [
+          {
+            productId: dto.productId,
+            sku,
+            quantity: absQty,
+            unitCost: dto.unitCost ?? variants[0]?.wacCost ?? variants[0]?.cost ?? '0.00',
+          },
+        ],
+      });
+    }
+
+    return this.atomicStockDecrement({
+      tenantId: dto.tenantId,
+      branchId: dto.branchId,
+      actorUserId: dto.actorUserId,
+      correlationId: dto.correlationId,
+      warehouseId: dto.warehouseId,
+      referenceDocumentId: refDocId,
+      reason: 'STOCK_ADJUSTMENT',
+      items: [
+        {
+          productId: dto.productId,
+          sku,
+          quantity: absQty,
+        },
+      ],
+    });
   }
 }
 

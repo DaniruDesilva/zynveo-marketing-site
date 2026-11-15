@@ -2,13 +2,13 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { UserRole, Permission, DEFAULT_ROLE_PERMISSIONS } from '@zynveo/contracts';
-import { UserSession, DEMO_PERSONAS, DEMO_TENANT } from '../lib/authTypes';
+import { UserRole, Permission } from '@zynveo/contracts';
+import { UserSession, DEMO_TENANT } from '../lib/authTypes';
 import {
   getStoredSession,
-  saveSession,
   clearSession,
   createSessionForRole,
+  refreshSessionFromGateway,
   signInWithEmailPassword,
 } from '../lib/authStore';
 
@@ -23,7 +23,7 @@ interface AuthContextType {
   hasAnyPermission: (permissions: (Permission | string)[]) => boolean;
   hasRole: (role: UserRole | string) => boolean;
   signInWithDemo: (role: UserRole, branchId?: string) => Promise<void>;
-  signIn: (email: string, password?: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   switchBranch: (branchId: string) => Promise<void>;
 }
@@ -35,41 +35,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserSession | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Initialize session from localStorage/cookies on mount
+  // Initialize and re-verify session against Gateway /api/v1/iam/me (fail-closed: never auto-login as OWNER)
   useEffect(() => {
-    try {
-      const stored = getStoredSession();
-      if (stored) {
-        setUser(stored);
-      } else {
-        // Fallback default for smooth local development experience
-        createSessionForRole('OWNER').then((defaultSession) => {
-          setUser(defaultSession);
-        });
+    let active = true;
+    (async () => {
+      try {
+        const stored = getStoredSession();
+        if (!stored) {
+          if (active) setUser(null);
+          return;
+        }
+        const verified = await refreshSessionFromGateway(stored);
+        if (active) {
+          setUser(verified);
+        }
+      } catch {
+        if (active) setUser(null);
+      } finally {
+        if (active) setIsLoading(false);
       }
-    } catch {
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
+    })();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const can = useCallback(
     (permission: Permission | string): boolean => {
       if (!user) return false;
-      if (user.role === 'OWNER') return true;
+      if (user.role === 'OWNER' || user.roles.includes('OWNER')) return true;
       return user.permissions.includes(permission);
     },
-    [user]
+    [user],
   );
 
   const hasAnyPermission = useCallback(
     (perms: (Permission | string)[]): boolean => {
       if (!user) return false;
-      if (user.role === 'OWNER') return true;
+      if (user.role === 'OWNER' || user.roles.includes('OWNER')) return true;
       return perms.some((p) => user.permissions.includes(p));
     },
-    [user]
+    [user],
   );
 
   const hasRole = useCallback(
@@ -77,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!user) return false;
       return user.role === roleToCheck || user.roles.includes(roleToCheck as UserRole);
     },
-    [user]
+    [user],
   );
 
   const signInWithDemo = useCallback(
@@ -91,11 +98,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
       }
     },
-    [router]
+    [router],
   );
 
   const signIn = useCallback(
-    async (email: string, password?: string) => {
+    async (email: string, password: string) => {
       setIsLoading(true);
       try {
         const session = await signInWithEmailPassword(email, password);
@@ -105,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
       }
     },
-    [router]
+    [router],
   );
 
   const switchBranch = useCallback(
@@ -119,7 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
       }
     },
-    [user]
+    [user],
   );
 
   const signOut = useCallback(async () => {
@@ -157,9 +164,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error('useAuth must be used inside an AuthProvider');
   }
-  return context;
+  return ctx;
 }

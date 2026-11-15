@@ -46,14 +46,16 @@ export async function POST(req: NextRequest) {
 
     // ── Insert into Supabase with resilience ────────────────────
     const { error: dbError, isNetworkError } = await runSupabaseSafe(
-      supabase.from("contact_inquiries").insert({
-        full_name: normalizedName,
-        email: normalizedEmail,
-        phone: normalizedPhone,
-        company: normalizedCompany || null,
-        subject: normalizedSubject,
-        message: normalizedMessage,
-      }),
+      supabase
+        ? supabase.from("contact_inquiries").insert({
+            full_name: normalizedName,
+            email: normalizedEmail,
+            phone: normalizedPhone,
+            company: normalizedCompany || null,
+            subject: normalizedSubject,
+            message: normalizedMessage,
+          })
+        : null,
       { timeoutMs: 1800, context: "Contact API" }
     );
 

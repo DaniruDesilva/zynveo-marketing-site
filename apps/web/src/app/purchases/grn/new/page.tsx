@@ -2,10 +2,24 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Decimal from "decimal.js";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
-import { usePowerSync } from "../../../../components/PowerSyncProvider";
+import { ArrowLeft, CheckCircle2, AlertCircle } from "lucide-react";
 import { erpApi } from "../../../../lib/api";
+
+interface PoWithLines {
+  id: string;
+  poNumber: string;
+  warehouseId: string;
+  status: string;
+  lines?: Array<{
+    id: string;
+    productId: string;
+    sku: string;
+    orderedQty: string;
+    receivedQty?: string;
+  }>;
+}
 
 interface GrnReceiptRow {
   poLineId: string;
@@ -19,11 +33,10 @@ interface GrnReceiptRow {
 }
 
 export default function AddGRNPage() {
-  const db = usePowerSync();
   const router = useRouter();
 
-  const [purchaseOrders, setPurchaseOrders] = useState<any[]>([]);
-  const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [purchaseOrders, setPurchaseOrders] = useState<PoWithLines[]>([]);
+  const [warehouses, setWarehouses] = useState<Array<{ id: string; code: string; name: string }>>([]);
   const [selectedPoId, setSelectedPoId] = useState("");
   const [warehouseId, setWarehouseId] = useState("");
   const [lines, setLines] = useState<GrnReceiptRow[]>([]);
@@ -31,56 +44,58 @@ export default function AddGRNPage() {
   const [error, setError] = useState("");
 
   const loadPurchaseOrders = useCallback(async () => {
-    if (!db) return;
+    setError("");
     try {
       const [poRows, whRows] = await Promise.all([
-        db.getAll(
-          "SELECT id, po_number, warehouse_id, status FROM purchase_orders WHERE status IN ('ISSUED', 'PARTIALLY_RECEIVED', 'DRAFT') ORDER BY created_at DESC"
-        ),
-        db.getAll("SELECT id, name FROM warehouses ORDER BY name ASC"),
+        erpApi.procurement.listPurchaseOrders(),
+        erpApi.inventory.listWarehouses(),
       ]);
-      setPurchaseOrders(poRows);
+      const receivablePos = (poRows as PoWithLines[]).filter((p) =>
+        ["ISSUED", "PARTIALLY_RECEIVED", "DRAFT"].includes(p.status)
+      );
+      setPurchaseOrders(receivablePos);
       setWarehouses(whRows);
       if (whRows.length > 0 && !warehouseId) {
         setWarehouseId(whRows[0].id);
       }
-    } catch (e) {
-      console.error(e);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load open Purchase Orders or Warehouses.");
     }
-  }, [db, warehouseId]);
+  }, [warehouseId]);
 
   useEffect(() => {
     loadPurchaseOrders();
   }, [loadPurchaseOrders]);
 
-  const handleSelectPo = async (poId: string) => {
+  const handleSelectPo = (poId: string) => {
     setSelectedPoId(poId);
-    if (!db || !poId) {
+    if (!poId) {
       setLines([]);
       return;
     }
 
     const po = purchaseOrders.find((p) => p.id === poId);
-    if (po?.warehouse_id) {
-      setWarehouseId(po.warehouse_id);
+    if (po?.warehouseId) {
+      setWarehouseId(po.warehouseId);
     }
 
-    const poLineRows = await db.getAll(
-      "SELECT id, product_id, sku, ordered_qty, received_qty FROM po_lines WHERE purchase_order_id = ?",
-      [poId]
-    );
-
+    const poLines = po?.lines ?? [];
     setLines(
-      poLineRows.map((pl: any) => ({
-        poLineId: pl.id,
-        productId: pl.product_id,
-        sku: pl.sku,
-        orderedQty: String(pl.ordered_qty || "0.0000"),
-        receivedQty: String(pl.ordered_qty || "1.0000"),
-        rejectedQty: "0.0000",
-        batchNumber: `LOT-${Date.now().toString().slice(-5)}`,
-        expiryDate: "",
-      }))
+      poLines.map((pl) => {
+        const ordered = new Decimal(pl.orderedQty || "0");
+        const alreadyReceived = new Decimal(pl.receivedQty || "0");
+        const remaining = Decimal.max(new Decimal("1.0000"), ordered.minus(alreadyReceived));
+        return {
+          poLineId: pl.id,
+          productId: pl.productId,
+          sku: pl.sku,
+          orderedQty: ordered.toFixed(4),
+          receivedQty: remaining.toFixed(4),
+          rejectedQty: "0.0000",
+          batchNumber: `LOT-${Date.now().toString().slice(-5)}`,
+          expiryDate: "",
+        };
+      })
     );
   };
 
@@ -110,19 +125,17 @@ export default function AddGRNPage() {
         lines: lines.map((l) => ({
           poLineId: l.poLineId,
           productId: l.productId,
-          receivedQty: (Number(l.receivedQty) || 0).toFixed(4),
-          rejectedQty: (Number(l.rejectedQty) || 0).toFixed(4),
+          receivedQty: new Decimal(l.receivedQty || 0).toFixed(4),
+          rejectedQty: new Decimal(l.rejectedQty || 0).toFixed(4),
           batchNumber: l.batchNumber.trim(),
-          expiryDate: l.expiryDate
-            ? new Date(`${l.expiryDate}T00:00:00.000Z`).toISOString()
-            : undefined,
+          expiryDate: l.expiryDate ? new Date(`${l.expiryDate}T00:00:00.000Z`).toISOString() : undefined,
         })),
       });
 
       router.push("/purchases");
-    } catch (err: any) {
-      console.warn("API Gateway offline or unreachable, approving GRN in local PowerSync store:", err);
-      router.push("/purchases");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to approve GRN via API Gateway.");
+      setIsSubmitting(false);
     }
   };
 
@@ -137,31 +150,32 @@ export default function AddGRNPage() {
 
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         {error && (
-          <div className="m-6 p-4 bg-red-50 text-red-600 text-sm rounded-xl">
-            {error}
+          <div className="m-6 flex items-center gap-2 p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">
+            <AlertCircle size={16} className="shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
         <div className="p-6 border-b border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-700">Purchase Order</label>
+            <label className="text-sm font-medium text-slate-700">Purchase Order *</label>
             <select
               required
               value={selectedPoId}
               onChange={(e) => handleSelectPo(e.target.value)}
               className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
-              <option value="">Select Issued Purchase Order...</option>
+              <option value="">Select Open Purchase Order...</option>
               {purchaseOrders.map((po) => (
                 <option key={po.id} value={po.id}>
-                  {po.po_number} ({po.status})
+                  {po.poNumber} ({po.status})
                 </option>
               ))}
             </select>
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-700">Receiving Warehouse</label>
+            <label className="text-sm font-medium text-slate-700">Receiving Warehouse *</label>
             <select
               required
               value={warehouseId}
@@ -171,7 +185,7 @@ export default function AddGRNPage() {
               <option value="">Select Warehouse...</option>
               {warehouses.map((w) => (
                 <option key={w.id} value={w.id}>
-                  {w.name}
+                  {w.code} - {w.name}
                 </option>
               ))}
             </select>
@@ -193,8 +207,8 @@ export default function AddGRNPage() {
             <tbody>
               {lines.map((line, index) => (
                 <tr key={line.poLineId} className="border-b border-slate-50">
-                  <td className="p-4 text-sm font-medium text-slate-800">{line.sku}</td>
-                  <td className="p-4 text-sm text-right text-slate-600">{line.orderedQty}</td>
+                  <td className="p-4 text-sm font-mono font-medium text-slate-800">{line.sku}</td>
+                  <td className="p-4 text-sm font-mono text-right text-slate-600">{line.orderedQty}</td>
                   <td className="p-4">
                     <input
                       type="number"
@@ -203,7 +217,7 @@ export default function AddGRNPage() {
                       required
                       value={line.receivedQty}
                       onChange={(e) => handleLineChange(index, "receivedQty", e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-right"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono text-right"
                     />
                   </td>
                   <td className="p-4">
@@ -213,7 +227,7 @@ export default function AddGRNPage() {
                       min="0"
                       value={line.rejectedQty}
                       onChange={(e) => handleLineChange(index, "rejectedQty", e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-right"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono text-right"
                     />
                   </td>
                   <td className="p-4">
@@ -222,7 +236,7 @@ export default function AddGRNPage() {
                       required
                       value={line.batchNumber}
                       onChange={(e) => handleLineChange(index, "batchNumber", e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono"
                       placeholder="LOT-2026-A"
                     />
                   </td>
@@ -248,7 +262,10 @@ export default function AddGRNPage() {
         </div>
 
         <div className="p-6 border-t border-slate-100 flex justify-end space-x-4 bg-slate-50/50">
-          <Link href="/purchases" className="px-6 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl">
+          <Link
+            href="/purchases"
+            className="px-6 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl"
+          >
             Cancel
           </Link>
           <button

@@ -2,66 +2,57 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Decimal from "decimal.js";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, UserPlus, CheckCircle2, Building, Mail, Phone, CreditCard, MapPin } from "lucide-react";
-import { usePowerSync } from "../../../../components/PowerSyncProvider";
+import { ArrowLeft, UserPlus, CheckCircle2, Building, Mail, Phone, CreditCard, AlertCircle } from "lucide-react";
+import { erpApi } from "../../../../lib/api";
 
 export default function NewCustomerPage() {
   const router = useRouter();
-  const db = usePowerSync();
 
   const [form, setForm] = useState({
     name: "",
-    contactPerson: "",
+    company: "",
     email: "",
     phone: "",
     creditLimit: "250000.00",
-    paymentTerms: "Net 30 Days",
-    taxId: "",
+    tier: "STANDARD",
     address: "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) return;
 
     setIsSubmitting(true);
+    setError(null);
     try {
-      if (db) {
-        await db.execute(
-          `INSERT INTO customers (id, tenant_id, name, email, phone, credit_limit, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            crypto.randomUUID ? crypto.randomUUID() : `cust-${Date.now()}`,
-            "22222222-2222-4222-8222-222222222222",
-            form.name,
-            form.email,
-            form.phone,
-            Number(form.creditLimit),
-            1,
-            new Date().toISOString(),
-          ]
-        );
-      }
+      await erpApi.sales.createCustomer({
+        name: form.name.trim(),
+        company: form.company.trim() || undefined,
+        email: form.email.trim() || undefined,
+        phone: form.phone.trim() || undefined,
+        address: form.address.trim() || undefined,
+        tier: form.tier,
+        creditLimit: new Decimal(form.creditLimit || 0).toFixed(2),
+      });
+
       setSuccess(true);
       setTimeout(() => {
         router.push("/people");
-      }, 1200);
-    } catch (err) {
-      setSuccess(true);
-      setTimeout(() => {
-        router.push("/people");
-      }, 1200);
-    } finally {
+      }, 800);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to create customer via API Gateway.");
       setIsSubmitting(false);
     }
   };
 
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6">
-      {/* Top Breadcrumb */}
       <div className="flex items-center space-x-3">
         <Link href="/people" className="text-slate-400 hover:text-slate-600 transition-colors">
           <ArrowLeft size={20} />
@@ -72,6 +63,13 @@ export default function NewCustomerPage() {
         </div>
       </div>
 
+      {error && (
+        <div className="flex items-center gap-2 p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-sm">
+          <AlertCircle size={16} className="shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
       {success && (
         <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-sm flex items-center space-x-2">
           <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
@@ -80,10 +78,10 @@ export default function NewCustomerPage() {
       )}
 
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 space-y-6">
-        <div className="grid grid-cols-2 gap-5">
-          <div className="col-span-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="md:col-span-2">
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Company / Customer Name *
+              Customer / Account Name *
             </label>
             <div className="relative">
               <Building className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
@@ -100,30 +98,31 @@ export default function NewCustomerPage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Primary Contact Person
+              Legal Company Name
             </label>
             <input
               type="text"
-              placeholder="e.g. Sampath Wickramasinghe"
-              value={form.contactPerson}
-              onChange={(e) => setForm({ ...form, contactPerson: e.target.value })}
+              placeholder="e.g. Acme Holdings (Pvt) Ltd"
+              value={form.company}
+              onChange={(e) => setForm({ ...form, company: e.target.value })}
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Credit Limit (LKR)
+              Credit Limit (LKR) *
             </label>
             <div className="relative">
               <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
               <input
                 type="number"
                 step="0.01"
+                min="0"
                 required
                 value={form.creditLimit}
                 onChange={(e) => setForm({ ...form, creditLimit: e.target.value })}
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
               />
             </div>
           </div>
@@ -162,34 +161,20 @@ export default function NewCustomerPage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Payment Terms
+              Customer Tier
             </label>
             <select
-              value={form.paymentTerms}
-              onChange={(e) => setForm({ ...form, paymentTerms: e.target.value })}
+              value={form.tier}
+              onChange={(e) => setForm({ ...form, tier: e.target.value })}
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
             >
-              <option value="Immediate">Immediate / Advance</option>
-              <option value="Net 15 Days">Net 15 Days</option>
-              <option value="Net 30 Days">Net 30 Days</option>
-              <option value="Net 60 Days">Net 60 Days</option>
+              <option value="STANDARD">STANDARD</option>
+              <option value="ENTERPRISE">ENTERPRISE</option>
+              <option value="VIP">VIP</option>
             </select>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Tax Registration (TIN / VAT #)
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. 102938475-7000"
-              value={form.taxId}
-              onChange={(e) => setForm({ ...form, taxId: e.target.value })}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-            />
-          </div>
-
-          <div className="col-span-2">
+          <div className="md:col-span-2">
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
               Registered Billing & Shipping Address
             </label>

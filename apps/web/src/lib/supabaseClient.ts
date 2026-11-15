@@ -12,13 +12,8 @@ const safeJson = async (res: Response) => {
   }
 };
 
-const DEV_FALLBACK_JWT = [
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
-  'eyJzdWIiOiIxMTExMTExMS0xMTExLTQxMTEtODExMS0xMTExMTExMTExMTEiLCJlbWFpbCI6ImFkbWluQHp5bnZlby5jb20iLCJ0ZW5hbnRfaWQiOiIyMjIyMjIyMi0yMjIyLTQyMjItODIyMi0yMjIyMjIyMjIyMjIiLCJicmFuY2hfaWQiOiIzMzMzMzMzMy0zMzMzLTQzMzMtODMzMy0zMzMzMzMzMzMzMzMifQ',
-  'dev-signature',
-].join('.');
-
 import { getStoredSession } from './authStore';
+import { isTokenExpired } from './jwtHelper';
 
 export const supabase = {
   from: (table: string) => {
@@ -105,7 +100,7 @@ export const supabase = {
       if (typeof window !== 'undefined') {
         const stored = getStoredSession();
         const token = stored?.token || window.localStorage.getItem('zynveo_access_token');
-        if (token) {
+        if (token && !isTokenExpired(token)) {
           return {
             data: { session: { access_token: token } },
             error: null,

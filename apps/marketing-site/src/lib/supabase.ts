@@ -1,13 +1,16 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://zepsiobwivepnzlokuml.supabase.co";
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplcHNpb2J3aXZlcG56bG9rdW1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NjU4MDYsImV4cCI6MjA5NzQ0MTgwNn0.RfnPJvTS3rjlmzqDgOKhactN_NmdBTKeJ7n4lig3c20";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: false,
-  },
-});
+export const supabase: SupabaseClient | null =
+  supabaseUrl && supabaseAnonKey
+    ? createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: false,
+        },
+      })
+    : null;
 
 export interface SafeSupabaseResult<T = any> {
   data: T | null;
@@ -19,13 +22,18 @@ export interface SafeSupabaseResult<T = any> {
 /**
  * Safely executes a Supabase query with timeout and network/DNS error resilience.
  * Prevents long multi-line 'TypeError: fetch failed (ENOTFOUND)' stack traces when
- * Supabase free tier is paused or when offline, ensuring email delivery and API endpoints continue gracefully.
+ * Supabase is unconfigured, paused, or offline, ensuring email delivery and API endpoints continue gracefully.
  */
 export async function runSupabaseSafe<T = any>(
-  queryPromise: PromiseLike<{ data: T | null; error: any | null }>,
+  queryPromise: PromiseLike<{ data: T | null; error: any | null }> | null | undefined,
   options: { timeoutMs?: number; context?: string } = {}
 ): Promise<SafeSupabaseResult<T>> {
   const { timeoutMs = 1800, context = "Database" } = options;
+
+  if (!queryPromise) {
+    console.warn(`[${context}] Notice: Supabase environment variables not configured; skipping database persistence.`);
+    return { data: null, error: null, isNetworkError: true };
+  }
 
   try {
     let timer: NodeJS.Timeout;

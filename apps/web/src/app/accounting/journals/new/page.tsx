@@ -1,17 +1,26 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { usePowerSync } from "../../../../components/PowerSyncProvider";
+import Decimal from "decimal.js";
 import { erpApi } from "../../../../lib/api";
-import { ArrowLeft, Plus, Trash2, Save } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Save, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+type AccountOption = Awaited<ReturnType<typeof erpApi.finance.listAccounts>>[number];
+
+interface JournalDraftLine {
+  id: string;
+  accountId: string;
+  description: string;
+  debit: string;
+  credit: string;
+}
+
 export default function NewJournalEntryPage() {
-  const db = usePowerSync();
   const router = useRouter();
 
-  const [accounts, setAccounts] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -21,22 +30,19 @@ export default function NewJournalEntryPage() {
     description: "",
   });
 
-  const [lines, setLines] = useState<any[]>([
+  const [lines, setLines] = useState<JournalDraftLine[]>([
     { id: "line-1", accountId: "", description: "", debit: "0.00", credit: "0.00" },
     { id: "line-2", accountId: "", description: "", debit: "0.00", credit: "0.00" },
   ]);
 
   const fetchAccounts = useCallback(async () => {
-    if (!db) return;
     try {
-      const result = await db.getAll(
-        "SELECT id, code, name, type FROM accounts WHERE is_active = 1 OR is_active = 'true' ORDER BY code ASC"
-      );
-      setAccounts(result);
-    } catch (e) {
-      console.error(e);
+      const result = await erpApi.finance.listAccounts();
+      setAccounts(result.filter((a) => a.isActive));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load GL accounts from API Gateway.");
     }
-  }, [db]);
+  }, []);
 
   useEffect(() => {
     fetchAccounts();
@@ -46,17 +52,22 @@ export default function NewJournalEntryPage() {
     setHeader((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleLineChange = (index: number, field: string, value: any) => {
+  const handleLineChange = (index: number, field: keyof JournalDraftLine, value: string) => {
     setLines((prev) => {
-      const newLines = [...prev];
+      const newLines = prev.map((item) => ({ ...item }));
+      const target = newLines[index];
+      if (!target) return prev;
+
       if (field === "debit") {
-        newLines[index].debit = value;
-        if (Number(value) > 0) newLines[index].credit = "0.00";
+        target.debit = value;
+        const parsed = new Decimal(value || 0);
+        if (parsed.gt(0)) target.credit = "0.00";
       } else if (field === "credit") {
-        newLines[index].credit = value;
-        if (Number(value) > 0) newLines[index].debit = "0.00";
+        target.credit = value;
+        const parsed = new Decimal(value || 0);
+        if (parsed.gt(0)) target.debit = "0.00";
       } else {
-        newLines[index][field] = value;
+        target[field] = value;
       }
       return newLines;
     });
@@ -74,17 +85,18 @@ export default function NewJournalEntryPage() {
     setLines((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const totalDebitCents = lines.reduce(
-    (sum, line) => sum + Math.round((Number(line.debit) || 0) * 100),
-    0
-  );
-  const totalCreditCents = lines.reduce(
-    (sum, line) => sum + Math.round((Number(line.credit) || 0) * 100),
-    0
-  );
-  const totalDebit = totalDebitCents / 100;
-  const totalCredit = totalCreditCents / 100;
-  const isBalanced = totalDebitCents === totalCreditCents && totalDebitCents > 0;
+  const safeDecimal = (val: string) => {
+    try {
+      return val.trim() === "" ? new Decimal(0) : new Decimal(val);
+    } catch {
+      return new Decimal(0);
+    }
+  };
+
+  const totalDebitDec = lines.reduce((sum, line) => sum.plus(safeDecimal(line.debit)), new Decimal(0));
+  const totalCreditDec = lines.reduce((sum, line) => sum.plus(safeDecimal(line.credit)), new Decimal(0));
+  const diffDec = totalDebitDec.minus(totalCreditDec).abs();
+  const isBalanced = totalDebitDec.equals(totalCreditDec) && totalDebitDec.gt(0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,12 +106,15 @@ export default function NewJournalEntryPage() {
     }
 
     for (let i = 0; i < lines.length; i++) {
-      if (!lines[i].accountId) {
+      const line = lines[i];
+      if (!line.accountId) {
         setError(`Please select an account for line ${i + 1}.`);
         return;
       }
-      if (Number(lines[i].debit) === 0 && Number(lines[i].credit) === 0) {
-        setError(`Line ${i + 1} must have a debit or credit amount.`);
+      const d = safeDecimal(line.debit);
+      const c = safeDecimal(line.credit);
+      if (d.lte(0) && c.lte(0)) {
+        setError(`Line ${i + 1} must have a positive debit or credit amount.`);
         return;
       }
     }
@@ -118,31 +133,23 @@ export default function NewJournalEntryPage() {
         narration: header.description.trim() || `Manual Journal ${referenceNumber}`,
         lines: lines.map((line) => {
           const acct = accounts.find((a) => a.id === line.accountId);
+          if (!acct) {
+            throw new Error("Invalid GL account selection.");
+          }
           return {
             accountId: line.accountId,
-            accountCode: acct?.code || "1000",
-            description: line.description || header.description || undefined,
-            debit: (Number(line.debit) || 0).toFixed(2),
-            credit: (Number(line.credit) || 0).toFixed(2),
+            accountCode: acct.code,
+            description: line.description.trim() || header.description.trim() || undefined,
+            debit: safeDecimal(line.debit).toFixed(2),
+            credit: safeDecimal(line.credit).toFixed(2),
           };
         }),
       });
 
       router.push("/accounting/journals");
-    } catch (err: any) {
-      console.warn("API Gateway offline or unreachable, posting journal entry to local PowerSync store:", err);
-      try {
-        const referenceNumber = header.reference.trim() || `JE-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-        if (db && db.execute) {
-          await db.execute(
-            `INSERT INTO journal_entries (id, entry_number, date, description, reference, status, total_amount) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [crypto.randomUUID(), referenceNumber, header.date, header.description, referenceNumber, "posted", totalDebit]
-          );
-        }
-      } catch (localErr) {
-        console.warn("Local storage fallback notice:", localErr);
-      }
-      router.push("/accounting/journals");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to post journal entry via API Gateway.");
+      setIsSubmitting(false);
     }
   };
 
@@ -157,12 +164,13 @@ export default function NewJournalEntryPage() {
 
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         {error && (
-          <div className="m-6 p-4 bg-red-50 text-red-600 text-sm rounded-xl">
-            {error}
+          <div className="m-6 flex items-center gap-2 p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">
+            <AlertCircle size={16} className="shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
-        <div className="p-6 border-b border-slate-100 grid grid-cols-3 gap-6">
+        <div className="p-6 border-b border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-1">
             <label className="text-sm font-medium text-slate-700">Date</label>
             <input
@@ -185,7 +193,7 @@ export default function NewJournalEntryPage() {
               placeholder="e.g. JE-2026-001"
             />
           </div>
-          <div className="space-y-1 col-span-3">
+          <div className="space-y-1 md:col-span-3">
             <label className="text-sm font-medium text-slate-700">Narration / Description</label>
             <textarea
               name="description"
@@ -198,14 +206,14 @@ export default function NewJournalEntryPage() {
           </div>
         </div>
 
-        <div className="p-0">
+        <div className="p-0 overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100 text-xs uppercase tracking-wider text-slate-500">
                 <th className="p-4 font-semibold w-1/3">Account</th>
                 <th className="p-4 font-semibold">Description</th>
-                <th className="p-4 font-semibold w-32 text-right">Debit</th>
-                <th className="p-4 font-semibold w-32 text-right">Credit</th>
+                <th className="p-4 font-semibold w-36 text-right">Debit</th>
+                <th className="p-4 font-semibold w-36 text-right">Credit</th>
                 <th className="p-4 font-semibold w-16 text-center"></th>
               </tr>
             </thead>
@@ -243,7 +251,7 @@ export default function NewJournalEntryPage() {
                       min="0"
                       value={line.debit}
                       onChange={(e) => handleLineChange(index, "debit", e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-right font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="0.00"
                     />
                   </td>
@@ -254,7 +262,7 @@ export default function NewJournalEntryPage() {
                       min="0"
                       value={line.credit}
                       onChange={(e) => handleLineChange(index, "credit", e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-right font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="0.00"
                     />
                   </td>
@@ -283,18 +291,18 @@ export default function NewJournalEntryPage() {
                     <span>Add Line</span>
                   </button>
                 </td>
-                <td className="p-4 text-right font-semibold text-slate-800">
-                  {totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                <td className="p-4 text-right font-mono font-semibold text-slate-800">
+                  {Number(totalDebitDec.toFixed(2)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </td>
-                <td className="p-4 text-right font-semibold text-slate-800">
-                  {totalCredit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                <td className="p-4 text-right font-mono font-semibold text-slate-800">
+                  {Number(totalCreditDec.toFixed(2)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </td>
                 <td></td>
               </tr>
-              {!isBalanced && totalDebit > 0 && totalCredit > 0 && (
+              {!isBalanced && (totalDebitDec.gt(0) || totalCreditDec.gt(0)) && (
                 <tr className="bg-red-50/50">
                   <td colSpan={5} className="p-3 text-center text-sm font-medium text-red-600">
-                    Difference: {Math.abs(totalDebit - totalCredit).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    Out of balance difference: {Number(diffDec.toFixed(2)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </td>
                 </tr>
               )}
@@ -303,7 +311,10 @@ export default function NewJournalEntryPage() {
         </div>
 
         <div className="p-6 border-t border-slate-100 flex justify-end space-x-4 bg-slate-50/50">
-          <Link href="/accounting/journals" className="px-6 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors">
+          <Link
+            href="/accounting/journals"
+            className="px-6 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors"
+          >
             Cancel
           </Link>
           <button

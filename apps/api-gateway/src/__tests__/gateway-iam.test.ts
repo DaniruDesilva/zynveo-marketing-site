@@ -10,10 +10,12 @@ import { ExecutionContext, RpcClientProxy } from '@zynveo/microservice-chassis';
 import {
   AuthenticatedRequest,
   JwtAuthGuard,
+  PermissionsGuard,
   RolesGuard,
+  verifySupabaseJwt,
 } from '../auth/jwt-auth.guard';
 import { ErpGatewayController } from '../controllers/erp-gateway.controller';
-import { startApiGateway } from '../main';
+import { createDefaultGatewayRpcBus, startApiGateway } from '../main';
 
 function signHs256Jwt(payload: Record<string, unknown>, secret: string): string {
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
@@ -229,6 +231,60 @@ describe('API Gateway + IAM Contract Verification', () => {
       else process.env.DEMO_MOCK_MODE = prevDemoMode;
       if (prevRedisUrl === undefined) delete process.env.REDIS_URL;
       else process.env.REDIS_URL = prevRedisUrl;
+    }
+  });
+
+  it('enforces PermissionsGuard and fail-closed JWT secret without elevating demo roles', async () => {
+    const prevSecret = process.env.SUPABASE_JWT_SECRET;
+    const prevDemoMode = process.env.DEMO_MOCK_MODE;
+
+    try {
+      delete process.env.SUPABASE_JWT_SECRET;
+      delete process.env.DEMO_MOCK_MODE;
+      const viewerToken = signHs256Jwt(
+        { sub: '11111111-1111-4111-8111-999999999999', exp: Math.floor(Date.now() / 1000) + 600 },
+        'zynveo-dev-jwt-secret-local-fallback',
+      );
+      assert.throws(() => verifySupabaseJwt(viewerToken), /JWT secret missing/);
+
+      process.env.SUPABASE_JWT_SECRET = JWT_SECRET;
+      const permGuard = new PermissionsGuard();
+      const gateway = new ErpGatewayController(inMemoryRpcBus);
+
+      const adminReq: AuthenticatedRequest = {
+        headers: {},
+        user: {
+          userId: '11111111-1111-4111-8111-888888888888',
+          tenantId: TENANT_ID,
+          roles: ['ADMIN'],
+          permissions: ['bi.dashboard.view', 'sales.invoice.create'],
+        },
+      };
+      const postJournalCtx = makeHttpExecutionContext(adminReq, gateway.postJournalEntry, ErpGatewayController);
+      assert.throws(
+        () => permGuard.canActivate(postJournalCtx),
+        /Requires permission: finance\.journal\.post/,
+      );
+
+      const demoBus = createDefaultGatewayRpcBus();
+      const viewerAccess = await demoBus.iamClient.send(
+        ERP_RPC_PATTERNS.IAM.VALIDATE_TENANT_ACCESS,
+        { userId: '11111111-1111-4111-8111-999999999999', tenantId: TENANT_ID },
+      );
+      assert.equal(viewerAccess.authorized, true);
+      assert.deepEqual(viewerAccess.roles, ['VIEWER']);
+
+      const unknownAccess = await demoBus.iamClient.send(
+        ERP_RPC_PATTERNS.IAM.VALIDATE_TENANT_ACCESS,
+        { userId: '99999999-9999-4999-8999-999999999999', tenantId: TENANT_ID },
+      );
+      assert.equal(unknownAccess.authorized, false);
+      assert.deepEqual(unknownAccess.roles, []);
+    } finally {
+      if (prevSecret === undefined) delete process.env.SUPABASE_JWT_SECRET;
+      else process.env.SUPABASE_JWT_SECRET = prevSecret;
+      if (prevDemoMode === undefined) delete process.env.DEMO_MOCK_MODE;
+      else process.env.DEMO_MOCK_MODE = prevDemoMode;
     }
   });
 });

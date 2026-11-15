@@ -1,5 +1,5 @@
 import Decimal from 'decimal.js';
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import {
   AtomicStockMutationResponse,
   CompleteWorkOrderDto,
@@ -401,6 +401,73 @@ export class ManufacturingController {
         outboxEventId: outboxRow.id,
       };
     });
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.MANUFACTURING.LIST_BOMS)
+  async listBoms(@Payload() rawPayload: { tenantId: string }) {
+    const boms = await this.db
+      .select()
+      .from(mfgSchema.billsOfMaterials)
+      .where(
+        and(
+          eq(mfgSchema.billsOfMaterials.tenantId, rawPayload.tenantId),
+          isNull(mfgSchema.billsOfMaterials.deletedAt),
+        ),
+      )
+      .orderBy(desc(mfgSchema.billsOfMaterials.createdAt));
+
+    const items = await this.db
+      .select()
+      .from(mfgSchema.bomItems)
+      .where(
+        and(
+          eq(mfgSchema.bomItems.tenantId, rawPayload.tenantId),
+          isNull(mfgSchema.bomItems.deletedAt),
+        ),
+      );
+
+    return boms.map((b: any) => ({
+      ...b,
+      components: items.filter((i: any) => i.bomId === b.id),
+    }));
+  }
+
+  @MessagePattern(ERP_RPC_PATTERNS.MANUFACTURING.LIST_WORK_ORDERS)
+  async listWorkOrders(@Payload() rawPayload: { tenantId: string }) {
+    const orders = await this.db
+      .select({
+        id: mfgSchema.workOrders.id,
+        workOrderNumber: mfgSchema.workOrders.workOrderNumber,
+        bomId: mfgSchema.workOrders.bomId,
+        bomCode: mfgSchema.billsOfMaterials.bomCode,
+        finishedProductId: mfgSchema.workOrders.finishedProductId,
+        sourceRawWarehouseId: mfgSchema.workOrders.sourceRawWarehouseId,
+        targetFinishedWarehouseId: mfgSchema.workOrders.targetFinishedWarehouseId,
+        plannedQty: mfgSchema.workOrders.plannedQty,
+        actualProducedQty: mfgSchema.workOrders.actualProducedQty,
+        outputBatchNumber: mfgSchema.workOrders.outputBatchNumber,
+        rawMaterialCostTotal: mfgSchema.workOrders.rawMaterialCostTotal,
+        laborCostTotal: mfgSchema.workOrders.laborCostTotal,
+        overheadCostTotal: mfgSchema.workOrders.overheadCostTotal,
+        totalProductionCost: mfgSchema.workOrders.totalProductionCost,
+        status: mfgSchema.workOrders.status,
+        scheduledStartDate: mfgSchema.workOrders.scheduledStartDate,
+        completedAt: mfgSchema.workOrders.completedAt,
+      })
+      .from(mfgSchema.workOrders)
+      .leftJoin(
+        mfgSchema.billsOfMaterials,
+        eq(mfgSchema.workOrders.bomId, mfgSchema.billsOfMaterials.id),
+      )
+      .where(
+        and(
+          eq(mfgSchema.workOrders.tenantId, rawPayload.tenantId),
+          isNull(mfgSchema.workOrders.deletedAt),
+        ),
+      )
+      .orderBy(desc(mfgSchema.workOrders.createdAt));
+
+    return orders;
   }
 }
 

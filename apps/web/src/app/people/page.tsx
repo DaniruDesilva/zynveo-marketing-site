@@ -1,82 +1,123 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { 
-  Users, 
-  Plus, 
-  Building2, 
-  Phone, 
-  Mail, 
-  CreditCard, 
-  Search,
-  CheckCircle2
-} from "lucide-react";
+import Decimal from "decimal.js";
+import { Users, Plus, Building2, Search, AlertCircle, RefreshCw, X } from "lucide-react";
+import { erpApi } from "../../lib/api";
+
+interface CustomerRow {
+  id: string;
+  name: string;
+  company?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  tier?: string;
+  creditLimit: string;
+  currentBalance?: string;
+  isActive: boolean;
+}
+
+interface SupplierRow {
+  id: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  taxRegistrationNumber?: string | null;
+  isActive: boolean;
+}
 
 export default function PeoplePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<"customers" | "suppliers">("customers");
+  const [customers, setCustomers] = useState<CustomerRow[]>([]);
+  const [suppliers, setSuppliers] = useState<SupplierRow[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [customers] = useState([
-    {
-      id: "cust-001",
-      name: "Acme Holdings Ltd",
-      contactPerson: "Dinesh Wijesinghe",
-      email: "finance@acmeholdings.lk",
-      phone: "+94 11 234 5678",
-      creditLimit: "LKR 500,000.00",
-      openBalance: "LKR 12,105.00",
-      status: "ACTIVE",
-    },
-    {
-      id: "cust-002",
-      name: "Ceylon Global Logistics",
-      contactPerson: "Priyanka Samarasekara",
-      email: "accounts@ceylonglobal.com",
-      phone: "+94 11 765 4321",
-      creditLimit: "LKR 750,000.00",
-      openBalance: "LKR 4,500.00",
-      status: "ACTIVE",
-    },
-    {
-      id: "cust-003",
-      name: "Apex Retail Group",
-      contactPerson: "Mahesh Jayatillake",
-      email: "billing@apexretail.lk",
-      phone: "+94 31 222 3344",
-      creditLimit: "LKR 300,000.00",
-      openBalance: "LKR 1,845.00",
-      status: "ACTIVE",
-    },
-  ]);
+  const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
+  const [supName, setSupName] = useState("");
+  const [supEmail, setSupEmail] = useState("");
+  const [supPhone, setSupPhone] = useState("");
+  const [supAddress, setSupAddress] = useState("");
+  const [supTax, setSupTax] = useState("");
+  const [savingSupplier, setSavingSupplier] = useState(false);
 
-  const [suppliers] = useState([
-    {
-      id: "supp-001",
-      name: "Alpha Component Supplies",
-      contactPerson: "Ravindra Senanayake",
-      email: "orders@alphasupplies.com",
-      phone: "+94 11 987 6543",
-      paymentTerms: "Net 30 Days",
-      category: "Raw Materials & Electronics",
-      status: "ACTIVE",
-    },
-    {
-      id: "supp-002",
-      name: "Global Audio OEM Ltd",
-      contactPerson: "Sunil Kulatunga",
-      email: "sales@globalaudio-oem.com",
-      phone: "+94 11 445 5667",
-      paymentTerms: "Net 15 Days",
-      category: "Peripherals & Audio",
-      status: "ACTIVE",
-    },
-  ]);
+  const loadDirectory = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [custRes, supRes] = await Promise.all([
+        erpApi.sales.listCustomers(),
+        erpApi.procurement.listSuppliers(),
+      ]);
+      setCustomers(custRes);
+      setSuppliers(supRes);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load People directory from API Gateway.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDirectory();
+  }, [loadDirectory]);
+
+  const handleCreateSupplier = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingSupplier(true);
+    setError(null);
+    try {
+      await erpApi.procurement.createSupplier({
+        name: supName.trim(),
+        email: supEmail.trim() || undefined,
+        phone: supPhone.trim() || undefined,
+        address: supAddress.trim() || undefined,
+        taxRegistrationNumber: supTax.trim() || undefined,
+      });
+      setIsSupplierModalOpen(false);
+      setSupName("");
+      setSupEmail("");
+      setSupPhone("");
+      setSupAddress("");
+      setSupTax("");
+      setActiveTab("suppliers");
+      await loadDirectory();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to create supplier.");
+    } finally {
+      setSavingSupplier(false);
+    }
+  };
+
+  const q = searchTerm.toLowerCase();
+  const filteredCustomers = customers.filter(
+    (c) =>
+      c.name.toLowerCase().includes(q) ||
+      (c.company && c.company.toLowerCase().includes(q)) ||
+      (c.email && c.email.toLowerCase().includes(q))
+  );
+  const filteredSuppliers = suppliers.filter(
+    (s) =>
+      s.name.toLowerCase().includes(q) ||
+      (s.email && s.email.toLowerCase().includes(q)) ||
+      (s.taxRegistrationNumber && s.taxRegistrationNumber.toLowerCase().includes(q))
+  );
+
+  const totalCreditDec = customers.reduce((sum, c) => sum.plus(new Decimal(c.creditLimit || 0)), new Decimal(0));
+  const totalArDec = customers.reduce((sum, c) => sum.plus(new Decimal(c.currentBalance || 0)), new Decimal(0));
+
+  const formatMoney = (val: string | Decimal) =>
+    Number(new Decimal(val || 0).toFixed(2)).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto p-4">
-      {/* Header */}
-      <div className="flex justify-between items-start bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+      <div className="flex flex-wrap justify-between items-start gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <div>
           <div className="flex items-center space-x-2 text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1">
             <Users size={16} />
@@ -87,7 +128,23 @@ export default function PeoplePage() {
             Manage customer credit limits, suppliers, and contacts across your supply chain.
           </p>
         </div>
-        <div className="flex space-x-3">
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={loadDirectory}
+            disabled={isLoading}
+            className="flex items-center space-x-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 px-3 py-2 rounded-xl hover:bg-slate-50 transition-colors"
+          >
+            <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsSupplierModalOpen(true)}
+            className="flex items-center space-x-2 text-sm font-semibold text-slate-700 bg-slate-100 px-4 py-2 rounded-xl hover:bg-slate-200 transition-colors"
+          >
+            <Plus size={16} />
+            <span>Add Supplier</span>
+          </button>
           <Link
             href="/people/customers/new"
             className="flex items-center space-x-2 text-sm font-semibold text-white bg-emerald-600 px-4 py-2 rounded-xl hover:bg-emerald-700 transition-colors shadow-sm"
@@ -98,44 +155,49 @@ export default function PeoplePage() {
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-3 gap-4">
+      {error && (
+        <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl text-sm">
+          <AlertCircle size={16} className="shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-b-emerald-500">
           <div className="text-xs font-medium text-slate-400 mb-1">Active Customers</div>
-          <div className="text-2xl font-bold text-slate-800">3 Accounts</div>
-          <div className="text-xs text-emerald-600 font-medium mt-1">LKR 1,550,000 Total Credit Line</div>
+          <div className="text-2xl font-bold text-slate-800">{customers.length} Accounts</div>
+          <div className="text-xs text-emerald-600 font-medium mt-1">
+            LKR {formatMoney(totalCreditDec)} Total Credit Line
+          </div>
         </div>
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-b-blue-500">
-          <div className="text-xs font-medium text-slate-400 mb-1">Total Receivables (AR)</div>
-          <div className="text-2xl font-bold text-slate-800">LKR 18,450.00</div>
+          <div className="text-xs font-medium text-slate-400 mb-1">Customer Receivables (AR)</div>
+          <div className="text-2xl font-bold text-slate-800">LKR {formatMoney(totalArDec)}</div>
           <div className="text-xs text-blue-600 font-medium mt-1">Across all customer accounts</div>
         </div>
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-b-orange-500">
           <div className="text-xs font-medium text-slate-400 mb-1">Supply Chain Vendors</div>
-          <div className="text-2xl font-bold text-slate-800">2 Suppliers</div>
-          <div className="text-xs text-orange-600 font-medium mt-1">Electronics & OEM Components</div>
+          <div className="text-2xl font-bold text-slate-800">{suppliers.length} Suppliers</div>
+          <div className="text-xs text-orange-600 font-medium mt-1">Registered procurement vendors</div>
         </div>
       </div>
 
-      {/* Tabs Toolbar */}
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap items-center justify-between gap-4">
         <div className="flex space-x-4 text-sm font-medium">
           <button
+            type="button"
             onClick={() => setActiveTab("customers")}
             className={`px-3 py-1.5 rounded-lg transition-colors ${
-              activeTab === "customers"
-                ? "bg-emerald-50 text-emerald-700 font-semibold"
-                : "text-slate-600 hover:bg-slate-50"
+              activeTab === "customers" ? "bg-emerald-50 text-emerald-700 font-semibold" : "text-slate-600 hover:bg-slate-50"
             }`}
           >
             Customers ({customers.length})
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab("suppliers")}
             className={`px-3 py-1.5 rounded-lg transition-colors ${
-              activeTab === "suppliers"
-                ? "bg-emerald-50 text-emerald-700 font-semibold"
-                : "text-slate-600 hover:bg-slate-50"
+              activeTab === "suppliers" ? "bg-emerald-50 text-emerald-700 font-semibold" : "text-slate-600 hover:bg-slate-50"
             }`}
           >
             Suppliers ({suppliers.length})
@@ -154,73 +216,177 @@ export default function PeoplePage() {
         </div>
       </div>
 
-      {/* Content */}
       {activeTab === "customers" ? (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-100">
-              <tr>
-                <th className="py-3 px-4">Company Name</th>
-                <th className="py-3 px-4">Primary Contact</th>
-                <th className="py-3 px-4">Email</th>
-                <th className="py-3 px-4">Phone</th>
-                <th className="py-3 px-4 text-right">Credit Limit</th>
-                <th className="py-3 px-4 text-right">Open AR</th>
-                <th className="py-3 px-4 text-center">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {customers.map((c) => (
-                <tr key={c.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="py-3.5 px-4 font-semibold text-slate-800 flex items-center space-x-2">
-                    <Building2 size={16} className="text-emerald-500 shrink-0" />
-                    <span>{c.name}</span>
-                  </td>
-                  <td className="py-3.5 px-4 text-slate-700">{c.contactPerson}</td>
-                  <td className="py-3.5 px-4 text-slate-500 text-xs font-mono">{c.email}</td>
-                  <td className="py-3.5 px-4 text-slate-500 text-xs">{c.phone}</td>
-                  <td className="py-3.5 px-4 text-right font-semibold text-slate-800">{c.creditLimit}</td>
-                  <td className="py-3.5 px-4 text-right font-bold text-blue-600">{c.openBalance}</td>
-                  <td className="py-3.5 px-4 text-center">
-                    <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-semibold">
-                      {c.status}
-                    </span>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-100">
+                <tr>
+                  <th className="py-3 px-4">Customer / Company</th>
+                  <th className="py-3 px-4">Email</th>
+                  <th className="py-3 px-4">Phone</th>
+                  <th className="py-3 px-4">Tier</th>
+                  <th className="py-3 px-4 text-right">Credit Limit</th>
+                  <th className="py-3 px-4 text-right">Open Balance</th>
+                  <th className="py-3 px-4 text-center">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredCustomers.map((c) => (
+                  <tr key={c.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="py-3.5 px-4 font-semibold text-slate-800 flex items-center space-x-2">
+                      <Building2 size={16} className="text-emerald-500 shrink-0" />
+                      <div>
+                        <div>{c.name}</div>
+                        {c.company && <div className="text-xs text-slate-400 font-normal">{c.company}</div>}
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4 text-slate-500 text-xs font-mono">{c.email || "-"}</td>
+                    <td className="py-3.5 px-4 text-slate-500 text-xs">{c.phone || "-"}</td>
+                    <td className="py-3.5 px-4 text-xs text-slate-600">{c.tier || "STANDARD"}</td>
+                    <td className="py-3.5 px-4 text-right font-mono font-semibold text-slate-800">
+                      LKR {formatMoney(c.creditLimit)}
+                    </td>
+                    <td className="py-3.5 px-4 text-right font-mono font-bold text-blue-600">
+                      LKR {formatMoney(c.currentBalance || "0")}
+                    </td>
+                    <td className="py-3.5 px-4 text-center">
+                      <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-semibold">
+                        {c.isActive ? "ACTIVE" : "INACTIVE"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {!isLoading && filteredCustomers.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-slate-500">
+                      No customers found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-100">
-              <tr>
-                <th className="py-3 px-4">Supplier Name</th>
-                <th className="py-3 px-4">Category</th>
-                <th className="py-3 px-4">Contact Person</th>
-                <th className="py-3 px-4">Email</th>
-                <th className="py-3 px-4">Payment Terms</th>
-                <th className="py-3 px-4 text-center">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {suppliers.map((s) => (
-                <tr key={s.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="py-3.5 px-4 font-semibold text-slate-800">{s.name}</td>
-                  <td className="py-3.5 px-4 text-slate-600 text-xs">{s.category}</td>
-                  <td className="py-3.5 px-4 text-slate-700">{s.contactPerson}</td>
-                  <td className="py-3.5 px-4 text-slate-500 text-xs font-mono">{s.email}</td>
-                  <td className="py-3.5 px-4 text-slate-700 font-medium">{s.paymentTerms}</td>
-                  <td className="py-3.5 px-4 text-center">
-                    <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full text-xs font-semibold">
-                      {s.status}
-                    </span>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-100">
+                <tr>
+                  <th className="py-3 px-4">Supplier Name</th>
+                  <th className="py-3 px-4">Email</th>
+                  <th className="py-3 px-4">Phone</th>
+                  <th className="py-3 px-4">Tax / TIN</th>
+                  <th className="py-3 px-4">Address</th>
+                  <th className="py-3 px-4 text-center">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredSuppliers.map((s) => (
+                  <tr key={s.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="py-3.5 px-4 font-semibold text-slate-800">{s.name}</td>
+                    <td className="py-3.5 px-4 text-slate-500 text-xs font-mono">{s.email || "-"}</td>
+                    <td className="py-3.5 px-4 text-slate-500 text-xs">{s.phone || "-"}</td>
+                    <td className="py-3.5 px-4 text-slate-600 font-mono text-xs">{s.taxRegistrationNumber || "-"}</td>
+                    <td className="py-3.5 px-4 text-slate-500 text-xs">{s.address || "-"}</td>
+                    <td className="py-3.5 px-4 text-center">
+                      <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full text-xs font-semibold">
+                        {s.isActive ? "ACTIVE" : "INACTIVE"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {!isLoading && filteredSuppliers.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-slate-500">
+                      No suppliers found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {isSupplierModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="flex justify-between items-center p-6 border-b border-slate-100">
+              <h2 className="text-lg font-semibold text-slate-800">Add New Supplier</h2>
+              <button type="button" onClick={() => setIsSupplierModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleCreateSupplier} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Supplier Name *</label>
+                <input
+                  required
+                  type="text"
+                  value={supName}
+                  onChange={(e) => setSupName(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm"
+                  placeholder="e.g. Alpha Component Supplies"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={supEmail}
+                    onChange={(e) => setSupEmail(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Phone</label>
+                  <input
+                    type="text"
+                    value={supPhone}
+                    onChange={(e) => setSupPhone(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Tax Registration (TIN)</label>
+                <input
+                  type="text"
+                  value={supTax}
+                  onChange={(e) => setSupTax(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Address</label>
+                <input
+                  type="text"
+                  value={supAddress}
+                  onChange={(e) => setSupAddress(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm"
+                />
+              </div>
+              <div className="pt-4 border-t border-slate-100 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setIsSupplierModalOpen(false)}
+                  className="px-4 py-2 text-sm text-slate-600 bg-slate-100 rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingSupplier}
+                  className="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl disabled:opacity-50"
+                >
+                  {savingSupplier ? "Saving..." : "Create Supplier"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

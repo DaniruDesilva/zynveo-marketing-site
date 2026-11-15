@@ -36,7 +36,13 @@ export async function POST(req: NextRequest) {
 
     // ── Insert into Supabase with resilience ────────────────────
     const { error: dbError, isUniqueViolation, isNetworkError } = await runSupabaseSafe(
-      supabase.from("wishlist_signups").insert({ full_name: normalizedName, email: normalizedEmail, phone: normalizedPhone }),
+      supabase
+        ? supabase.from("wishlist_signups").insert({
+            full_name: normalizedName,
+            email: normalizedEmail,
+            phone: normalizedPhone,
+          })
+        : null,
       { timeoutMs: 1800, context: "Wishlist API" }
     );
 

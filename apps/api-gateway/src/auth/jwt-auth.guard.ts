@@ -62,12 +62,12 @@ export function verifySupabaseJwt(
   const [headerB64, payloadB64, signatureB64] = parts;
 
   // Fail-closed security rule: verify signature with secret
+  const allowDevDemoFallback =
+    process.env.NODE_ENV !== 'production' && process.env.DEMO_MOCK_MODE === 'true';
   const effectiveSecret =
     jwtSecret ||
     process.env.SUPABASE_JWT_SECRET ||
-    (process.env.NODE_ENV === 'production'
-      ? undefined
-      : 'zynveo-dev-jwt-secret-local-fallback');
+    (allowDevDemoFallback ? 'zynveo-dev-jwt-secret-local-fallback' : undefined);
 
   if (!effectiveSecret) {
     throw new ErpRpcException(
@@ -255,7 +255,7 @@ export class PermissionsGuard implements CanActivate {
 
     const req = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const userRoles = req.user?.roles || [];
-    if (userRoles.includes('OWNER') || userRoles.includes('ADMIN')) {
+    if (userRoles.includes('OWNER')) {
       return true;
     }
 

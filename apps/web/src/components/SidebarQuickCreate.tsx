@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { 
+import {
   Plus, 
   FileText, 
   ShoppingBag, 
@@ -12,8 +12,11 @@ import {
   Factory,
   ChevronDown 
 } from "lucide-react";
+import { useAuth } from "./AuthProvider";
+import { canAccessRoute } from "../lib/routeAccess";
 
 export function SidebarQuickCreate() {
+  const { user, permissions } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -70,6 +73,14 @@ export function SidebarQuickCreate() {
     },
   ];
 
+  const visibleActions = quickActions.filter((action) =>
+    canAccessRoute(action.href, user?.roles || [], permissions),
+  );
+
+  if (visibleActions.length === 0) {
+    return null;
+  }
+
   return (
     <div className="relative px-3 pb-3" ref={menuRef}>
       <button
@@ -91,7 +102,7 @@ export function SidebarQuickCreate() {
           <div className="px-3 py-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
             Quick Actions
           </div>
-          {quickActions.map((action) => (
+          {visibleActions.map((action) => (
             <Link
               key={action.href}
               href={action.href}

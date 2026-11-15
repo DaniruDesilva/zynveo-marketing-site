@@ -199,3 +199,33 @@ export const InviteUserRequestSchema = z.object({
 
 export type InviteUserRequestInput = z.input<typeof InviteUserRequestSchema>;
 export type InviteUserRequestDto = z.infer<typeof InviteUserRequestSchema>;
+
+export const InviteUserSchema = TenantContextSchema.merge(InviteUserRequestSchema);
+export type InviteUserInput = z.input<typeof InviteUserSchema>;
+export type InviteUserDto = z.infer<typeof InviteUserSchema>;
+
+export const UpdateTenantSettingsRequestSchema = z.object({
+  companyName: z.string().min(2).max(255).optional(),
+  baseCurrency: z.string().length(3).optional(),
+  taxId: z.string().max(80).optional(),
+  address: z.string().max(500).optional(),
+  phone: z.string().max(50).optional(),
+  fiscalYearStartMonth: z.number().int().min(1).max(12).optional(),
+});
+
+export type UpdateTenantSettingsRequestInput = z.input<typeof UpdateTenantSettingsRequestSchema>;
+export type UpdateTenantSettingsRequest = z.infer<typeof UpdateTenantSettingsRequestSchema>;
+
+export const UpdateTenantSettingsSchema = TenantContextSchema.merge(UpdateTenantSettingsRequestSchema);
+export type UpdateTenantSettingsDto = z.infer<typeof UpdateTenantSettingsSchema>;
+
+export const TenantSettingsResponseSchema = z.object({
+  tenantId: z.string().uuid(),
+  name: z.string(),
+  slug: z.string(),
+  baseCurrency: z.string(),
+  isActive: z.boolean(),
+  branchCount: z.number().int().min(0),
+});
+
+export type TenantSettingsResponse = z.infer<typeof TenantSettingsResponseSchema>;

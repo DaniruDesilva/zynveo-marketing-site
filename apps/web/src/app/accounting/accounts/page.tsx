@@ -1,86 +1,82 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { usePowerSync } from "../../../components/PowerSyncProvider";
-import { Plus, Search, Edit2 } from "lucide-react";
+import Decimal from "decimal.js";
+import { Plus, Search, AlertCircle, RefreshCw } from "lucide-react";
+import { erpApi } from "../../../lib/api";
 import AccountModal from "./AccountModal";
 
+interface FormattedAccount {
+  id: string;
+  code: string;
+  name: string;
+  type: "asset" | "liability" | "equity" | "revenue" | "expense";
+  normalBalance: string;
+  description?: string | null;
+  isActive: boolean;
+  balance: Decimal;
+}
+
 export default function ChartOfAccountsPage() {
-  const db = usePowerSync();
-  const [accounts, setAccounts] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<FormattedAccount[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchAccounts = useCallback(async () => {
-    if (!db) return;
+    setIsLoading(true);
+    setError(null);
     try {
-      const result = await db.getAll(`
-        SELECT 
-          a.id, a.code, a.name, a.type, a.normal_balance, a.is_active,
-          SUM(jl.debit) as total_debits,
-          SUM(jl.credit) as total_credits
-        FROM accounts a
-        LEFT JOIN journal_lines jl ON a.id = jl.account_id
-        GROUP BY a.id, a.code, a.name, a.type, a.normal_balance, a.is_active
-        ORDER BY a.code ASC
-      `);
+      const result = await erpApi.finance.listAccounts();
 
-      const formattedAccounts = result.map((row: any) => {
-        const debit = Number(row.total_debits || 0);
-        const credit = Number(row.total_credits || 0);
-        const normalBal = (row.normal_balance || '').toLowerCase();
-        const balance = normalBal === 'debit' ? (debit - credit) : (credit - debit);
-        
+      const formattedAccounts: FormattedAccount[] = result.map((row) => {
+        const debit = new Decimal(row.totalDebits || "0");
+        const credit = new Decimal(row.totalCredits || "0");
+        const normalBal = (row.normalBalance || "DEBIT").toLowerCase();
+        const balance = normalBal === "debit" ? debit.minus(credit) : credit.minus(debit);
+
         return {
-          ...row,
-          type: (row.type || '').toLowerCase(),
-          normal_balance: normalBal,
-          balance
+          id: row.id,
+          code: row.code,
+          name: row.name,
+          type: row.type.toLowerCase() as FormattedAccount["type"],
+          normalBalance: normalBal,
+          description: row.description,
+          isActive: row.isActive,
+          balance,
         };
       });
 
       setAccounts(formattedAccounts);
-    } catch (e) {
-      console.error("Failed to fetch accounts:", e);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load Chart of Accounts.");
+    } finally {
+      setIsLoading(false);
     }
-  }, [db]);
+  }, []);
 
   useEffect(() => {
     fetchAccounts();
-    
-    // Subscribe to changes if possible, or just re-fetch when modal closes
-    if (db) {
-       // In a real scenario we use db.watch
-    }
-  }, [fetchAccounts, db]);
+  }, [fetchAccounts]);
 
-  const filteredAccounts = accounts.filter(acc => 
-    acc.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    acc.code.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredAccounts = accounts.filter(
+    (acc) =>
+      acc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      acc.code.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const groupedAccounts = filteredAccounts.reduce((acc: any, account: any) => {
+  const groupedAccounts = filteredAccounts.reduce<Record<string, FormattedAccount[]>>((acc, account) => {
     if (!acc[account.type]) acc[account.type] = [];
     acc[account.type].push(account);
     return acc;
   }, {});
 
-  const typeOrder = ['asset', 'liability', 'equity', 'revenue', 'expense'];
-
-  const openNewModal = () => {
-    setEditingAccount(null);
-    setIsModalOpen(true);
-  };
-
-  const openEditModal = (account: any) => {
-    setEditingAccount(account);
-    setIsModalOpen(true);
-  };
+  const typeOrder: Array<FormattedAccount["type"]> = ["asset", "liability", "equity", "revenue", "expense"];
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+      <div className="flex flex-wrap justify-between items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <div>
           <h1 className="text-xl font-semibold text-slate-800">Chart of Accounts</h1>
           <p className="text-sm text-slate-500 mt-1">Manage your general ledger accounts</p>
@@ -88,20 +84,37 @@ export default function ChartOfAccountsPage() {
         <div className="flex space-x-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <input 
-              type="text" 
-              placeholder="Search accounts..." 
+            <input
+              type="text"
+              placeholder="Search accounts..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
             />
           </div>
-          <button onClick={openNewModal} className="flex items-center space-x-2 text-sm font-medium text-white bg-blue-600 px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors shadow-sm">
+          <button
+            onClick={fetchAccounts}
+            disabled={isLoading}
+            className="flex items-center space-x-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 px-3 py-2 rounded-xl hover:bg-slate-50 transition-colors"
+          >
+            <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
+          </button>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center space-x-2 text-sm font-medium text-white bg-blue-600 px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
+          >
             <Plus size={16} />
             <span>Add Account</span>
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl text-sm">
+          <AlertCircle size={16} className="shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <div className="overflow-x-auto">
@@ -111,55 +124,56 @@ export default function ChartOfAccountsPage() {
                 <th className="p-4 font-semibold">Code</th>
                 <th className="p-4 font-semibold">Name</th>
                 <th className="p-4 font-semibold">Type</th>
-                <th className="p-4 font-semibold text-right">Balance</th>
+                <th className="p-4 font-semibold">Normal Balance</th>
+                <th className="p-4 font-semibold text-right">Balance (LKR)</th>
                 <th className="p-4 font-semibold text-center">Status</th>
-                <th className="p-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {typeOrder.map(type => {
+              {typeOrder.map((type) => {
                 const typeAccounts = groupedAccounts[type];
                 if (!typeAccounts || typeAccounts.length === 0) return null;
                 return (
                   <React.Fragment key={type}>
-                    {/* Group Header */}
                     <tr className="bg-slate-50/50 border-y border-slate-100">
                       <td colSpan={6} className="p-3 text-sm font-semibold text-slate-700 capitalize pl-4">
-                        {type}s
+                        {type === "liability" ? "Liabilities" : `${type}s`}
                       </td>
                     </tr>
-                    {/* Accounts */}
-                    {typeAccounts.map((account: any) => (
-                      <tr key={account.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors group">
-                        <td className="p-4 text-sm font-medium text-slate-700">{account.code}</td>
-                        <td className="p-4 text-sm text-slate-600">{account.name}</td>
-                        <td className="p-4 text-sm text-slate-500 capitalize">{account.type}</td>
-                        <td className="p-4 text-sm font-medium text-slate-800 text-right">
-                          {account.balance < 0 ? (
-                            <span className="text-rose-500">({Math.abs(account.balance).toLocaleString(undefined, {minimumFractionDigits: 2})})</span>
-                          ) : (
-                            <span>{account.balance.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                          )}
-                        </td>
-                        <td className="p-4 text-center">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${account.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-800'}`}>
-                            {account.is_active ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td className="p-4 text-right">
-                          <button onClick={() => openEditModal(account)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
-                            <Edit2 size={16} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {typeAccounts.map((account) => {
+                      const isNegative = account.balance.isNegative();
+                      const formattedBal = Number(account.balance.abs().toFixed(2)).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      });
+                      return (
+                        <tr key={account.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                          <td className="p-4 text-sm font-mono font-medium text-slate-700">{account.code}</td>
+                          <td className="p-4 text-sm text-slate-700 font-medium">{account.name}</td>
+                          <td className="p-4 text-sm text-slate-500 capitalize">{account.type}</td>
+                          <td className="p-4 text-xs text-slate-500 uppercase">{account.normalBalance}</td>
+                          <td className="p-4 text-sm font-mono font-medium text-slate-800 text-right">
+                            {isNegative ? <span className="text-rose-500">({formattedBal})</span> : <span>{formattedBal}</span>}
+                          </td>
+                          <td className="p-4 text-center">
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                account.isActive ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-800"
+                              }`}
+                            >
+                              {account.isActive ? "Active" : "Inactive"}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </React.Fragment>
                 );
               })}
-              {accounts.length === 0 && (
+              {!isLoading && filteredAccounts.length === 0 && (
                 <tr>
                   <td colSpan={6} className="p-8 text-center text-slate-500">
-                    No accounts found. Create your first account to get started.
+                    No accounts found. Create your first GL account to get started.
                   </td>
                 </tr>
               )}
@@ -169,13 +183,13 @@ export default function ChartOfAccountsPage() {
       </div>
 
       {isModalOpen && (
-        <AccountModal 
-          account={editingAccount} 
-          onClose={() => setIsModalOpen(false)} 
+        <AccountModal
+          existingAccounts={accounts.map((a) => ({ code: a.code, type: a.type.toUpperCase() }))}
+          onClose={() => setIsModalOpen(false)}
           onSaved={() => {
             setIsModalOpen(false);
             fetchAccounts();
-          }} 
+          }}
         />
       )}
     </div>

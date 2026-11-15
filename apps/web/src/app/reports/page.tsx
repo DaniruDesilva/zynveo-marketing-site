@@ -1,51 +1,77 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { 
-  BarChart2, 
-  TrendingUp, 
-  DollarSign, 
-  FileSpreadsheet, 
-  ArrowUpRight, 
-  Calendar,
+import Decimal from "decimal.js";
+import {
+  BarChart2,
+  TrendingUp,
+  FileSpreadsheet,
+  ArrowUpRight,
   Layers,
   Boxes,
-  Users,
-  Building
+  RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 import { erpApi } from "../../lib/api";
 
+function formatMoney(val: string | Decimal): string {
+  const num = new Decimal(val || "0").toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toFixed(2);
+  const [intPart, decPart] = num.split(".");
+  return `${intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${decPart}`;
+}
+
 export default function ReportsPage() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [kpis, setKpis] = useState({
-    totalRevenueMtd: "125,400.00",
-    totalExpensesMtd: "74,200.00",
-    netProfitMtd: "51,200.00",
-    accountsReceivableOpen: "18,450.00",
-    accountsPayableOpen: "9,300.00",
-    inventoryValuationTotal: "64,800.00",
-    headcountActive: 24,
+    todayRevenue: "0.00",
+    totalRevenueMtd: "0.00",
+    totalExpensesMtd: "0.00",
+    netProfitMtd: "0.00",
+    accountsReceivableOpen: "0.00",
+    accountsPayableOpen: "0.00",
+    inventoryValuationTotal: "0.00",
+    lowStockProductsCount: 0,
   });
 
-  useEffect(() => {
-    async function loadKpis() {
-      try {
-        const res = await erpApi.bi.getExecutiveKpis();
-        setKpis({
-          totalRevenueMtd: Number(res.todayRevenue).toLocaleString(undefined, { minimumFractionDigits: 2 }),
-          totalExpensesMtd: "74,200.00",
-          netProfitMtd: "51,200.00",
-          accountsReceivableOpen: Number(res.totalAccountsReceivable).toLocaleString(undefined, { minimumFractionDigits: 2 }),
-          accountsPayableOpen: Number(res.totalAccountsPayable).toLocaleString(undefined, { minimumFractionDigits: 2 }),
-          inventoryValuationTotal: Number(res.totalInventoryValuationWac).toLocaleString(undefined, { minimumFractionDigits: 2 }),
-          headcountActive: 24,
-        });
-      } catch {
-        // Fallback to pre-loaded enterprise data
-      }
+  const loadKpis = useCallback(async () => {
+    setIsLoading(true);
+    setErrorMsg(null);
+    try {
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const monthEnd = now.toISOString();
+
+      const [execRes, pnlRes] = await Promise.all([
+        erpApi.bi.getExecutiveKpis(),
+        erpApi.bi.getProfitAndLoss(monthStart, monthEnd).catch(() => null),
+      ]);
+
+      const totalExpenses = pnlRes
+        ? new Decimal(pnlRes.totalCogs || "0").plus(new Decimal(pnlRes.totalOperatingExpenses || "0"))
+        : new Decimal("0");
+
+      setKpis({
+        todayRevenue: formatMoney(execRes.todayRevenue || "0"),
+        totalRevenueMtd: formatMoney(pnlRes?.totalRevenue || execRes.todayRevenue || "0"),
+        totalExpensesMtd: formatMoney(totalExpenses),
+        netProfitMtd: formatMoney(pnlRes?.netProfit || "0"),
+        accountsReceivableOpen: formatMoney(execRes.totalAccountsReceivable || "0"),
+        accountsPayableOpen: formatMoney(execRes.totalAccountsPayable || "0"),
+        inventoryValuationTotal: formatMoney(execRes.totalInventoryValuationWac || "0"),
+        lowStockProductsCount: execRes.lowStockProductsCount || 0,
+      });
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Failed to load executive reports from API Gateway.");
+    } finally {
+      setIsLoading(false);
     }
-    loadKpis();
   }, []);
+
+  useEffect(() => {
+    loadKpis();
+  }, [loadKpis]);
 
   const statementReports = [
     {
@@ -80,7 +106,6 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto p-4">
-      {/* Header */}
       <div className="flex justify-between items-start bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <div>
           <div className="flex items-center space-x-2 text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">
@@ -92,38 +117,51 @@ export default function ReportsPage() {
             Consolidated executive statements, tax summaries, and general ledger reports.
           </p>
         </div>
+        <button
+          onClick={loadKpis}
+          disabled={isLoading}
+          className="inline-flex items-center space-x-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl transition-colors"
+        >
+          <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
+          <span>Refresh Live KPIs</span>
+        </button>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-4 gap-4">
+      {errorMsg && (
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-center space-x-3 text-rose-700 text-xs font-medium">
+          <AlertCircle size={18} className="shrink-0" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-b-blue-500">
-          <div className="text-xs font-medium text-slate-400 mb-1">Revenue MTD</div>
+          <div className="text-xs font-medium text-slate-400 mb-1">Revenue (MTD / Today: LKR {kpis.todayRevenue})</div>
           <div className="text-2xl font-bold text-slate-800">LKR {kpis.totalRevenueMtd}</div>
           <div className="text-xs text-blue-600 font-medium mt-1">Dispatched customer sales</div>
         </div>
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-b-emerald-500">
           <div className="text-xs font-medium text-slate-400 mb-1">Net Profit MTD</div>
           <div className="text-2xl font-bold text-slate-800">LKR {kpis.netProfitMtd}</div>
-          <div className="text-xs text-emerald-600 font-medium mt-1">Revenue minus COGS & Expenses</div>
+          <div className="text-xs text-emerald-600 font-medium mt-1">Expenses + COGS: LKR {kpis.totalExpensesMtd}</div>
         </div>
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-b-amber-500">
-          <div className="text-xs font-medium text-slate-400 mb-1">Inventory Valuation</div>
+          <div className="text-xs font-medium text-slate-400 mb-1">Inventory Valuation (WAC)</div>
           <div className="text-2xl font-bold text-slate-800">LKR {kpis.inventoryValuationTotal}</div>
-          <div className="text-xs text-slate-500 font-medium mt-1">Weighted Average Cost basis</div>
+          <div className="text-xs text-slate-500 font-medium mt-1">{kpis.lowStockProductsCount} items below reorder point</div>
         </div>
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-b-purple-500">
-          <div className="text-xs font-medium text-slate-400 mb-1">Accounts Receivable (AR)</div>
+          <div className="text-xs font-medium text-slate-400 mb-1">Accounts Receivable / Payable</div>
           <div className="text-2xl font-bold text-slate-800">LKR {kpis.accountsReceivableOpen}</div>
-          <div className="text-xs text-purple-600 font-medium mt-1">Pending customer settlement</div>
+          <div className="text-xs text-purple-600 font-medium mt-1">Open AP: LKR {kpis.accountsPayableOpen}</div>
         </div>
       </div>
 
-      {/* Financial Statements Grid */}
       <div>
         <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">
           Statutory & Operating Reports
         </h2>
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {statementReports.map((report) => (
             <Link
               key={report.href}
@@ -140,9 +178,7 @@ export default function ReportsPage() {
                   </h3>
                   <ArrowUpRight size={18} className="text-slate-400 group-hover:text-blue-600 transition-colors" />
                 </div>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  {report.description}
-                </p>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">{report.description}</p>
               </div>
             </Link>
           ))}

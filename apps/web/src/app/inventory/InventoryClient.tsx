@@ -1,264 +1,224 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Decimal from "decimal.js";
 import {
   Boxes,
   Search,
   Plus,
   Truck,
   Warehouse,
-  ArrowUpDown,
   AlertTriangle,
   CheckCircle2,
   History,
-  PackagePlus,
-  SlidersHorizontal,
-  MapPin,
   Layers,
   X,
+  RefreshCw,
+  AlertCircle,
 } from "lucide-react";
-import { usePowerSync } from "../../components/PowerSyncProvider";
+import { erpApi } from "../../lib/api";
 
 interface InventoryItem {
   id: string;
   sku: string;
   name: string;
   category: string;
-  wac: number;
-  price: number;
-  stock: number;
-  reserved: number;
-  reorderLevel: number;
+  wac: Decimal;
+  price: Decimal;
+  stock: Decimal;
+  reserved: Decimal;
+  reorderLevel: Decimal;
+  warehouseId: string;
   warehouseCode: string;
-  binLocation: string;
   batchNumber: string;
-  uom: string;
   status: "In Stock" | "Low Stock" | "Out of Stock";
 }
 
-interface StockMovementRecord {
+interface StockMovementRow {
   id: string;
-  timestamp: string;
-  movementType: "RECEIPT_GRN" | "DISPATCH_SALE" | "PRODUCTION_YIELD" | "CYCLE_ADJUSTMENT";
-  referenceDoc: string;
-  sku: string;
+  createdAt: string;
+  reason: string;
+  referenceDocumentId: string;
   productName: string;
-  warehouse: string;
-  batchNumber: string;
-  qtyDelta: string;
-  unitCost: string;
+  warehouseCode: string;
+  batchNumber: string | null;
+  quantityDelta: string;
+  unitCostAtMovement: string;
+}
+
+interface WarehouseRow {
+  id: string;
+  code: string;
+  name: string;
+  address?: string | null;
+  isActive: boolean;
 }
 
 export default function InventoryClient() {
-  const db = usePowerSync();
   const [activeTab, setActiveTab] = useState<"catalog" | "movements" | "warehouses">("catalog");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [notification, setNotification] = useState<string | null>(null);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  // New Product Modal State
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [movements, setMovements] = useState<StockMovementRow[]>([]);
+  const [warehouses, setWarehouses] = useState<WarehouseRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [notification, setNotification] = useState<string | null>(null);
+  const [adjustingId, setAdjustingId] = useState<string | null>(null);
+
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newSku, setNewSku] = useState("");
   const [newName, setNewName] = useState("");
-  const [newCategory, setNewCategory] = useState("Electronics");
-  const [newWac, setNewWac] = useState("120.00");
-  const [newPrice, setNewPrice] = useState("199.00");
-  const [newStock, setNewStock] = useState("50");
-  const [newWarehouse, setNewWarehouse] = useState("WH-CMB-01");
-  const [newBin, setNewBin] = useState("Zone-A • Bin A14-02");
+  const [newCategory, setNewCategory] = useState("General");
+  const [newWac, setNewWac] = useState("100.00");
+  const [newPrice, setNewPrice] = useState("150.00");
+  const [newStock, setNewStock] = useState("0");
+  const [newWarehouseId, setNewWarehouseId] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
 
-  const [movements, setMovements] = useState<StockMovementRecord[]>([
-    {
-      id: "MOV-2026-904",
-      timestamp: "2026-11-01 14:22",
-      movementType: "RECEIPT_GRN",
-      referenceDoc: "GRN-2026-0501",
-      sku: "AUD-WH-001",
-      productName: "Premium Wireless Headphones",
-      warehouse: "WH-CMB-01",
-      batchNumber: "LOT-2026-10A",
-      qtyDelta: "+50.0000",
-      unitCost: "LKR 180.00",
-    },
-    {
-      id: "MOV-2026-903",
-      timestamp: "2026-10-31 16:45",
-      movementType: "DISPATCH_SALE",
-      referenceDoc: "INV-2026-2401",
-      sku: "AUD-WH-001",
-      productName: "Premium Wireless Headphones",
-      warehouse: "WH-CMB-01",
-      batchNumber: "LOT-2026-10A",
-      qtyDelta: "-20.0000",
-      unitCost: "LKR 180.00",
-    },
-    {
-      id: "MOV-2026-902",
-      timestamp: "2026-10-30 11:10",
-      movementType: "PRODUCTION_YIELD",
-      referenceDoc: "WO-2026-081",
-      sku: "PER-MK-104",
-      productName: "Mechanical Tactile Keyboard",
-      warehouse: "WH-CMB-01",
-      batchNumber: "LOT-2026-09C",
-      qtyDelta: "+15.0000",
-      unitCost: "LKR 85.00",
-    },
-    {
-      id: "MOV-2026-901",
-      timestamp: "2026-10-29 09:30",
-      movementType: "RECEIPT_GRN",
-      referenceDoc: "GRN-2026-0502",
-      sku: "DIS-4K-27",
-      productName: "UltraSharp 4K IPS Monitor 27\"",
-      warehouse: "WH-CMB-01",
-      batchNumber: "LOT-2026-10E",
-      qtyDelta: "+5.0000",
-      unitCost: "LKR 240.00",
-    },
-  ]);
+  const loadInventoryData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [productsRes, warehousesRes, levelsRes, movementsRes] = await Promise.all([
+        erpApi.inventory.listProducts(),
+        erpApi.inventory.listWarehouses(),
+        erpApi.inventory.listStockLevels(),
+        erpApi.inventory.listStockMovements(),
+      ]);
 
-  useEffect(() => {
-    const fetchInventory = async () => {
-      if (!db) return;
-      const results = await db.getAll(`
-        SELECT p.id, p.name, v.sku, p.category, s.quantity as stock, v.price
-        FROM products p
-        JOIN product_variants v ON p.id = v.product_id
-        JOIN stock_levels s ON v.id = s.variant_id
-      `);
+      setWarehouses(warehousesRes);
+      if (!newWarehouseId && warehousesRes[0]?.id) {
+        setNewWarehouseId(warehousesRes[0].id);
+      }
 
-      const mapped: InventoryItem[] = results.map((item: any, idx: number) => {
-        const stockNum = Number(item.stock ?? 0);
-        const reorder = Number(item.reorder_level ?? 20);
-        const wacNum = Number(item.weighted_avg_cost ?? (Number(item.price || 100) * 0.6));
-        const priceNum = Number(item.selling_price ?? item.price ?? 0);
+      const mapped: InventoryItem[] = productsRes.map((item) => {
+        const stockDec = new Decimal(item.stock || "0");
+        const reservedDec = new Decimal(item.reserved || "0");
+        const reorderDec = new Decimal(item.reorderThreshold || "10");
+        const wacDec = new Decimal(item.wacCost || item.cost || "0");
+        const priceDec = new Decimal(item.price || "0");
 
-        let status: "In Stock" | "Low Stock" | "Out of Stock" = "In Stock";
-        if (stockNum <= 0) status = "Out of Stock";
-        else if (stockNum <= reorder) status = "Low Stock";
+        const level = levelsRes.find((l) => l.productId === item.id || l.sku === item.sku);
+        const status: InventoryItem["status"] = stockDec.lte(0)
+          ? "Out of Stock"
+          : stockDec.lte(reorderDec)
+          ? "Low Stock"
+          : "In Stock";
 
         return {
-          id: item.id || `sku-${idx}`,
-          sku: item.sku || `SKU-00${idx + 1}`,
+          id: item.id,
+          sku: item.sku,
           name: item.name,
           category: item.category || "General",
-          wac: wacNum,
-          price: priceNum,
-          stock: stockNum,
-          reserved: Number(item.reserved ?? Math.min(4, Math.floor(stockNum * 0.1))),
-          reorderLevel: reorder,
-          warehouseCode: item.warehouse_code || "WH-CMB-01",
-          binLocation: item.bin_location || `Zone-A • Bin A0${idx + 1}-04`,
-          batchNumber: item.batch_number || `LOT-2026-10${String.fromCharCode(65 + idx)}`,
-          uom: item.uom || "PCS",
+          wac: wacDec,
+          price: priceDec,
+          stock: stockDec,
+          reserved: reservedDec,
+          reorderLevel: reorderDec,
+          warehouseId: level?.warehouseId || warehousesRes[0]?.id || "",
+          warehouseCode: level?.warehouseCode || warehousesRes[0]?.code || "DEFAULT",
+          batchNumber: level?.batchNumber || "-",
           status,
         };
       });
+
       setInventory(mapped);
-    };
-    fetchInventory();
-  }, [db]);
+      setMovements(movementsRes);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load inventory data from API Gateway.");
+    } finally {
+      setLoading(false);
+    }
+  }, [newWarehouseId]);
 
-  const handleQuickReplenish = (item: InventoryItem) => {
-    const addedQty = 25;
-    setInventory((prev) =>
-      prev.map((row) => {
-        if (row.id !== item.id) return row;
-        const updatedStock = row.stock + addedQty;
-        const updatedStatus =
-          updatedStock <= 0
-            ? "Out of Stock"
-            : updatedStock <= row.reorderLevel
-            ? "Low Stock"
-            : "In Stock";
-        return {
-          ...row,
-          stock: updatedStock,
-          status: updatedStatus,
-        };
-      })
-    );
+  useEffect(() => {
+    loadInventoryData();
+  }, [loadInventoryData]);
 
-    const newMov: StockMovementRecord = {
-      id: `MOV-2026-${Math.floor(905 + Math.random() * 90)}`,
-      timestamp: new Date().toISOString().slice(0, 16).replace("T", " "),
-      movementType: "CYCLE_ADJUSTMENT",
-      referenceDoc: `ADJ-2026-${Math.floor(100 + Math.random() * 899)}`,
-      sku: item.sku,
-      productName: item.name,
-      warehouse: item.warehouseCode,
-      batchNumber: item.batchNumber,
-      qtyDelta: `+${addedQty.toFixed(4)}`,
-      unitCost: `LKR ${item.wac.toFixed(2)}`,
-    };
-    setMovements((prev) => [newMov, ...prev]);
-    setNotification(
-      `Stock replenished: +${addedQty} ${item.uom} added to ${item.name} (${item.sku}) in ${item.warehouseCode}.`
-    );
-    setTimeout(() => setNotification(null), 6000);
+  const handleQuickReplenish = async (item: InventoryItem) => {
+    const targetWarehouseId = item.warehouseId || warehouses[0]?.id;
+    if (!targetWarehouseId) {
+      setError("No warehouse exists for this tenant. Create stock with a valid warehouse first.");
+      return;
+    }
+
+    setAdjustingId(item.id);
+    setError(null);
+    setNotification(null);
+    try {
+      await erpApi.inventory.adjustStock({
+        warehouseId: targetWarehouseId,
+        productId: item.id,
+        quantityDelta: "25.0000",
+        unitCost: item.wac.gt(0) ? item.wac.toFixed(2) : "1.00",
+        notes: `Quick cycle replenishment (+25) for ${item.sku}`,
+      });
+      setNotification(`Stock replenished: +25.0000 added to ${item.name} (${item.sku}).`);
+      await loadInventoryData();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to replenish stock.");
+    } finally {
+      setAdjustingId(null);
+    }
   };
 
-  const handleCreateProduct = (e: React.FormEvent) => {
+  const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSku.trim() || !newName.trim()) return;
 
-    const stockNum = Number(newStock) || 0;
-    const wacNum = Number(newWac) || 0;
-    const priceNum = Number(newPrice) || 0;
-    const reorder = 20;
+    setIsCreating(true);
+    setError(null);
+    setNotification(null);
+    try {
+      const created = await erpApi.inventory.createProduct({
+        sku: newSku.trim().toUpperCase(),
+        name: newName.trim(),
+        category: newCategory.trim() || "General",
+        cost: new Decimal(newWac || 0).toFixed(2),
+        price: new Decimal(newPrice || 0).toFixed(2),
+        initialStock: new Decimal(newStock || 0).toFixed(4),
+        warehouseId: newWarehouseId || undefined,
+      });
 
-    const created: InventoryItem = {
-      id: `prod-${Date.now()}`,
-      sku: newSku.trim().toUpperCase(),
-      name: newName.trim(),
-      category: newCategory,
-      wac: wacNum,
-      price: priceNum,
-      stock: stockNum,
-      reserved: 0,
-      reorderLevel: reorder,
-      warehouseCode: newWarehouse,
-      binLocation: newBin,
-      batchNumber: `LOT-2026-11A`,
-      uom: "PCS",
-      status: stockNum <= 0 ? "Out of Stock" : stockNum <= reorder ? "Low Stock" : "In Stock",
-    };
-
-    setInventory((prev) => [created, ...prev]);
-    setIsAddModalOpen(false);
-    setNewSku("");
-    setNewName("");
-    setNotification(
-      `New Product ${created.name} (${created.sku}) added to ${created.warehouseCode} with unit cost LKR ${created.wac.toFixed(2)}.`
-    );
-    setTimeout(() => setNotification(null), 6000);
+      setIsAddModalOpen(false);
+      setNewSku("");
+      setNewName("");
+      setNotification(`Product ${created.name} (${created.sku}) created in WMS.`);
+      await loadInventoryData();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to create product.");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const categories = ["ALL", ...Array.from(new Set(inventory.map((i) => i.category)))];
 
   const filteredInventory = inventory.filter((item) => {
+    const q = searchTerm.toLowerCase();
     const matchesSearch =
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.batchNumber.toLowerCase().includes(searchTerm.toLowerCase());
+      item.name.toLowerCase().includes(q) ||
+      item.sku.toLowerCase().includes(q) ||
+      item.category.toLowerCase().includes(q) ||
+      item.batchNumber.toLowerCase().includes(q);
     const matchesCategory = selectedCategory === "ALL" || item.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  // KPIs
-  const totalAssetValue = inventory.reduce((sum, item) => sum + item.stock * item.wac, 0);
-  const totalRetailValue = inventory.reduce((sum, item) => sum + item.stock * item.price, 0);
-  const totalUnitsOnHand = inventory.reduce((sum, item) => sum + item.stock, 0);
-  const totalReservedUnits = inventory.reduce((sum, item) => sum + item.reserved, 0);
+  const totalAssetValueDec = inventory.reduce((sum, item) => sum.plus(item.stock.mul(item.wac)), new Decimal(0));
+  const totalRetailValueDec = inventory.reduce((sum, item) => sum.plus(item.stock.mul(item.price)), new Decimal(0));
+  const totalUnitsOnHandDec = inventory.reduce((sum, item) => sum.plus(item.stock), new Decimal(0));
+  const totalReservedUnitsDec = inventory.reduce((sum, item) => sum.plus(item.reserved), new Decimal(0));
   const lowStockCount = inventory.filter((item) => item.status !== "In Stock").length;
+
+  const formatMoney = (dec: Decimal) =>
+    Number(dec.toFixed(2)).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto p-4">
-      {/* Header Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <div>
           <div className="flex items-center space-x-2 text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">
@@ -267,11 +227,19 @@ export default function InventoryClient() {
           </div>
           <h1 className="text-2xl font-bold text-slate-800">Inventory & Stock Control</h1>
           <p className="text-sm text-slate-400 mt-1">
-            Manage product stock levels, warehouse bin locations, and inventory receipts across all locations.
+            Live WMS stock levels, Weighted Average Cost (WAC) valuation, and immutable ledger movements.
           </p>
         </div>
 
         <div className="flex items-center space-x-3">
+          <button
+            type="button"
+            onClick={loadInventoryData}
+            disabled={loading}
+            className="flex items-center space-x-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors"
+          >
+            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+          </button>
           <Link
             href="/purchases/grn/new"
             className="flex items-center space-x-2 text-sm font-semibold text-slate-700 bg-slate-100 px-4 py-2.5 rounded-xl hover:bg-slate-200 transition-colors"
@@ -280,6 +248,7 @@ export default function InventoryClient() {
             <span>Receive Goods (GRN)</span>
           </Link>
           <button
+            type="button"
             onClick={() => setIsAddModalOpen(true)}
             className="flex items-center space-x-2 text-sm font-semibold text-white bg-indigo-600 px-4 py-2.5 rounded-xl hover:bg-indigo-700 transition-colors shadow-sm"
           >
@@ -289,7 +258,13 @@ export default function InventoryClient() {
         </div>
       </div>
 
-      {/* Live Action Notification */}
+      {error && (
+        <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl text-sm">
+          <AlertCircle size={16} className="shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
       {notification && (
         <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-sm flex items-center justify-between shadow-xs">
           <div className="flex items-center space-x-2 font-semibold">
@@ -297,30 +272,27 @@ export default function InventoryClient() {
             <span>{notification}</span>
           </div>
           <span className="text-xs font-medium bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-md shrink-0">
-            Saved Successfully
+            Persisted to WMS
           </span>
         </div>
       )}
 
-      {/* 4 Enterprise KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-b-indigo-500">
-          <div className="text-xs font-medium text-slate-400 mb-1">Total Stock Value (At Cost)</div>
-          <div className="text-2xl font-bold text-slate-800">
-            LKR {totalAssetValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
+          <div className="text-xs font-medium text-slate-400 mb-1">Total Stock Value (WAC)</div>
+          <div className="text-2xl font-bold text-slate-800">LKR {formatMoney(totalAssetValueDec)}</div>
           <div className="text-xs text-indigo-600 font-medium mt-1">
-            Retail Value: LKR {totalRetailValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            Retail Value: LKR {formatMoney(totalRetailValueDec)}
           </div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-b-emerald-500">
           <div className="text-xs font-medium text-slate-400 mb-1">Total Units On-Hand</div>
           <div className="text-2xl font-bold text-slate-800">
-            {totalUnitsOnHand.toLocaleString()} <span className="text-sm font-normal text-slate-400">Units</span>
+            {Number(totalUnitsOnHandDec.toFixed(2)).toLocaleString()} <span className="text-sm font-normal text-slate-400">Units</span>
           </div>
           <div className="text-xs text-emerald-600 font-medium mt-1">
-            {inventory.length} Products • {totalReservedUnits} Reserved for Orders
+            {inventory.length} Products • {totalReservedUnitsDec.toFixed(2)} Reserved
           </div>
         </div>
 
@@ -329,29 +301,25 @@ export default function InventoryClient() {
           <div className="text-2xl font-bold text-slate-800">
             {lowStockCount} {lowStockCount === 1 ? "Item" : "Items"}
           </div>
-          <div className="text-xs text-amber-600 font-medium mt-1">
-            Below minimum safety stock level
-          </div>
+          <div className="text-xs text-amber-600 font-medium mt-1">Below minimum safety stock level</div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-b-blue-500">
           <div className="text-xs font-medium text-slate-400 mb-1">Active Warehouse Locations</div>
-          <div className="text-2xl font-bold text-slate-800">2 Facilities</div>
-          <div className="text-xs text-blue-600 font-medium mt-1">
-            Colombo Central & Kandy Regional
+          <div className="text-2xl font-bold text-slate-800">{warehouses.length} Facilities</div>
+          <div className="text-xs text-blue-600 font-medium mt-1 truncate">
+            {warehouses.map((w) => w.code).join(", ") || "No warehouses configured"}
           </div>
         </div>
       </div>
 
-      {/* Sub-Navigation & Search Bar */}
       <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center space-x-2 w-full md:w-auto overflow-x-auto">
           <button
+            type="button"
             onClick={() => setActiveTab("catalog")}
             className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-colors ${
-              activeTab === "catalog"
-                ? "bg-indigo-50 text-indigo-700 font-semibold"
-                : "text-slate-600 hover:bg-slate-50"
+              activeTab === "catalog" ? "bg-indigo-50 text-indigo-700 font-semibold" : "text-slate-600 hover:bg-slate-50"
             }`}
           >
             <Layers size={15} />
@@ -359,11 +327,10 @@ export default function InventoryClient() {
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab("movements")}
             className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-colors ${
-              activeTab === "movements"
-                ? "bg-indigo-50 text-indigo-700 font-semibold"
-                : "text-slate-600 hover:bg-slate-50"
+              activeTab === "movements" ? "bg-indigo-50 text-indigo-700 font-semibold" : "text-slate-600 hover:bg-slate-50"
             }`}
           >
             <History size={15} />
@@ -371,29 +338,27 @@ export default function InventoryClient() {
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab("warehouses")}
             className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-colors ${
-              activeTab === "warehouses"
-                ? "bg-indigo-50 text-indigo-700 font-semibold"
-                : "text-slate-600 hover:bg-slate-50"
+              activeTab === "warehouses" ? "bg-indigo-50 text-indigo-700 font-semibold" : "text-slate-600 hover:bg-slate-50"
             }`}
           >
             <Warehouse size={15} />
-            <span>Warehouse Locations (2)</span>
+            <span>Warehouse Locations ({warehouses.length})</span>
           </button>
         </div>
 
         {activeTab === "catalog" && (
           <div className="flex items-center space-x-3 w-full md:w-auto">
-            <div className="flex items-center bg-slate-50 p-1 rounded-xl border border-slate-200">
+            <div className="flex items-center bg-slate-50 p-1 rounded-xl border border-slate-200 overflow-x-auto">
               {categories.map((cat) => (
                 <button
                   key={cat}
+                  type="button"
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                    selectedCategory === cat
-                      ? "bg-white text-slate-800 shadow-xs font-semibold"
-                      : "text-slate-500 hover:text-slate-700"
+                    selectedCategory === cat ? "bg-white text-slate-800 shadow-xs font-semibold" : "text-slate-500 hover:text-slate-700"
                   }`}
                 >
                   {cat}
@@ -415,286 +380,188 @@ export default function InventoryClient() {
         )}
       </div>
 
-      {/* TAB 1: STOCK CATALOG */}
       {activeTab === "catalog" && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-100">
                 <tr>
-                  <th className="py-3.5 px-4">Product & Warehouse Location</th>
-                  <th className="py-3.5 px-4">SKU / Batch Lot</th>
+                  <th className="py-3.5 px-4">Product & Warehouse</th>
+                  <th className="py-3.5 px-4">SKU / Batch</th>
                   <th className="py-3.5 px-4">Category</th>
-                  <th className="py-3.5 px-4 text-right">Avg. Unit Cost</th>
+                  <th className="py-3.5 px-4 text-right">WAC (LKR)</th>
                   <th className="py-3.5 px-4 text-right">Selling Price</th>
                   <th className="py-3.5 px-4 text-right">On-Hand Qty</th>
-                  <th className="py-3.5 px-4 text-right">Total Stock Value</th>
-                  <th className="py-3.5 px-4 text-center">Stock Status</th>
-                  <th className="py-3.5 px-4 text-right">Quick Action</th>
+                  <th className="py-3.5 px-4 text-right">Stock Value</th>
+                  <th className="py-3.5 px-4 text-center">Status</th>
+                  <th className="py-3.5 px-4 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredInventory.map((product) => {
-                  const availableQty = Math.max(0, product.stock - product.reserved);
-                  const totalValue = product.stock * product.wac;
+                  const totalValue = product.stock.mul(product.wac);
                   return (
                     <tr key={product.id} className="hover:bg-slate-50/70 transition-colors">
                       <td className="py-3.5 px-4">
                         <div className="font-semibold text-slate-800">{product.name}</div>
-                        <div className="flex items-center space-x-2 text-xs text-slate-400 mt-0.5">
-                          <span className="inline-flex items-center text-indigo-600 font-medium">
-                            <MapPin size={11} className="mr-1" />
-                            {product.warehouseCode}
-                          </span>
-                          <span>•</span>
-                          <span>{product.binLocation}</span>
-                        </div>
+                        <div className="text-xs text-indigo-600 font-medium mt-0.5">{product.warehouseCode}</div>
                       </td>
-
                       <td className="py-3.5 px-4">
-                        <span className="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
-                          {product.sku}
-                        </span>
-                        <div className="text-[11px] font-mono text-slate-400 mt-1">
-                          Batch: {product.batchNumber}
-                        </div>
+                        <span className="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-700">{product.sku}</span>
+                        <div className="text-[11px] font-mono text-slate-400 mt-1">{product.batchNumber}</div>
                       </td>
-
-                      <td className="py-3.5 px-4">
-                        <span className="text-xs font-medium text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
-                          {product.category}
-                        </span>
+                      <td className="py-3.5 px-4 text-slate-600">{product.category}</td>
+                      <td className="py-3.5 px-4 text-right font-mono text-slate-700">{formatMoney(product.wac)}</td>
+                      <td className="py-3.5 px-4 text-right font-mono text-slate-700">{formatMoney(product.price)}</td>
+                      <td className="py-3.5 px-4 text-right font-mono font-semibold text-slate-800">
+                        {product.stock.toFixed(2)}
+                        {product.reserved.gt(0) && (
+                          <div className="text-[11px] text-amber-600">{product.reserved.toFixed(2)} reserved</div>
+                        )}
                       </td>
-
-                      <td className="py-3.5 px-4 text-right font-mono text-xs font-semibold text-slate-600">
-                        LKR {product.wac.toFixed(2)}
-                      </td>
-
-                      <td className="py-3.5 px-4 text-right font-mono text-sm font-bold text-slate-800">
-                        LKR {product.price.toFixed(2)}
-                      </td>
-
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="font-bold text-slate-800">
-                          {product.stock.toLocaleString()}{" "}
-                          <span className="text-[11px] font-normal text-slate-400">{product.uom}</span>
-                        </div>
-                        <div className="text-[11px] text-slate-400">
-                          {availableQty} avail • {product.reserved} rsv
-                        </div>
-                      </td>
-
-                      <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900">
-                        LKR {totalValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </td>
-
+                      <td className="py-3.5 px-4 text-right font-mono font-semibold text-slate-800">{formatMoney(totalValue)}</td>
                       <td className="py-3.5 px-4 text-center">
                         <StatusBadge status={product.status} />
                       </td>
-
                       <td className="py-3.5 px-4 text-right">
                         <button
+                          type="button"
                           onClick={() => handleQuickReplenish(product)}
-                          className="inline-flex items-center space-x-1 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg transition-colors"
-                          title="Add 25 units to stock"
+                          disabled={adjustingId === product.id}
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 transition-colors"
                         >
-                          <PackagePlus size={13} />
-                          <span>+25 Stock</span>
+                          {adjustingId === product.id ? "Posting..." : "+25 Adjust"}
                         </button>
                       </td>
                     </tr>
                   );
                 })}
+                {!loading && filteredInventory.length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="p-8 text-center text-slate-500">
+                      No matching inventory items found.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
-          </div>
-
-          <div className="px-6 py-3.5 border-t border-slate-100 bg-slate-50/60 flex items-center justify-between text-xs text-slate-500">
-            <span>
-              Showing <strong>{filteredInventory.length}</strong> of <strong>{inventory.length}</strong> active products
-            </span>
-            <span className="text-slate-600">
-              Costing Method: <strong>Weighted Average Cost</strong>
-            </span>
           </div>
         </div>
       )}
 
-      {/* TAB 2: STOCK MOVEMENTS HISTORY */}
       {activeTab === "movements" && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
           <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-bold text-slate-800">Stock Movement History</h3>
-              <p className="text-xs text-slate-400">
-                Chronological audit log of all warehouse goods receipts, sales shipments, and stock adjustments.
-              </p>
+              <h3 className="text-sm font-bold text-slate-800">Immutable Stock Ledger Movements</h3>
+              <p className="text-xs text-slate-400">Chronological audit trail from inventory.stock_movements</p>
             </div>
-            <span className="text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-1 rounded-lg font-semibold">
-              Verified Audit Trail
-            </span>
           </div>
 
-          <table className="w-full text-sm text-left">
-            <thead className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-100">
-              <tr>
-                <th className="py-3 px-4">Reference ID</th>
-                <th className="py-3 px-4">Date & Time</th>
-                <th className="py-3 px-4">Transaction Type</th>
-                <th className="py-3 px-4">Source Document</th>
-                <th className="py-3 px-4">SKU & Product</th>
-                <th className="py-3 px-4">Warehouse / Batch</th>
-                <th className="py-3 px-4 text-right">Quantity Change</th>
-                <th className="py-3 px-4 text-right">Unit Cost</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {movements.map((m) => {
-                const isPositive = m.qtyDelta.startsWith("+");
-                return (
-                  <tr key={m.id} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="py-3.5 px-4 font-mono text-xs font-bold text-slate-700">{m.id}</td>
-                    <td className="py-3.5 px-4 text-xs text-slate-500 font-mono">{m.timestamp}</td>
-                    <td className="py-3.5 px-4">
-                      <span
-                        className={`inline-flex px-2 py-0.5 rounded-md text-[11px] font-bold ${
-                          isPositive
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                            : "bg-amber-50 text-amber-700 border border-amber-200"
-                        }`}
-                      >
-                        {m.movementType}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 font-mono text-xs font-semibold text-blue-600">
-                      {m.referenceDoc}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div className="font-semibold text-slate-800 text-xs">{m.productName}</div>
-                      <div className="font-mono text-[11px] text-slate-400">{m.sku}</div>
-                    </td>
-                    <td className="py-3.5 px-4 text-xs text-slate-600">
-                      <span className="font-semibold">{m.warehouse}</span> •{" "}
-                      <span className="font-mono text-slate-400">{m.batchNumber}</span>
-                    </td>
-                    <td
-                      className={`py-3.5 px-4 text-right font-mono font-bold ${
-                        isPositive ? "text-emerald-600" : "text-rose-600"
-                      }`}
-                    >
-                      {m.qtyDelta}
-                    </td>
-                    <td className="py-3.5 px-4 text-right font-mono text-xs text-slate-600">
-                      {m.unitCost}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-100">
+                <tr>
+                  <th className="py-3 px-4">Date & Time</th>
+                  <th className="py-3 px-4">Reason</th>
+                  <th className="py-3 px-4">Reference Doc</th>
+                  <th className="py-3 px-4">Product</th>
+                  <th className="py-3 px-4">Warehouse / Batch</th>
+                  <th className="py-3 px-4 text-right">Qty Delta</th>
+                  <th className="py-3 px-4 text-right">Unit Cost</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {movements.map((m) => {
+                  const deltaDec = new Decimal(m.quantityDelta || 0);
+                  const isPositive = deltaDec.gte(0);
+                  return (
+                    <tr key={m.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="py-3.5 px-4 text-xs text-slate-500 font-mono">
+                        {new Date(m.createdAt).toLocaleString()}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span
+                          className={`inline-flex px-2 py-0.5 rounded-md text-[11px] font-bold ${
+                            isPositive
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : "bg-amber-50 text-amber-700 border border-amber-200"
+                          }`}
+                        >
+                          {m.reason}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 font-mono text-xs font-semibold text-blue-600">
+                        {m.referenceDocumentId.slice(0, 12)}
+                      </td>
+                      <td className="py-3.5 px-4 font-semibold text-slate-800 text-xs">{m.productName}</td>
+                      <td className="py-3.5 px-4 text-xs text-slate-600">
+                        <span className="font-semibold">{m.warehouseCode || "DEFAULT"}</span>
+                        {m.batchNumber ? ` • ${m.batchNumber}` : ""}
+                      </td>
+                      <td className={`py-3.5 px-4 text-right font-mono font-bold ${isPositive ? "text-emerald-600" : "text-rose-600"}`}>
+                        {isPositive ? `+${deltaDec.toFixed(4)}` : deltaDec.toFixed(4)}
+                      </td>
+                      <td className="py-3.5 px-4 text-right font-mono text-xs text-slate-600">
+                        LKR {formatMoney(new Decimal(m.unitCostAtMovement || 0))}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {!loading && movements.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-slate-500">
+                      No stock movements recorded yet.
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
-      {/* TAB 3: WAREHOUSES & BIN ZONES */}
       {activeTab === "warehouses" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md">
-                  WH-CMB-01 • PRIMARY DISTRIBUTION HUB
+          {warehouses.map((wh) => (
+            <div key={wh.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md">
+                    {wh.code}
+                  </span>
+                  <h3 className="text-lg font-bold text-slate-800 mt-2">{wh.name}</h3>
+                  <p className="text-xs text-slate-400">{wh.address || "Registered tenant warehouse"}</p>
+                </div>
+                <span
+                  className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                    wh.isActive
+                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                      : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {wh.isActive ? "Operational" : "Inactive"}
                 </span>
-                <h3 className="text-lg font-bold text-slate-800 mt-2">Colombo Central Warehouse</h3>
-                <p className="text-xs text-slate-400">Peliyagoda Logistics Complex, Colombo 01100</p>
-              </div>
-              <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold px-2.5 py-1 rounded-full">
-                Operational
-              </span>
-            </div>
-
-            <div className="space-y-2 pt-2">
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-500 font-medium">Bin Capacity Utilization</span>
-                <span className="font-bold text-slate-700">74% (370 / 500 Pallets)</span>
-              </div>
-              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full bg-indigo-600 rounded-full" style={{ width: "74%" }} />
               </div>
             </div>
-
-            <div className="grid grid-cols-3 gap-3 pt-2 text-center">
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                <div className="text-xs text-slate-400">Active Zones</div>
-                <div className="text-sm font-bold text-slate-800 mt-0.5">Zone A, B, High-Bay</div>
-              </div>
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                <div className="text-xs text-slate-400">Picking Policy</div>
-                <div className="text-sm font-bold text-slate-800 mt-0.5">FEFO / FIFO</div>
-              </div>
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                <div className="text-xs text-slate-400">SKUs Stored</div>
-                <div className="text-sm font-bold text-slate-800 mt-0.5">4 SKUs (639 PCS)</div>
-              </div>
+          ))}
+          {!loading && warehouses.length === 0 && (
+            <div className="col-span-2 bg-white p-8 rounded-2xl border border-slate-100 text-center text-slate-500">
+              No warehouses configured yet. Creating a product with opening stock auto-initializes a default warehouse.
             </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-xs font-mono font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md">
-                  WH-KDY-02 • REGIONAL FULFILLMENT
-                </span>
-                <h3 className="text-lg font-bold text-slate-800 mt-2">Kandy Regional Hub</h3>
-                <p className="text-xs text-slate-400">Kundasale Industrial Park, Kandy 20168</p>
-              </div>
-              <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold px-2.5 py-1 rounded-full">
-                Operational
-              </span>
-            </div>
-
-            <div className="space-y-2 pt-2">
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-500 font-medium">Bin Capacity Utilization</span>
-                <span className="font-bold text-slate-700">42% (84 / 200 Pallets)</span>
-              </div>
-              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-600 rounded-full" style={{ width: "42%" }} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3 pt-2 text-center">
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                <div className="text-xs text-slate-400">Active Zones</div>
-                <div className="text-sm font-bold text-slate-800 mt-0.5">Zone C • Bulk Rack</div>
-              </div>
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                <div className="text-xs text-slate-400">Picking Policy</div>
-                <div className="text-sm font-bold text-slate-800 mt-0.5">FEFO / FIFO</div>
-              </div>
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                <div className="text-xs text-slate-400">SKUs Stored</div>
-                <div className="text-sm font-bold text-slate-800 mt-0.5">1 SKU (18 UNITS)</div>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       )}
 
-      {/* ADD PRODUCT MODAL */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-lg w-full overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-bold text-slate-800">Register New Product SKU</h3>
-                <p className="text-xs text-slate-400">
-                  Add item to master catalog and initialize warehouse stock ledger.
-                </p>
+                <p className="text-xs text-slate-400">Creates product, variant, and optional opening stock ledger entry.</p>
               </div>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
-              >
+              <button type="button" onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
                 <X size={18} />
               </button>
             </div>
@@ -714,16 +581,12 @@ export default function InventoryClient() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">Category</label>
-                  <select
+                  <input
+                    type="text"
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="Electronics">Electronics</option>
-                    <option value="Furniture">Furniture</option>
-                    <option value="Accessories">Accessories</option>
-                    <option value="Networking">Networking</option>
-                  </select>
+                  />
                 </div>
               </div>
 
@@ -732,22 +595,23 @@ export default function InventoryClient() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Enterprise Wi-Fi 6E Access Point"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
+                  placeholder="e.g. Enterprise Firewall Appliance"
                   className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Unit WAC (LKR)</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Unit Cost (LKR)</label>
                   <input
                     type="number"
                     step="0.01"
+                    min="0"
                     value={newWac}
                     onChange={(e) => setNewWac(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
                 <div>
@@ -755,44 +619,41 @@ export default function InventoryClient() {
                   <input
                     type="number"
                     step="0.01"
+                    min="0"
                     value={newPrice}
                     onChange={(e) => setNewPrice(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">Opening Stock</label>
                   <input
                     type="number"
+                    step="0.0001"
+                    min="0"
                     value={newStock}
                     onChange={(e) => setNewStock(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              {warehouses.length > 0 && (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Primary Warehouse</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Target Warehouse</label>
                   <select
-                    value={newWarehouse}
-                    onChange={(e) => setNewWarehouse(e.target.value)}
+                    value={newWarehouseId}
+                    onChange={(e) => setNewWarehouseId(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
-                    <option value="WH-CMB-01">WH-CMB-01 (Colombo Central)</option>
-                    <option value="WH-KDY-02">WH-KDY-02 (Kandy Regional)</option>
+                    {warehouses.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.code} - {w.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Bin Allocation</label>
-                  <input
-                    type="text"
-                    value={newBin}
-                    onChange={(e) => setNewBin(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-              </div>
+              )}
 
               <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
                 <button
@@ -804,9 +665,10 @@ export default function InventoryClient() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors shadow-sm"
+                  disabled={isCreating}
+                  className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors shadow-sm disabled:opacity-50"
                 >
-                  Create SKU & Post Stock
+                  {isCreating ? "Creating..." : "Create SKU"}
                 </button>
               </div>
             </form>

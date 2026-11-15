@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../components/AuthProvider';
 import { DEMO_PERSONAS, DEMO_TENANT } from '../../lib/authTypes';
+import { isDemoModeEnabled } from '../../lib/authStore';
 import { UserRole } from '@zynveo/contracts';
 
 const QUICK_ROLES: {
@@ -37,13 +38,15 @@ const QUICK_ROLES: {
 export default function LoginPage() {
   const router = useRouter();
   const { signInWithDemo, signIn, isLoading } = useAuth();
+  const demoEnabled = isDemoModeEnabled();
 
-  const [email, setEmail] = useState('owner@zynveo.com');
-  const [password, setPassword] = useState('••••••••••••');
+  const [email, setEmail] = useState(demoEnabled ? 'owner@zynveo.com' : '');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [infoMsg, setInfoMsg] = useState<string | null>(null);
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,6 +125,12 @@ export default function LoginPage() {
             </div>
           )}
 
+          {infoMsg && (
+            <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium">
+              {infoMsg}
+            </div>
+          )}
+
           {/* Standard Form */}
           <form onSubmit={handleFormSubmit} className="space-y-3.5">
             <div>
@@ -148,7 +157,7 @@ export default function LoginPage() {
                 </label>
                 <button
                   type="button"
-                  onClick={() => alert("Password reset instructions sent to registered corporate email.")}
+                  onClick={() => setInfoMsg("Contact your tenant Systems Administrator or use your SSO recovery link to reset your corporate password.")}
                   className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
                 >
                   Forgot password?
@@ -197,44 +206,46 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Quick Demo Roles Section (Compact, 1-Click for Evaluators) */}
-          <div className="pt-2 border-t border-slate-100">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-700">
-                <Sparkles size={13} className="text-blue-600" />
-                <span>Quick Role Demo (1-Click Switch)</span>
+          {/* Quick Demo Roles Section (Strictly gated behind NEXT_PUBLIC_DEMO_MODE=true) */}
+          {demoEnabled && (
+            <div className="pt-2 border-t border-slate-100">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-700">
+                  <Sparkles size={13} className="text-blue-600" />
+                  <span>Quick Role Demo (1-Click Switch)</span>
+                </div>
+                <span className="text-[10px] text-slate-400 font-medium">Demo Mode Active</span>
               </div>
-              <span className="text-[10px] text-slate-400 font-medium">Interview Mode</span>
-            </div>
 
-            <p className="text-[11px] text-slate-500 mb-2.5">
-              Click any verified persona to instantly sign in and test RBAC permissions:
-            </p>
+              <p className="text-[11px] text-slate-500 mb-2.5">
+                Click any verified persona to test RBAC permissions:
+              </p>
 
-            <div className="grid grid-cols-2 gap-1.5">
-              {QUICK_ROLES.map((item) => (
-                <button
-                  key={item.role}
-                  type="button"
-                  disabled={submitting || isLoading}
-                  onClick={() => handleDemoSignIn(item.role)}
-                  className={`flex items-center space-x-2 px-2.5 py-1.5 rounded-lg border text-left transition-all cursor-pointer bg-slate-50/70 ${item.color}`}
-                >
-                  <div className={`w-6 h-6 rounded-md ${item.avatarColor} text-white text-[10px] font-bold flex items-center justify-center shrink-0 shadow-xs`}>
-                    {item.name[0]}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold text-slate-800 truncate leading-tight">
-                      {item.label}
-                    </p>
-                    <p className="text-[10px] text-slate-400 truncate">
-                      {item.name}
-                    </p>
-                  </div>
-                </button>
-              ))}
+              <div className="grid grid-cols-2 gap-1.5">
+                {QUICK_ROLES.map((item) => (
+                  <button
+                    key={item.role}
+                    type="button"
+                    disabled={submitting || isLoading}
+                    onClick={() => handleDemoSignIn(item.role)}
+                    className={`flex items-center space-x-2 px-2.5 py-1.5 rounded-lg border text-left transition-all cursor-pointer bg-slate-50/70 ${item.color}`}
+                  >
+                    <div className={`w-6 h-6 rounded-md ${item.avatarColor} text-white text-[10px] font-bold flex items-center justify-center shrink-0 shadow-xs`}>
+                      {item.name[0]}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-slate-800 truncate leading-tight">
+                        {item.label}
+                      </p>
+                      <p className="text-[10px] text-slate-400 truncate">
+                        {item.name}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Card Security Trust Note */}
           <div className="pt-1 flex items-center justify-center space-x-1.5 text-[11px] text-slate-400 text-center">
@@ -248,11 +259,11 @@ export default function LoginPage() {
       <footer className="w-full max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400 gap-2 pt-2">
         <p>© 2026 {DEMO_TENANT.name}. All enterprise rights reserved.</p>
         <div className="flex items-center space-x-4">
-          <a href="#" onClick={(e) => { e.preventDefault(); alert("Corporate Privacy Policy: All tenant data is encrypted at rest and in transit."); }} className="hover:text-slate-600 transition-colors">Privacy Policy</a>
+          <button type="button" onClick={() => setInfoMsg("Corporate Privacy Policy: All tenant data is encrypted at rest and in transit.")} className="hover:text-slate-600 transition-colors cursor-pointer">Privacy Policy</button>
           <span>·</span>
-          <a href="#" onClick={(e) => { e.preventDefault(); alert("Terms of Service: Authorized enterprise use only."); }} className="hover:text-slate-600 transition-colors">Terms of Service</a>
+          <button type="button" onClick={() => setInfoMsg("Terms of Service: Authorized enterprise use only.")} className="hover:text-slate-600 transition-colors cursor-pointer">Terms of Service</button>
           <span>·</span>
-          <a href="#" onClick={(e) => { e.preventDefault(); alert("All 8 Microservices Operational: Port 4000 Gateway Online."); }} className="hover:text-slate-600 transition-colors">System Status</a>
+          <button type="button" onClick={() => setInfoMsg("API Gateway Port 4000 · Zero-Trust Tenant Verification Active.")} className="hover:text-slate-600 transition-colors cursor-pointer">System Status</button>
         </div>
       </footer>
     </div>

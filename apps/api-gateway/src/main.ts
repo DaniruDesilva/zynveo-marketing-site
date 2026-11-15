@@ -18,7 +18,12 @@ import {
   RpcClientProxy,
 } from '@zynveo/microservice-chassis';
 import { ApiGatewayModule } from './app.module';
-import { AuthenticatedRequest, JwtAuthGuard, RolesGuard } from './auth/jwt-auth.guard';
+import {
+  AuthenticatedRequest,
+  JwtAuthGuard,
+  PermissionsGuard,
+  RolesGuard,
+} from './auth/jwt-auth.guard';
 import { ErpGatewayController } from './controllers/erp-gateway.controller';
 
 function readJsonBody(req: http.IncomingMessage): Promise<unknown> {
@@ -80,25 +85,34 @@ export function createDefaultGatewayRpcBus(): {
     }
   >();
 
+  const DEMO_USER_ROLES: Record<string, ValidateTenantAccessResponse['roles']> = {
+    '11111111-1111-4111-8111-111111111111': ['OWNER'],
+    '11111111-1111-4111-8111-222222222222': ['ACCOUNTANT'],
+    '11111111-1111-4111-8111-333333333333': ['WAREHOUSE_MANAGER'],
+    '11111111-1111-4111-8111-444444444444': ['SALES_REP'],
+    '11111111-1111-4111-8111-555555555555': ['PROCUREMENT_OFFICER'],
+    '11111111-1111-4111-8111-666666666666': ['PRODUCTION_MANAGER'],
+    '11111111-1111-4111-8111-777777777777': ['HR_MANAGER'],
+    '11111111-1111-4111-8111-888888888888': ['ADMIN'],
+    '11111111-1111-4111-8111-999999999999': ['VIEWER'],
+  };
+
   const iamClient: RpcClientProxy = {
     async send<TResponse = any>(pattern: { cmd: string }, payload: any): Promise<TResponse> {
       if (pattern.cmd === ERP_RPC_PATTERNS.IAM.VALIDATE_TENANT_ACCESS.cmd) {
-        const resp: ValidateTenantAccessResponse = {
-          authorized: true,
-          tenantId: payload.tenantId || '22222222-2222-4222-8222-222222222222',
-          branchId: '33333333-3333-4333-8333-333333333333',
-          roles: [
-            'OWNER',
-            'ADMIN',
-            'ACCOUNTANT',
-            'SALES_REP',
-            'WAREHOUSE_MANAGER',
-            'PROCUREMENT_OFFICER',
-            'PRODUCTION_MANAGER',
-            'HR_MANAGER',
-            'VIEWER',
-          ],
-        };
+        const assignedRoles = DEMO_USER_ROLES[payload.userId];
+        const resp: ValidateTenantAccessResponse = assignedRoles
+          ? {
+              authorized: true,
+              tenantId: payload.tenantId || '22222222-2222-4222-8222-222222222222',
+              branchId: '33333333-3333-4333-8333-333333333333',
+              roles: assignedRoles,
+            }
+          : {
+              authorized: false,
+              tenantId: payload.tenantId || '22222222-2222-4222-8222-222222222222',
+              roles: [],
+            };
         return resp as unknown as TResponse;
       }
       return { ok: true } as unknown as TResponse;
@@ -245,21 +259,18 @@ export function createDefaultGatewayRpcBus(): {
 
         case ERP_RPC_PATTERNS.BI_REPORTING.GET_EXECUTIVE_KPIS.cmd: {
           return {
-            tenantId: payload.tenantId,
-            totalRevenueMtd: '125400.00',
-            totalExpensesMtd: '74200.00',
-            netProfitMtd: '51200.00',
-            accountsReceivableOpen: '18450.00',
-            accountsPayableOpen: '9300.00',
-            inventoryValuationTotal: '64800.00',
-            headcountActive: 24,
-            refreshedAt: new Date().toISOString(),
+            todayRevenue: '125400.00',
+            todayInvoicesCount: 14,
+            todayGrnsCount: 4,
+            totalInventoryValuationWac: '64800.00',
+            totalAccountsReceivable: '18450.00',
+            totalAccountsPayable: '9300.00',
+            lowStockProductsCount: 2,
           } as unknown as TResponse;
         }
 
         case ERP_RPC_PATTERNS.BI_REPORTING.GET_PROFIT_AND_LOSS.cmd: {
           return {
-            tenantId: payload.tenantId,
             startDate: payload.startDate,
             endDate: payload.endDate,
             totalRevenue: '125400.00',
@@ -267,11 +278,66 @@ export function createDefaultGatewayRpcBus(): {
             grossProfit: '77200.00',
             totalOperatingExpenses: '26000.00',
             netProfit: '51200.00',
-            lines: [
-              { accountCode: '4000', accountName: 'Sales Revenue', category: 'REVENUE', balance: '125400.00' },
-              { accountCode: '5000', accountName: 'Cost of Goods Sold', category: 'COGS', balance: '48200.00' },
-              { accountCode: '5100', accountName: 'Salaries & Wages Expense', category: 'EXPENSE', balance: '26000.00' },
-            ],
+          } as unknown as TResponse;
+        }
+
+        case ERP_RPC_PATTERNS.IAM.GET_TENANT_SETTINGS.cmd:
+        case ERP_RPC_PATTERNS.IAM.UPDATE_TENANT_SETTINGS.cmd: {
+          return {
+            tenantId: payload.tenantId,
+            name: payload.companyName || 'Zynveo Enterprise Holdings',
+            slug: 'zynveo-enterprise',
+            baseCurrency: payload.baseCurrency || 'USD',
+            isActive: true,
+            branchCount: 2,
+          } as unknown as TResponse;
+        }
+
+        case ERP_RPC_PATTERNS.IAM.LIST_USERS.cmd:
+        case ERP_RPC_PATTERNS.IAM.LIST_BRANCHES.cmd:
+        case ERP_RPC_PATTERNS.FINANCE.LIST_ACCOUNTS.cmd:
+        case ERP_RPC_PATTERNS.FINANCE.LIST_JOURNALS.cmd:
+        case ERP_RPC_PATTERNS.FINANCE.LIST_AR_INVOICES.cmd:
+        case ERP_RPC_PATTERNS.FINANCE.LIST_AP_BILLS.cmd:
+        case ERP_RPC_PATTERNS.SALES_CRM.LIST_INVOICES.cmd:
+        case ERP_RPC_PATTERNS.SALES_CRM.LIST_QUOTATIONS.cmd:
+        case ERP_RPC_PATTERNS.SALES_CRM.LIST_CUSTOMERS.cmd:
+        case ERP_RPC_PATTERNS.SALES_CRM.LIST_SLA_TICKETS.cmd:
+        case ERP_RPC_PATTERNS.INVENTORY_WMS.LIST_PRODUCTS.cmd:
+        case ERP_RPC_PATTERNS.INVENTORY_WMS.LIST_WAREHOUSES.cmd:
+        case ERP_RPC_PATTERNS.INVENTORY_WMS.LIST_STOCK_LEVELS.cmd:
+        case ERP_RPC_PATTERNS.INVENTORY_WMS.LIST_STOCK_MOVEMENTS.cmd:
+        case ERP_RPC_PATTERNS.PROCUREMENT.LIST_SUPPLIERS.cmd:
+        case ERP_RPC_PATTERNS.PROCUREMENT.LIST_PURCHASE_ORDERS.cmd:
+        case ERP_RPC_PATTERNS.PROCUREMENT.LIST_GRNS.cmd:
+        case ERP_RPC_PATTERNS.MANUFACTURING.LIST_BOMS.cmd:
+        case ERP_RPC_PATTERNS.MANUFACTURING.LIST_WORK_ORDERS.cmd:
+        case ERP_RPC_PATTERNS.HR_PAYROLL.LIST_EMPLOYEES.cmd:
+        case ERP_RPC_PATTERNS.HR_PAYROLL.LIST_PAYROLL_RUNS.cmd:
+        case ERP_RPC_PATTERNS.HR_PAYROLL.LIST_DEPARTMENTS.cmd: {
+          return [] as unknown as TResponse;
+        }
+
+        case ERP_RPC_PATTERNS.FINANCE.GET_TRIAL_BALANCE.cmd: {
+          return {
+            isBalanced: true,
+            totalDebit: '0.00',
+            totalCredit: '0.00',
+            rows: [],
+          } as unknown as TResponse;
+        }
+
+        case ERP_RPC_PATTERNS.FINANCE.GET_BALANCE_SHEET.cmd: {
+          return {
+            asOfDate: new Date().toISOString(),
+            assets: [],
+            liabilities: [],
+            equity: [],
+            totalAssets: '0.00',
+            totalLiabilities: '0.00',
+            totalEquity: '0.00',
+            retainedEarningsCurrentPeriod: '0.00',
+            isBalanced: true,
           } as unknown as TResponse;
         }
 
@@ -317,6 +383,7 @@ export async function startApiGateway(
 
   const jwtGuard = new JwtAuthGuard(iamClient);
   const rolesGuard = new RolesGuard();
+  const permissionsGuard = new PermissionsGuard();
   const controller = new ErpGatewayController(rpcBus);
 
   const sendJson = (res: http.ServerResponse, statusCode: number, data: unknown) => {
@@ -328,6 +395,7 @@ export async function startApiGateway(
     const ctx = createExecutionContext(req, res, handler, ErpGatewayController);
     await jwtGuard.canActivate(ctx);
     rolesGuard.canActivate(ctx);
+    permissionsGuard.canActivate(ctx);
   };
 
   return bootstrapMicroservice({
@@ -350,92 +418,121 @@ export async function startApiGateway(
         headers: rawReq.headers as Record<string, string | string[] | undefined>,
       };
 
-      if (method === 'GET' && pathname === '/api/v1/iam/me') {
-        await runGuards(req, res, controller.getMe);
-        sendJson(res, 200, await controller.getMe(req));
+      const dispatch = async (
+        statusCode: number,
+        handler: Function,
+        invoke: () => Promise<unknown>,
+        withBody = false,
+      ) => {
+        if (withBody) {
+          req.body = await readJsonBody(rawReq);
+        }
+        await runGuards(req, res, handler);
+        sendJson(res, statusCode, await invoke());
         return true;
-      }
+      };
 
-      if (method === 'POST' && pathname === '/api/v1/finance/journals') {
-        req.body = await readJsonBody(rawReq);
-        await runGuards(req, res, controller.postJournalEntry);
-        sendJson(res, 201, await controller.postJournalEntry(req, req.body));
-        return true;
-      }
+      const staticRoutes: Array<{
+        method: string;
+        path: string;
+        status: number;
+        withBody?: boolean;
+        handler: Function;
+        run: () => Promise<unknown>;
+      }> = [
+        { method: 'GET', path: '/api/v1/iam/me', status: 200, handler: controller.getMe, run: () => controller.getMe(req) },
+        { method: 'GET', path: '/api/v1/iam/users', status: 200, handler: controller.listUsers, run: () => controller.listUsers(req) },
+        { method: 'POST', path: '/api/v1/iam/users/invite', status: 201, withBody: true, handler: controller.inviteUser, run: () => controller.inviteUser(req, req.body) },
+        { method: 'GET', path: '/api/v1/iam/settings', status: 200, handler: controller.getTenantSettings, run: () => controller.getTenantSettings(req) },
+        { method: 'PATCH', path: '/api/v1/iam/settings', status: 200, withBody: true, handler: controller.updateTenantSettings, run: () => controller.updateTenantSettings(req, req.body) },
+        { method: 'GET', path: '/api/v1/iam/branches', status: 200, handler: controller.listBranches, run: () => controller.listBranches(req) },
 
-      if (method === 'POST' && pathname === '/api/v1/sales/invoices') {
-        req.body = await readJsonBody(rawReq);
-        await runGuards(req, res, controller.createDraftInvoice);
-        sendJson(res, 201, await controller.createDraftInvoice(req, req.body));
-        return true;
+        { method: 'GET', path: '/api/v1/finance/accounts', status: 200, handler: controller.listAccounts, run: () => controller.listAccounts(req) },
+        { method: 'POST', path: '/api/v1/finance/accounts', status: 201, withBody: true, handler: controller.createAccount, run: () => controller.createAccount(req, req.body) },
+        { method: 'GET', path: '/api/v1/finance/journals', status: 200, handler: controller.listJournals, run: () => controller.listJournals(req) },
+        { method: 'POST', path: '/api/v1/finance/journals', status: 201, withBody: true, handler: controller.postJournalEntry, run: () => controller.postJournalEntry(req, req.body) },
+        { method: 'POST', path: '/api/v1/finance/payments', status: 201, withBody: true, handler: controller.recordPayment, run: () => controller.recordPayment(req, req.body) },
+        { method: 'GET', path: '/api/v1/finance/reports/trial-balance', status: 200, handler: controller.getTrialBalance, run: () => controller.getTrialBalance(req, parsedUrl.searchParams.get('asOfDate') || undefined) },
+        { method: 'GET', path: '/api/v1/finance/reports/balance-sheet', status: 200, handler: controller.getBalanceSheet, run: () => controller.getBalanceSheet(req, parsedUrl.searchParams.get('asOfDate') || undefined) },
+        { method: 'GET', path: '/api/v1/finance/ar', status: 200, handler: controller.listArInvoices, run: () => controller.listArInvoices(req) },
+        { method: 'GET', path: '/api/v1/finance/ap', status: 200, handler: controller.listApBills, run: () => controller.listApBills(req) },
+
+        { method: 'GET', path: '/api/v1/sales/invoices', status: 200, handler: controller.listInvoices, run: () => controller.listInvoices(req) },
+        { method: 'POST', path: '/api/v1/sales/invoices', status: 201, withBody: true, handler: controller.createDraftInvoice, run: () => controller.createDraftInvoice(req, req.body) },
+        { method: 'GET', path: '/api/v1/sales/quotations', status: 200, handler: controller.listQuotations, run: () => controller.listQuotations(req) },
+        { method: 'GET', path: '/api/v1/sales/customers', status: 200, handler: controller.listCustomers, run: () => controller.listCustomers(req) },
+        { method: 'POST', path: '/api/v1/sales/customers', status: 201, withBody: true, handler: controller.createCustomer, run: () => controller.createCustomer(req, req.body) },
+        { method: 'GET', path: '/api/v1/crm/tickets', status: 200, handler: controller.listSlaTickets, run: () => controller.listSlaTickets(req) },
+        { method: 'POST', path: '/api/v1/crm/tickets', status: 201, withBody: true, handler: controller.createSlaTicket, run: () => controller.createSlaTicket(req, req.body) },
+
+        { method: 'GET', path: '/api/v1/inventory/products', status: 200, handler: controller.listProducts, run: () => controller.listProducts(req) },
+        { method: 'POST', path: '/api/v1/inventory/products', status: 201, withBody: true, handler: controller.createProduct, run: () => controller.createProduct(req, req.body) },
+        { method: 'GET', path: '/api/v1/inventory/warehouses', status: 200, handler: controller.listWarehouses, run: () => controller.listWarehouses(req) },
+        { method: 'GET', path: '/api/v1/inventory/stock-levels', status: 200, handler: controller.listStockLevels, run: () => controller.listStockLevels(req) },
+        { method: 'GET', path: '/api/v1/inventory/stock-movements', status: 200, handler: controller.listStockMovements, run: () => controller.listStockMovements(req) },
+        { method: 'POST', path: '/api/v1/inventory/stock-adjustments', status: 200, withBody: true, handler: controller.adjustStock, run: () => controller.adjustStock(req, req.body) },
+
+        { method: 'GET', path: '/api/v1/procurement/suppliers', status: 200, handler: controller.listSuppliers, run: () => controller.listSuppliers(req) },
+        { method: 'POST', path: '/api/v1/procurement/suppliers', status: 201, withBody: true, handler: controller.createSupplier, run: () => controller.createSupplier(req, req.body) },
+        { method: 'GET', path: '/api/v1/procurement/purchase-orders', status: 200, handler: controller.listPurchaseOrders, run: () => controller.listPurchaseOrders(req) },
+        { method: 'POST', path: '/api/v1/procurement/purchase-orders', status: 201, withBody: true, handler: controller.createPurchaseOrder, run: () => controller.createPurchaseOrder(req, req.body) },
+        { method: 'GET', path: '/api/v1/procurement/grns', status: 200, handler: controller.listGrns, run: () => controller.listGrns(req) },
+        { method: 'POST', path: '/api/v1/procurement/grn/approve', status: 200, withBody: true, handler: controller.approveGrn, run: () => controller.approveGrn(req, req.body) },
+
+        { method: 'GET', path: '/api/v1/manufacturing/boms', status: 200, handler: controller.listBoms, run: () => controller.listBoms(req) },
+        { method: 'POST', path: '/api/v1/manufacturing/boms', status: 201, withBody: true, handler: controller.createBom, run: () => controller.createBom(req, req.body) },
+        { method: 'GET', path: '/api/v1/manufacturing/work-orders', status: 200, handler: controller.listWorkOrders, run: () => controller.listWorkOrders(req) },
+        { method: 'POST', path: '/api/v1/manufacturing/work-orders/release', status: 201, withBody: true, handler: controller.releaseWorkOrder, run: () => controller.releaseWorkOrder(req, req.body) },
+        { method: 'POST', path: '/api/v1/manufacturing/work-orders/complete', status: 200, withBody: true, handler: controller.completeWorkOrder, run: () => controller.completeWorkOrder(req, req.body) },
+
+        { method: 'GET', path: '/api/v1/hr/employees', status: 200, handler: controller.listEmployees, run: () => controller.listEmployees(req) },
+        { method: 'POST', path: '/api/v1/hr/employees', status: 201, withBody: true, handler: controller.createEmployee, run: () => controller.createEmployee(req, req.body) },
+        { method: 'GET', path: '/api/v1/hr/payroll/runs', status: 200, handler: controller.listPayrollRuns, run: () => controller.listPayrollRuns(req) },
+        { method: 'POST', path: '/api/v1/hr/payroll/execute', status: 200, withBody: true, handler: controller.executePayrollRun, run: () => controller.executePayrollRun(req, req.body) },
+        { method: 'GET', path: '/api/v1/hr/departments', status: 200, handler: controller.listDepartments, run: () => controller.listDepartments(req) },
+
+        { method: 'GET', path: '/api/v1/bi/kpis', status: 200, handler: controller.getExecutiveKpis, run: () => controller.getExecutiveKpis(req) },
+        {
+          method: 'GET',
+          path: '/api/v1/bi/profit-and-loss',
+          status: 200,
+          handler: controller.getProfitAndLoss,
+          run: () => {
+            const startDate = parsedUrl.searchParams.get('startDate') || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+            const endDate = parsedUrl.searchParams.get('endDate') || new Date().toISOString();
+            return controller.getProfitAndLoss(req, startDate, endDate);
+          },
+        },
+      ];
+
+      const matchedStatic = staticRoutes.find((r) => r.method === method && r.path === pathname);
+      if (matchedStatic) {
+        return dispatch(matchedStatic.status, matchedStatic.handler, matchedStatic.run, matchedStatic.withBody);
       }
 
       const finalizeMatch = pathname.match(/^\/api\/v1\/sales\/invoices\/([^/]+)\/finalize$/);
       if (method === 'POST' && finalizeMatch) {
-        req.body = await readJsonBody(rawReq);
-        await runGuards(req, res, controller.finalizeInvoice);
-        sendJson(
-          res,
-          200,
-          await controller.finalizeInvoice(req, decodeURIComponent(finalizeMatch[1]), req.body),
-        );
-        return true;
+        return dispatch(200, controller.finalizeInvoice, () =>
+          controller.finalizeInvoice(req, decodeURIComponent(finalizeMatch[1]), req.body), true);
       }
 
-      if (method === 'POST' && pathname === '/api/v1/crm/tickets') {
-        req.body = await readJsonBody(rawReq);
-        await runGuards(req, res, controller.createSlaTicket);
-        sendJson(res, 201, await controller.createSlaTicket(req, req.body));
-        return true;
+      const journalDetailMatch = pathname.match(/^\/api\/v1\/finance\/journals\/([^/]+)$/);
+      if (method === 'GET' && journalDetailMatch) {
+        return dispatch(200, controller.getJournalDetail, () =>
+          controller.getJournalDetail(req, decodeURIComponent(journalDetailMatch[1])));
       }
 
-      if (method === 'POST' && pathname === '/api/v1/procurement/purchase-orders') {
-        req.body = await readJsonBody(rawReq);
-        await runGuards(req, res, controller.createPurchaseOrder);
-        sendJson(res, 201, await controller.createPurchaseOrder(req, req.body));
-        return true;
-      }
-
-      if (method === 'POST' && pathname === '/api/v1/procurement/grn/approve') {
-        req.body = await readJsonBody(rawReq);
-        await runGuards(req, res, controller.approveGrn);
-        sendJson(res, 200, await controller.approveGrn(req, req.body));
-        return true;
-      }
-
-      if (method === 'POST' && pathname === '/api/v1/manufacturing/boms') {
-        req.body = await readJsonBody(rawReq);
-        await runGuards(req, res, controller.createBom);
-        sendJson(res, 201, await controller.createBom(req, req.body));
-        return true;
-      }
-
-      if (method === 'POST' && pathname === '/api/v1/manufacturing/work-orders/complete') {
-        req.body = await readJsonBody(rawReq);
-        await runGuards(req, res, controller.completeWorkOrder);
-        sendJson(res, 200, await controller.completeWorkOrder(req, req.body));
-        return true;
-      }
-
-      if (method === 'POST' && pathname === '/api/v1/hr/payroll/execute') {
-        req.body = await readJsonBody(rawReq);
-        await runGuards(req, res, controller.executePayrollRun);
-        sendJson(res, 200, await controller.executePayrollRun(req, req.body));
-        return true;
-      }
-
-      if (method === 'GET' && pathname === '/api/v1/bi/kpis') {
-        await runGuards(req, res, controller.getExecutiveKpis);
-        sendJson(res, 200, await controller.getExecutiveKpis(req));
-        return true;
-      }
-
-      if (method === 'GET' && pathname === '/api/v1/bi/profit-and-loss') {
-        await runGuards(req, res, controller.getProfitAndLoss);
-        const startDate = parsedUrl.searchParams.get('startDate') || '2026-01-01';
-        const endDate = parsedUrl.searchParams.get('endDate') || '2026-12-31';
-        sendJson(res, 200, await controller.getProfitAndLoss(req, startDate, endDate));
-        return true;
+      const productMatch = pathname.match(/^\/api\/v1\/inventory\/products\/([^/]+)$/);
+      if (productMatch) {
+        const productId = decodeURIComponent(productMatch[1]);
+        if (method === 'PATCH') {
+          return dispatch(200, controller.updateProduct, () =>
+            controller.updateProduct(req, productId, req.body), true);
+        }
+        if (method === 'DELETE') {
+          return dispatch(200, controller.softDeleteProduct, () =>
+            controller.softDeleteProduct(req, productId));
+        }
       }
 
       return false;
