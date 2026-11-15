@@ -13,6 +13,7 @@ import {
   RolesGuard,
 } from '../auth/jwt-auth.guard';
 import { ErpGatewayController } from '../controllers/erp-gateway.controller';
+import { startApiGateway } from '../main';
 
 function signHs256Jwt(payload: Record<string, unknown>, secret: string): string {
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
@@ -203,5 +204,31 @@ describe('API Gateway + IAM Contract Verification', () => {
       async () => jwtGuard.canActivate(missingCtx),
       /Missing Bearer token/,
     );
+  });
+
+  it('requires real Redis RPC by default and only enables mock RPC bus when DEMO_MOCK_MODE=true', async () => {
+    const prevDemoMode = process.env.DEMO_MOCK_MODE;
+    const prevRedisUrl = process.env.REDIS_URL;
+
+    try {
+      delete process.env.DEMO_MOCK_MODE;
+      process.env.REDIS_URL = 'redis://127.0.0.1:59991';
+      await assert.rejects(async () => startApiGateway(0));
+
+      process.env.DEMO_MOCK_MODE = 'true';
+      const demoHandle = await startApiGateway(0);
+      try {
+        const health = demoHandle.probeHealth('/health');
+        assert.equal(health.statusCode, 200);
+        assert.equal(health.body.service, 'api-gateway');
+      } finally {
+        await demoHandle.close();
+      }
+    } finally {
+      if (prevDemoMode === undefined) delete process.env.DEMO_MOCK_MODE;
+      else process.env.DEMO_MOCK_MODE = prevDemoMode;
+      if (prevRedisUrl === undefined) delete process.env.REDIS_URL;
+      else process.env.REDIS_URL = prevRedisUrl;
+    }
   });
 });

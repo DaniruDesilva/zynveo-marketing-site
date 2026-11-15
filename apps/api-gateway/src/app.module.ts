@@ -1,4 +1,4 @@
-import { Module } from '@zynveo/microservice-chassis';
+import { Module, createRedisRpcClient } from '@zynveo/microservice-chassis';
 import { IAM_RPC_CLIENT, JwtAuthGuard, RolesGuard } from './auth/jwt-auth.guard';
 import { ErpGatewayController, GATEWAY_RPC_BUS } from './controllers/erp-gateway.controller';
 
@@ -9,11 +9,11 @@ import { ErpGatewayController, GATEWAY_RPC_BUS } from './controllers/erp-gateway
     RolesGuard,
     {
       provide: IAM_RPC_CLIENT,
-      useValue: null,
+      useFactory: () => createRedisRpcClient(),
     },
     {
       provide: GATEWAY_RPC_BUS,
-      useValue: null,
+      useFactory: () => createRedisRpcClient(),
     },
   ],
 })

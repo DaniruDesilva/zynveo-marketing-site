@@ -4,5 +4,6 @@ export * from './tenant-context';
 export * from './zod-validation.pipe';
 export * from './outbox.service';
 export * from './inbox-idempotency';
+export * from './redis-transport';
 export * from './bootstrap';
 

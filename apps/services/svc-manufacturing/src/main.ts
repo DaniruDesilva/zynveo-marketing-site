@@ -26,6 +26,7 @@ import {
   Payload,
   RpcClientProxy,
   bootstrapMicroservice,
+  createRedisRpcClient,
 } from '@zynveo/microservice-chassis';
 
 export const MFG_RPC_CLIENT = 'ZYNVEO_MFG_RPC_CLIENT';
@@ -250,6 +251,7 @@ export class ManufacturingController {
 
     // Step 3: Backflush Raw Materials via svc-inventory-wms & get WAC valuation
     let rawMaterialCostTotal = new Decimal('0.00');
+    const unitCostByProduct = new Map<string, string>();
     if (this.rpcClient) {
       const rmRes = await this.rpcClient.send<AtomicStockMutationResponse>(
         ERP_RPC_PATTERNS.INVENTORY.ATOMIC_STOCK_DECREMENT,
@@ -269,6 +271,9 @@ export class ManufacturingController {
         },
       );
       rawMaterialCostTotal = new Decimal(rmRes.totalCogsValuation);
+      for (const bal of rmRes.updatedBalances || []) {
+        unitCostByProduct.set(bal.productId, bal.unitWacCost);
+      }
     }
 
     const actualQty = new Decimal(dto.actualProducedQty);
@@ -330,15 +335,23 @@ export class ManufacturingController {
 
       if (backflushedItems.length > 0) {
         await tx.insert(mfgSchema.materialConsumptions).values(
-          backflushedItems.map((bi) => ({
-            tenantId: dto.tenantId,
-            workOrderId: wo.id,
-            rawMaterialProductId: bi.rawMaterialProductId,
-            consumedQuantity: bi.consumedQuantity,
-            unitCost: '0.00',
-            totalCost: '0.00',
-            batchNumber: dto.outputBatchNumber,
-          })),
+          backflushedItems.map((bi) => {
+            const rmUnitCost = new Decimal(
+              unitCostByProduct.get(bi.rawMaterialProductId) || '0.00',
+            ).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+            const rmTotalCost = new Decimal(bi.consumedQuantity)
+              .mul(rmUnitCost)
+              .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+            return {
+              tenantId: dto.tenantId,
+              workOrderId: wo.id,
+              rawMaterialProductId: bi.rawMaterialProductId,
+              consumedQuantity: bi.consumedQuantity,
+              unitCost: rmUnitCost.toFixed(2),
+              totalCost: rmTotalCost.toFixed(2),
+              batchNumber: dto.outputBatchNumber,
+            };
+          }),
         );
       }
 
@@ -394,7 +407,14 @@ export class ManufacturingController {
 @Module({
   imports: [DrizzleModule.forService('manufacturing', mfgSchema)],
   controllers: [ManufacturingController],
-  providers: [OutboxService, InboxService],
+  providers: [
+    OutboxService,
+    InboxService,
+    {
+      provide: MFG_RPC_CLIENT,
+      useFactory: () => createRedisRpcClient(),
+    },
+  ],
 })
 export class ManufacturingModule {}
 

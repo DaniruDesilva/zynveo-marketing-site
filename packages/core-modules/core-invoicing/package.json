@@ -5,8 +5,13 @@
     "dependencies":  {
                          "@zynveo/database":  "workspace:*",
                          "@zynveo/core-inventory":  "workspace:*",
+                         "decimal.js":  "^10.4.3",
                          "drizzle-orm":  "^0.30.10"
                      },
+    "scripts":  {
+                    "typecheck":  "tsc --noEmit",
+                    "build":  "tsc -p tsconfig.build.json"
+                },
     "devDependencies":  {
                             "typescript":  "^5.4.5"
                         },

@@ -30,6 +30,7 @@ import {
   Payload,
   RpcClientProxy,
   bootstrapMicroservice,
+  createRedisRpcClient,
 } from '@zynveo/microservice-chassis';
 
 export const SALES_RPC_CLIENT = 'ZYNVEO_SALES_RPC_CLIENT';
@@ -395,7 +396,14 @@ export class CrmSalesController {
 @Module({
   imports: [DrizzleModule.forService('sales_crm', salesCrmSchema)],
   controllers: [CrmSalesController],
-  providers: [OutboxService, InboxService],
+  providers: [
+    OutboxService,
+    InboxService,
+    {
+      provide: SALES_RPC_CLIENT,
+      useFactory: () => createRedisRpcClient(),
+    },
+  ],
 })
 export class CrmSalesModule {}
 

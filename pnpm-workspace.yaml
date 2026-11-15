@@ -7,7 +7,9 @@ overrides:
   next: 'file:./next-14.2.15.tgz'
 allowBuilds:
   '@journeyapps/wa-sqlite': true
+  '@nestjs/core': true
   core-js: false
   es5-ext: true
   esbuild: true
+  msgpackr-extract: true
   unrs-resolver: true

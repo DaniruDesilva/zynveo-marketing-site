@@ -11,8 +11,10 @@
   },
   "dependencies": {
     "@zynveo/contracts": "workspace:*",
+    "@zynveo/core-inventory": "workspace:*",
     "@zynveo/database": "workspace:*",
     "@zynveo/microservice-chassis": "workspace:*",
+    "decimal.js": "^10.4.3",
     "drizzle-orm": "^0.30.10",
     "zod": "^3.23.8"
   },

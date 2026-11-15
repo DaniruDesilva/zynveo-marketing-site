@@ -1,5 +1,15 @@
 import { createHmac } from 'node:crypto';
 import * as http from 'node:http';
+import { DRIZZLE_POOL } from './drizzle.module';
+import { OutboxRelayWorker } from './outbox.service';
+import {
+  BullMqEventConsumer,
+  BullMqEventQueuePublisher,
+  InstantiatedModuleContext,
+  RedisRpcServer,
+  instantiateMicroserviceModule,
+  resolveQueueForSchema,
+} from './redis-transport';
 import { getCurrentTenantContext } from './tenant-context';
 
 export function signJwtHmac(payload: Record<string, unknown>, secret: string): string {
@@ -17,6 +27,8 @@ export interface MicroserviceBootstrapOptions {
   healthPort: number;
   appModule: Function;
   redisUrl?: string;
+  enableTransport?: boolean;
+  onClose?: () => Promise<void> | void;
   httpHandler?: (req: http.IncomingMessage, res: http.ServerResponse) => Promise<boolean> | boolean;
 }
 
@@ -89,12 +101,79 @@ export function evaluateHealthRequest(
 }
 
 /**
- * Starts the microservice health check HTTP endpoint (`/health`, `/api/v1/health`) and binds the NestJS Redis transport.
+ * Starts the microservice health check HTTP endpoint (`/health`, `/api/v1/health`) and binds
+ * the Redis RPC handlers, BullMQ event consumer worker, and OutboxRelayWorker.
  */
 export async function bootstrapMicroservice(
   options: MicroserviceBootstrapOptions,
 ): Promise<RunningMicroserviceHandle> {
   const logger = new StructuredLogger(options.serviceName);
+  const redisUrl = options.redisUrl || process.env.REDIS_URL || 'redis://localhost:6379';
+  const hasModuleMetadata = Boolean((options.appModule as any)?.__module__);
+  const transportEnabled = options.enableTransport !== false && hasModuleMetadata;
+
+  let moduleCtx: InstantiatedModuleContext | null = null;
+  let rpcServer: RedisRpcServer | null = null;
+  let bullConsumer: BullMqEventConsumer | null = null;
+  let bullPublisher: BullMqEventQueuePublisher | null = null;
+  let outboxWorker: OutboxRelayWorker | null = null;
+
+  if (transportEnabled) {
+    moduleCtx = await instantiateMicroserviceModule(options.appModule);
+
+    if (moduleCtx.rpcHandlers.size > 0) {
+      rpcServer = new RedisRpcServer(moduleCtx.rpcHandlers, redisUrl);
+      await rpcServer.start();
+    }
+
+    const serviceQueue = resolveQueueForSchema(options.schemaName);
+    if (serviceQueue && moduleCtx.eventHandlers.size > 0) {
+      bullConsumer = new BullMqEventConsumer(serviceQueue, moduleCtx.eventHandlers, redisUrl);
+      await bullConsumer.start();
+    }
+
+    const writeSchemas = new Set([
+      'iam',
+      'finance',
+      'hr',
+      'scm',
+      'inventory',
+      'manufacturing',
+      'sales_crm',
+    ]);
+    const pool = moduleCtx.providers.get(DRIZZLE_POOL);
+    if (writeSchemas.has(options.schemaName) && pool && typeof pool.connect === 'function') {
+      bullPublisher = new BullMqEventQueuePublisher(redisUrl);
+      outboxWorker = new OutboxRelayWorker(
+        {
+          withTransaction: async (fn) => {
+            const client = await pool.connect();
+            try {
+              await client.query('BEGIN');
+              const res = await fn(client);
+              await client.query('COMMIT');
+              return res;
+            } catch (err) {
+              await client.query('ROLLBACK').catch(() => {});
+              throw err;
+            } finally {
+              client.release();
+            }
+          },
+        },
+        bullPublisher,
+        {
+          schemaName: options.schemaName,
+          onError: (err) => {
+            logger.warn('OutboxRelayWorker poll failed', {
+              error: err instanceof Error ? err.message : String(err),
+            });
+          },
+        },
+      );
+      outboxWorker.start();
+    }
+  }
 
   const healthServer = http.createServer(async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -125,7 +204,7 @@ export async function bootstrapMicroservice(
         res.writeHead(errCode, { 'Content-Type': 'application/json' });
         res.end(
           JSON.stringify({
-            errorCode: err?.errorCode || 'INTERNAL_ERROR',
+            errorCode: err?.errorCode || err?.code || 'INTERNAL_ERROR',
             message: err?.message || 'Internal Server Error',
             details: err?.details,
           }),
@@ -148,7 +227,10 @@ export async function bootstrapMicroservice(
   logger.info(`Microservice started`, {
     schema: options.schemaName,
     healthPort: options.healthPort,
-    redisUrl: options.redisUrl || process.env.REDIS_URL || 'redis://localhost:6379',
+    redisUrl,
+    rpcHandlersCount: moduleCtx?.rpcHandlers.size ?? 0,
+    eventPatternsCount: moduleCtx?.eventHandlers.size ?? 0,
+    outboxRelayActive: Boolean(outboxWorker),
   });
 
   return {
@@ -158,6 +240,18 @@ export async function bootstrapMicroservice(
     healthServer,
     probeHealth: (path = '/health') => evaluateHealthRequest(path, options),
     close: async () => {
+      outboxWorker?.stop();
+      await bullConsumer?.close();
+      await bullPublisher?.close();
+      await rpcServer?.close();
+      await moduleCtx?.closeResources();
+      if (options.onClose) {
+        await options.onClose();
+      }
+      const pool = moduleCtx?.providers.get(DRIZZLE_POOL);
+      if (pool && typeof pool.end === 'function') {
+        await pool.end().catch(() => {});
+      }
       if (healthServer.listening) {
         await new Promise<void>((resolve) => healthServer.close(() => resolve()));
       }

@@ -6,6 +6,10 @@
                          "@zynveo/database":  "workspace:*",
                          "drizzle-orm":  "^0.30.10"
                      },
+    "scripts":  {
+                    "typecheck":  "tsc --noEmit",
+                    "build":  "tsc -p tsconfig.build.json"
+                },
     "devDependencies":  {
                             "typescript":  "^5.4.5"
                         },

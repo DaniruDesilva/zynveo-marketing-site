@@ -12,6 +12,14 @@ import {
 } from '../outbox.service';
 import { InboxService } from '../inbox-idempotency';
 import { bootstrapMicroservice } from '../bootstrap';
+import {
+  Controller,
+  EventPattern,
+  Inject,
+  MessagePattern,
+  Module,
+} from '../nest-compat';
+import { instantiateMicroserviceModule } from '../redis-transport';
 
 describe('@zynveo/microservice-chassis verification', () => {
   it('OutboxRelayWorker polls with FOR UPDATE SKIP LOCKED and fans out to BullMQ queues', async () => {
@@ -184,5 +192,85 @@ describe('@zynveo/microservice-chassis verification', () => {
       .update(`${header}.${payload}`)
       .digest('base64url');
     assert.equal(`${header}.${payload}.${sig}`.split('.').length, 3);
+  });
+
+  it('retains stacked @EventPattern decorators and resolves @Module factory DI providers', async () => {
+    const CUSTOM_CLIENT = 'CUSTOM_RPC_CLIENT';
+    const seenEvents: string[] = [];
+
+    class HelperService {
+      greet(val: string) {
+        return `hello:${val}`;
+      }
+    }
+
+    @Controller()
+    class SampleController {
+      constructor(
+        private readonly helper: HelperService,
+        @Inject(CUSTOM_CLIENT) private readonly rpcClient: { send: (cmd: string) => string },
+      ) {}
+
+      @MessagePattern({ cmd: 'SAMPLE.PING' })
+      async handlePing(payload: { name: string }) {
+        return { msg: this.helper.greet(payload.name), upstream: this.rpcClient.send('UPSTREAM') };
+      }
+
+      @EventPattern(ERP_EVENT_PATTERNS.INVOICE_FINALIZED)
+      @EventPattern(ERP_EVENT_PATTERNS.GRN_APPROVED)
+      async handleMultipleEvents(envelope: EventEnvelope<any>) {
+        seenEvents.push(envelope.eventName);
+      }
+    }
+
+    @Module({
+      providers: [
+        HelperService,
+        {
+          provide: CUSTOM_CLIENT,
+          useFactory: () => ({ send: (cmd: string) => `rpc:${cmd}` }),
+        },
+      ],
+      controllers: [SampleController],
+    })
+    class SampleModule {}
+
+    const metadataPatterns = (SampleController.prototype.handleMultipleEvents as any).__event_patterns__;
+    assert.deepEqual(metadataPatterns, [
+      ERP_EVENT_PATTERNS.GRN_APPROVED,
+      ERP_EVENT_PATTERNS.INVOICE_FINALIZED,
+    ]);
+
+    const instantiated = await instantiateMicroserviceModule(SampleModule);
+    const rpcHandler = instantiated.rpcHandlers.get('SAMPLE.PING');
+    assert.ok(rpcHandler);
+    const rpcResult = await rpcHandler({ name: 'erp' });
+    assert.deepEqual(rpcResult, { msg: 'hello:erp', upstream: 'rpc:UPSTREAM' });
+
+    const invHandlers = instantiated.eventHandlers.get(ERP_EVENT_PATTERNS.INVOICE_FINALIZED) || [];
+    const grnHandlers = instantiated.eventHandlers.get(ERP_EVENT_PATTERNS.GRN_APPROVED) || [];
+    assert.equal(invHandlers.length, 1);
+    assert.equal(grnHandlers.length, 1);
+
+    await invHandlers[0]({
+      eventId: '11111111-1111-4111-8111-111111111111',
+      eventName: ERP_EVENT_PATTERNS.INVOICE_FINALIZED,
+      tenantId: '22222222-2222-4222-8222-222222222222',
+      occurredAt: new Date().toISOString(),
+      sourceService: 'svc-test',
+      payload: {},
+    });
+    await grnHandlers[0]({
+      eventId: '33333333-3333-4333-8333-333333333333',
+      eventName: ERP_EVENT_PATTERNS.GRN_APPROVED,
+      tenantId: '22222222-2222-4222-8222-222222222222',
+      occurredAt: new Date().toISOString(),
+      sourceService: 'svc-test',
+      payload: {},
+    });
+    assert.deepEqual(seenEvents, [
+      ERP_EVENT_PATTERNS.INVOICE_FINALIZED,
+      ERP_EVENT_PATTERNS.GRN_APPROVED,
+    ]);
   });
 });

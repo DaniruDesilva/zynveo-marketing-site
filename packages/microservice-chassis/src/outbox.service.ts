@@ -113,6 +113,7 @@ export interface OutboxRelayOptions {
   maxAttempts?: number;
   batchSize?: number;
   pollIntervalMs?: number;
+  onError?: (err: unknown) => void;
 }
 
 /**
@@ -181,7 +182,7 @@ export class OutboxRelayWorker {
           };
 
           for (const queueName of targetQueues) {
-            const jobId = `${row.id}:${queueName}`;
+            const jobId = `${row.id}__${queueName}`;
             await this.publisher.publishToQueue(queueName, row.event_name, envelope, jobId);
           }
 
@@ -210,7 +211,9 @@ export class OutboxRelayWorker {
   start(): void {
     if (this.timer) return;
     this.timer = setInterval(() => {
-      this.pollOnce().catch(() => {});
+      this.pollOnce().catch((err) => {
+        this.options.onError?.(err);
+      });
     }, this.pollIntervalMs);
   }
 

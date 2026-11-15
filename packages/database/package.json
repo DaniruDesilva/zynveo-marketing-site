@@ -54,6 +54,21 @@
       "default": "./dist/schemas/bi.js"
     }
   },
+  "typesVersions": {
+    "*": {
+      "client": ["./dist/client.d.ts"],
+      "shared": ["./dist/shared/index.d.ts"],
+      "iam": ["./dist/schemas/iam.d.ts"],
+      "finance": ["./dist/schemas/finance.d.ts"],
+      "hr": ["./dist/schemas/hr.d.ts"],
+      "scm": ["./dist/schemas/scm.d.ts"],
+      "inventory": ["./dist/schemas/inventory.d.ts"],
+      "manufacturing": ["./dist/schemas/manufacturing.d.ts"],
+      "sales_crm": ["./dist/schemas/sales_crm.d.ts"],
+      "sales-crm": ["./dist/schemas/sales_crm.d.ts"],
+      "bi": ["./dist/schemas/bi.d.ts"]
+    }
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.build.json",

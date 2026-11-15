@@ -9,7 +9,10 @@ import { verifyDoubleEntryBalance } from '@zynveo/core-accounting';
 import { calculateSlaDeadline } from '@zynveo/core-crm';
 import { calculateInvoiceTotals } from '@zynveo/core-invoicing';
 import {
+  RedisRpcClient,
+  StructuredLogger,
   bootstrapMicroservice,
+  createRedisRpcClient,
   ErpRpcException,
   ExecutionContext,
   RpcClientProxy,
@@ -285,10 +288,36 @@ export async function startApiGateway(
   port = Number(process.env.API_GATEWAY_PORT || 4000),
   overrides?: { iamClient?: RpcClientProxy; rpcBus?: RpcClientProxy },
 ) {
-  const defaults = createDefaultGatewayRpcBus();
-  const jwtGuard = new JwtAuthGuard(overrides?.iamClient || defaults.iamClient);
+  const logger = new StructuredLogger('api-gateway');
+  const isDemoMockMode = process.env.DEMO_MOCK_MODE === 'true';
+
+  let ownedRedisClient: RedisRpcClient | null = null;
+  let iamClient: RpcClientProxy;
+  let rpcBus: RpcClientProxy;
+
+  if (overrides?.iamClient && overrides?.rpcBus) {
+    iamClient = overrides.iamClient;
+    rpcBus = overrides.rpcBus;
+  } else if (isDemoMockMode) {
+    logger.warn('DEMO_MOCK_MODE=true enabled: using in-memory gateway mock RPC bus');
+    const mockBus = createDefaultGatewayRpcBus();
+    iamClient = overrides?.iamClient || mockBus.iamClient;
+    rpcBus = overrides?.rpcBus || mockBus.rpcBus;
+  } else {
+    ownedRedisClient = createRedisRpcClient(process.env.REDIS_URL || 'redis://localhost:6379');
+    try {
+      await ownedRedisClient.connect();
+    } catch (err) {
+      await ownedRedisClient.close();
+      throw err;
+    }
+    iamClient = overrides?.iamClient || ownedRedisClient;
+    rpcBus = overrides?.rpcBus || ownedRedisClient;
+  }
+
+  const jwtGuard = new JwtAuthGuard(iamClient);
   const rolesGuard = new RolesGuard();
-  const controller = new ErpGatewayController(overrides?.rpcBus || defaults.rpcBus);
+  const controller = new ErpGatewayController(rpcBus);
 
   const sendJson = (res: http.ServerResponse, statusCode: number, data: unknown) => {
     res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -306,6 +335,12 @@ export async function startApiGateway(
     schemaName: 'gateway',
     healthPort: port,
     appModule: ApiGatewayModule,
+    enableTransport: false,
+    onClose: async () => {
+      if (ownedRedisClient) {
+        await ownedRedisClient.close();
+      }
+    },
     httpHandler: async (rawReq, res) => {
       const parsedUrl = new URL(rawReq.url || '/', `http://${rawReq.headers.host || 'localhost'}`);
       const pathname = parsedUrl.pathname;

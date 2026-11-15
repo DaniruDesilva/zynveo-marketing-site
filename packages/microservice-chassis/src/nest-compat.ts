@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { z } from 'zod';
 
 /**
@@ -142,7 +143,19 @@ export const MessagePattern = (pattern: { cmd: string } | string): MethodDecorat
   attachMeta('__message_pattern__', pattern) as MethodDecorator;
 
 export const EventPattern = (pattern: string): MethodDecorator =>
-  attachMeta('__event_pattern__', pattern) as MethodDecorator;
+  ((target: any, propertyKey?: string | symbol, descriptor?: any) => {
+    const metaTarget = propertyKey ? descriptor?.value ?? target[propertyKey] : target;
+    if (metaTarget) {
+      metaTarget['__event_pattern__'] = pattern;
+      const existing: string[] = Array.isArray(metaTarget['__event_patterns__'])
+        ? metaTarget['__event_patterns__']
+        : [];
+      if (!existing.includes(pattern)) {
+        existing.push(pattern);
+      }
+      metaTarget['__event_patterns__'] = existing;
+    }
+  }) as MethodDecorator;
 
 export const Payload = (pipe?: PipeTransform): ParameterDecorator =>
   (() => {}) as ParameterDecorator;
