@@ -148,6 +148,7 @@ export class ManufacturingController {
         and(
           eq(mfgSchema.billsOfMaterials.tenantId, dto.tenantId),
           eq(mfgSchema.billsOfMaterials.id, dto.bomId),
+          isNull(mfgSchema.billsOfMaterials.deletedAt),
         ),
       );
 
@@ -201,6 +202,7 @@ export class ManufacturingController {
         and(
           eq(mfgSchema.workOrders.tenantId, dto.tenantId),
           eq(mfgSchema.workOrders.id, dto.workOrderId),
+          isNull(mfgSchema.workOrders.deletedAt),
         ),
       );
     const wo = woRows[0];
@@ -223,6 +225,7 @@ export class ManufacturingController {
         and(
           eq(mfgSchema.billsOfMaterials.tenantId, dto.tenantId),
           eq(mfgSchema.billsOfMaterials.id, wo.bomId),
+          isNull(mfgSchema.billsOfMaterials.deletedAt),
         ),
       );
     const bom = bomRows[0];
@@ -237,6 +240,7 @@ export class ManufacturingController {
         and(
           eq(mfgSchema.bomItems.tenantId, dto.tenantId),
           eq(mfgSchema.bomItems.bomId, bom.id),
+          isNull(mfgSchema.bomItems.deletedAt),
         ),
       );
 

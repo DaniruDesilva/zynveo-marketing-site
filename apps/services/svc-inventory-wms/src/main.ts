@@ -507,6 +507,7 @@ export class InventoryWmsController {
           eq(inventorySchema.stockLevels.tenantId, tenantId),
           eq(inventorySchema.stockLevels.warehouseId, warehouseId),
           eq(inventorySchema.stockLevels.productId, productId),
+          isNull(inventorySchema.stockLevels.deletedAt),
         ),
       );
     return rows[0] ?? null;
@@ -527,6 +528,7 @@ export class InventoryWmsController {
           eq(inventorySchema.batchesLots.tenantId, tenantId),
           eq(inventorySchema.batchesLots.warehouseId, warehouseId),
           eq(inventorySchema.batchesLots.productId, productId),
+          isNull(inventorySchema.batchesLots.deletedAt),
         ),
       );
     return Array.isArray(rows) ? rows : [];

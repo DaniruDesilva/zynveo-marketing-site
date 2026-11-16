@@ -44,6 +44,7 @@ export class IamTenantController {
     const conditions = [
       eq(iamSchema.tenantUsers.userId, dto.userId),
       eq(iamSchema.tenantUsers.isActive, true),
+      isNull(iamSchema.tenantUsers.deletedAt),
     ];
     if (dto.tenantId) {
       conditions.push(eq(iamSchema.tenantUsers.tenantId, dto.tenantId));
@@ -85,12 +86,12 @@ export class IamTenantController {
     const [user] = await this.db
       .select()
       .from(iamSchema.users)
-      .where(eq(iamSchema.users.id, rawPayload.userId));
+      .where(and(eq(iamSchema.users.id, rawPayload.userId), isNull(iamSchema.users.deletedAt)));
 
     const [tenant] = await this.db
       .select()
       .from(iamSchema.tenants)
-      .where(eq(iamSchema.tenants.id, rawPayload.tenantId));
+      .where(and(eq(iamSchema.tenants.id, rawPayload.tenantId), isNull(iamSchema.tenants.deletedAt)));
 
     const memberships = await this.db
       .select()
@@ -100,6 +101,7 @@ export class IamTenantController {
           eq(iamSchema.tenantUsers.userId, rawPayload.userId),
           eq(iamSchema.tenantUsers.tenantId, rawPayload.tenantId),
           eq(iamSchema.tenantUsers.isActive, true),
+          isNull(iamSchema.tenantUsers.deletedAt),
         ),
       );
 
@@ -113,7 +115,12 @@ export class IamTenantController {
       const [branch] = await this.db
         .select()
         .from(iamSchema.branches)
-        .where(eq(iamSchema.branches.id, memberships[0].branchId));
+        .where(
+          and(
+            eq(iamSchema.branches.id, memberships[0].branchId),
+            isNull(iamSchema.branches.deletedAt),
+          ),
+        );
       branchName = branch?.name;
     }
 

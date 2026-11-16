@@ -97,9 +97,9 @@ export function WishlistSection() {
                   <div className="h-16 w-16 bg-emerald-400/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto">
                     <CheckCircle2 className="h-8 w-8" />
                   </div>
-                  <h3 className="text-2xl font-black">You're On The List! 🎉</h3>
+                  <h3 className="text-2xl font-black">You&apos;re On The List! 🎉</h3>
                   <p className="text-indigo-100 font-medium max-w-sm mx-auto">
-                    Check your email for your <strong className="text-accent font-bold">30% discount confirmation</strong>. We'll notify you the moment Zynveo Cloud OS launches.
+                    Check your email for your <strong className="text-accent font-bold">30% discount confirmation</strong>. We&apos;ll notify you the moment Zynveo Cloud OS launches.
                   </p>
                 </div>
               ) : (

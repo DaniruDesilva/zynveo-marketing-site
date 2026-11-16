@@ -159,6 +159,7 @@ export class FinanceController {
         and(
           eq(financeSchema.accountsReceivable.tenantId, dto.tenantId),
           eq(financeSchema.accountsReceivable.customerId, dto.customerId),
+          isNull(financeSchema.accountsReceivable.deletedAt),
         ),
       );
 
@@ -1052,7 +1053,12 @@ export class FinanceController {
     const existing = await tx
       .select()
       .from(financeSchema.accounts)
-      .where(eq(financeSchema.accounts.tenantId, tenantId));
+      .where(
+        and(
+          eq(financeSchema.accounts.tenantId, tenantId),
+          isNull(financeSchema.accounts.deletedAt),
+        ),
+      );
 
     const byCode = new Map<string, any>();
     for (const acct of existing) {

@@ -537,6 +537,9 @@ importers:
       '@zynveo/database':
         specifier: workspace:*
         version: link:../../database
+      decimal.js:
+        specifier: ^10.4.3
+        version: 10.6.0
       drizzle-orm:
         specifier: ^0.30.10
         version: 0.30.10(@types/react@18.3.31)(pg@8.21.0)(react@19.2.7)
@@ -553,6 +556,9 @@ importers:
       date-fns:
         specifier: ^3.6.0
         version: 3.6.0
+      decimal.js:
+        specifier: ^10.4.3
+        version: 10.6.0
       drizzle-orm:
         specifier: ^0.30.10
         version: 0.30.10(@types/react@18.3.31)(pg@8.21.0)(react@19.2.7)

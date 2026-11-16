@@ -161,7 +161,12 @@ export class HrPayrollController {
       const salaryRows = await tx
         .select()
         .from(hrSchema.salaryStructures)
-        .where(eq(hrSchema.salaryStructures.tenantId, dto.tenantId));
+        .where(
+          and(
+            eq(hrSchema.salaryStructures.tenantId, dto.tenantId),
+            isNull(hrSchema.salaryStructures.deletedAt),
+          ),
+        );
 
       const structureByEmp = new Map<string, any>();
       for (const row of salaryRows) {
@@ -311,6 +316,7 @@ export class HrPayrollController {
           eq(hrSchema.payslipItems.tenantId, dto.tenantId),
           eq(hrSchema.payslipItems.payrollRunId, dto.payrollRunId),
           eq(hrSchema.payslipItems.employeeId, dto.employeeId),
+          isNull(hrSchema.payslipItems.deletedAt),
         ),
       );
 

@@ -2,9 +2,15 @@
   "name": "@zynveo/core-projects",
   "version": "0.1.0",
   "private": true,
-  "main": "src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json"
+  },
   "dependencies": {
     "@zynveo/database": "workspace:*",
+    "decimal.js": "^10.4.3",
     "drizzle-orm": "^0.30.10"
   },
   "devDependencies": {

@@ -163,7 +163,7 @@ export default function BlogPostPage({ params }: Props) {
             Stop Leaking Margins in Your Daily Operations
           </h3>
           <p className="text-indigo-100 max-w-xl mx-auto font-medium text-sm sm:text-base">
-            Use Zynveo's 100% free viral MRP and Invoice calculators right now without creating an account or signing up.
+            Use Zynveo&apos;s 100% free viral MRP and Invoice calculators right now without creating an account or signing up.
           </p>
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link

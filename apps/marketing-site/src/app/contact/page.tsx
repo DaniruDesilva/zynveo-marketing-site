@@ -91,7 +91,7 @@ export default function ContactPage() {
           <span>We respond within 2 hours</span>
         </div>
         <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-neutral-text">
-          Let's Scale Your Retail & <br className="hidden sm:inline" />
+          Let&apos;s Scale Your Retail &amp; <br className="hidden sm:inline" />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-indigo-600 to-accent">
             Warehouse Operations
           </span>
@@ -178,7 +178,7 @@ export default function ContactPage() {
                   <div className="space-y-2">
                     <h3 className="text-3xl font-black text-slate-900">Message Received!</h3>
                     <p className="text-slate-600 max-w-md mx-auto font-medium leading-relaxed">
-                      Thank you for reaching out. We've sent a confirmation to your email. One of our enterprise solutions engineers will respond within 2 hours.
+                      Thank you for reaching out. We&apos;ve sent a confirmation to your email. One of our enterprise solutions engineers will respond within 2 hours.
                     </p>
                   </div>
                   <div className="pt-4">
@@ -195,7 +195,7 @@ export default function ContactPage() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-2 border-b border-slate-100 pb-6">
                     <h3 className="text-2xl font-black text-slate-900">Send Us a Message</h3>
-                    <p className="text-sm font-medium text-slate-500">Fill out the fields below and we'll connect you with the right specialist.</p>
+                    <p className="text-sm font-medium text-slate-500">Fill out the fields below and we&apos;ll connect you with the right specialist.</p>
                   </div>
 
                   {error && (

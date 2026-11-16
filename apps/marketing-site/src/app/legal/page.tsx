@@ -34,7 +34,7 @@ export default function LegalPage() {
         <section className="space-y-3">
           <h2 className="text-2xl font-black text-slate-900">1. Regulatory Compliance Framework</h2>
           <p>
-            Zynveo Technologies (Pvt) Ltd ("Zynveo", "we", "our", or "us") operates under the statutory corporate regulations of Sri Lanka and adheres to strict international cloud data compliance standards. Our software platforms are engineered to ensure complete separation between proprietary brand data and external analytics.
+            Zynveo Technologies (Pvt) Ltd (&quot;Zynveo&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) operates under the statutory corporate regulations of Sri Lanka and adheres to strict international cloud data compliance standards. Our software platforms are engineered to ensure complete separation between proprietary brand data and external analytics.
           </p>
         </section>
 

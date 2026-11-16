@@ -118,7 +118,7 @@ export function FeedbackWidget() {
                 </div>
                 <h4 className="text-xl font-black text-slate-900">Thank You! 🙏</h4>
                 <p className="text-sm text-slate-600 font-medium max-w-sm mx-auto">
-                  Your feedback has been received. We've sent a confirmation to your email.
+                  Your feedback has been received. We&apos;ve sent a confirmation to your email.
                 </p>
                 <button
                   type="button"

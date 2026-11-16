@@ -172,6 +172,7 @@ export class CrmSalesController {
         and(
           eq(salesCrmSchema.invoices.tenantId, dto.tenantId),
           eq(salesCrmSchema.invoices.id, dto.invoiceId),
+          isNull(salesCrmSchema.invoices.deletedAt),
         ),
       );
 
@@ -195,6 +196,7 @@ export class CrmSalesController {
         and(
           eq(salesCrmSchema.invoiceLines.tenantId, dto.tenantId),
           eq(salesCrmSchema.invoiceLines.invoiceId, dto.invoiceId),
+          isNull(salesCrmSchema.invoiceLines.deletedAt),
         ),
       );
 
@@ -323,6 +325,7 @@ export class CrmSalesController {
           and(
             eq(salesCrmSchema.quotations.tenantId, dto.tenantId),
             eq(salesCrmSchema.quotations.id, dto.quotationId),
+            isNull(salesCrmSchema.quotations.deletedAt),
           ),
         );
 

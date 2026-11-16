@@ -134,6 +134,7 @@ export class ProcurementController {
           and(
             eq(scmSchema.purchaseOrders.tenantId, dto.tenantId),
             eq(scmSchema.purchaseOrders.id, dto.purchaseOrderId),
+            isNull(scmSchema.purchaseOrders.deletedAt),
           ),
         );
 
@@ -153,6 +154,7 @@ export class ProcurementController {
           and(
             eq(scmSchema.poLines.tenantId, dto.tenantId),
             eq(scmSchema.poLines.purchaseOrderId, dto.purchaseOrderId),
+            isNull(scmSchema.poLines.deletedAt),
           ),
         );
 
@@ -323,6 +325,7 @@ export class ProcurementController {
           and(
             eq(scmSchema.purchaseOrders.tenantId, dto.tenantId),
             eq(scmSchema.purchaseOrders.id, dto.purchaseOrderId),
+            isNull(scmSchema.purchaseOrders.deletedAt),
           ),
         );
       const po = poRows[0];
@@ -337,6 +340,7 @@ export class ProcurementController {
           and(
             eq(scmSchema.poLines.tenantId, dto.tenantId),
             eq(scmSchema.poLines.purchaseOrderId, dto.purchaseOrderId),
+            isNull(scmSchema.poLines.deletedAt),
           ),
         );
 
@@ -347,6 +351,7 @@ export class ProcurementController {
           and(
             eq(scmSchema.goodsReceivedNotes.tenantId, dto.tenantId),
             eq(scmSchema.goodsReceivedNotes.id, dto.grnId),
+            isNull(scmSchema.goodsReceivedNotes.deletedAt),
           ),
         );
       const grn = grnRows[0];
@@ -361,6 +366,7 @@ export class ProcurementController {
           and(
             eq(scmSchema.grnLines.tenantId, dto.tenantId),
             eq(scmSchema.grnLines.grnId, dto.grnId),
+            isNull(scmSchema.grnLines.deletedAt),
           ),
         );
 
@@ -371,6 +377,7 @@ export class ProcurementController {
           and(
             eq(scmSchema.supplierBills.tenantId, dto.tenantId),
             eq(scmSchema.supplierBills.id, dto.supplierBillId),
+            isNull(scmSchema.supplierBills.deletedAt),
           ),
         );
       const bill = billRows[0];

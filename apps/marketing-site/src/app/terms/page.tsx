@@ -41,7 +41,7 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="text-2xl font-black text-slate-900">2. Accuracy of Utility Calculators</h2>
           <p>
-            While our engineering team validates all mathematical formulas embedded within our MRP Calculator, Invoice Generator, and Barcode Maker against accounting best practices, these public utilities are provided "as is" without formal legal or tax warranties. Users are advised to verify final invoice tax figures with a certified public accountant.
+            While our engineering team validates all mathematical formulas embedded within our MRP Calculator, Invoice Generator, and Barcode Maker against accounting best practices, these public utilities are provided &quot;as is&quot; without formal legal or tax warranties. Users are advised to verify final invoice tax figures with a certified public accountant.
           </p>
         </section>
 

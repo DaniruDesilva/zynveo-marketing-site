@@ -41,7 +41,7 @@ export function NewsletterSection() {
       <div className="pt-8 mt-8 border-t border-slate-800/80">
         <div className="flex items-center gap-3 text-emerald-400 text-sm font-bold">
           <CheckCircle2 className="h-5 w-5 shrink-0" />
-          <span>You're subscribed! Check your email for a welcome message.</span>
+          <span>You&apos;re subscribed! Check your email for a welcome message.</span>
         </div>
       </div>
     );

@@ -466,7 +466,7 @@ export default function MarketingHomepage() {
               {/* Metrics Row */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                 <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm space-y-1 sm:space-y-2 border-l-4 border-l-primary">
-                  <div className="text-[9px] sm:text-[10px] font-black uppercase text-slate-400">Today's Revenue</div>
+                  <div className="text-[9px] sm:text-[10px] font-black uppercase text-slate-400">Today&apos;s Revenue</div>
                   <div className="text-base sm:text-2xl font-black text-slate-800">Rs. 1,450,800</div>
                   <div className="text-[9px] sm:text-[10px] text-emerald-500 font-bold">↑ 18.4% vs yesterday</div>
                 </div>
